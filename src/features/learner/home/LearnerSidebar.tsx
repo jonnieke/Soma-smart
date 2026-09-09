@@ -1,12 +1,11 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  ArrowRight,
   BarChart3,
   BookMarked,
   BookOpen,
   CheckSquare,
-  CreditCard,
   Gift,
   Home,
   Map,
@@ -48,7 +47,6 @@ export const LearnerSidebar: React.FC<LearnerSidebarProps> = ({
   activeTab,
   sessionsLeft,
   isPro = false,
-  subscriptionPlan,
   onToggle,
   onTabChange,
   onProfile,
@@ -61,13 +59,13 @@ export const LearnerSidebar: React.FC<LearnerSidebarProps> = ({
   };
 
   const primary: SidebarAction[] = [
-    { label: 'Learn', icon: <Home />, tab: 'HOME' },
-    { label: 'Practise', icon: <CheckSquare />, tab: 'SUBJECTS' },
-    { label: 'Library', icon: <BookOpen />, tab: 'RESOURCES' },
-    { label: 'My Progress', icon: <BarChart3 />, tab: 'PROGRESS' },
+    { label: 'Home', icon: <Home />, tab: 'HOME' },
+    { label: 'Subjects', icon: <BookOpen />, tab: 'RESOURCES' },
+    { label: 'My notes', icon: <BookMarked />, tab: 'NOTEBOOK' },
   ];
   const more: SidebarAction[] = [
-    { label: 'Notebook', icon: <BookMarked />, tab: 'NOTEBOOK' },
+    { label: 'Practice papers', icon: <CheckSquare />, tab: 'SUBJECTS' },
+    { label: 'My progress', icon: <BarChart3 />, tab: 'PROGRESS' },
     { label: 'Talk & Learn', icon: <Mic />, tab: 'TALKBACK' },
     { label: 'Study Groups', icon: <Users />, tab: 'EXAM_ROOMS' },
     { label: 'Quest Map', icon: <Map />, tab: 'QUEST_MAP' },
@@ -76,8 +74,8 @@ export const LearnerSidebar: React.FC<LearnerSidebarProps> = ({
   const account: SidebarAction[] = [
     { label: 'Profile', icon: <UserCircle />, action: onProfile },
     {
-      label: isPro ? 'Upgrade / Manage Plan' : 'Unlock Unlimited',
-      icon: isPro ? <ShieldCheck className="text-emerald-500" /> : <Sparkles className="text-amber-500 animate-pulse" />,
+      label: 'My plan',
+      icon: isPro ? <ShieldCheck /> : <Sparkles />,
       action: onPlans,
       badge: isPro ? (
         <span className="flex h-5 items-center justify-center rounded-md bg-emerald-100 px-1.5 text-[10px] font-black text-emerald-800 uppercase">
@@ -92,7 +90,7 @@ export const LearnerSidebar: React.FC<LearnerSidebarProps> = ({
           {sessionsLeft} Left
         </span>
       ),
-      highlight: !isPro,
+      highlight: false,
     },
     { label: 'Parent Connection', icon: <Users />, action: onParent },
     { label: 'Referral', icon: <Gift />, tab: 'REFERRAL' },
@@ -114,59 +112,29 @@ export const LearnerSidebar: React.FC<LearnerSidebarProps> = ({
       <nav className="flex-1 overflow-y-auto px-3 pb-5">
         <NavGroup items={primary} activeTab={activeTab} onChoose={choose} />
         <div className="mx-2 my-4 border-t border-[#e7e4f2]" />
-        <p className="px-3 pb-2 text-xs font-medium text-[#6c748f]">More</p>
-        <NavGroup items={more} activeTab={activeTab} onChoose={choose} />
+        <details open={more.some(item => item.tab === activeTab) || undefined}>
+          <summary className="min-h-12 cursor-pointer rounded-xl px-4 py-3 text-sm font-semibold text-slate-600 focus-visible:outline-indigo-600">More learning tools</summary>
+          <NavGroup items={more} activeTab={activeTab} onChoose={choose} />
+        </details>
         <div className="mx-2 my-4 border-t border-[#e7e4f2]" />
         <p className="px-3 pb-2 text-xs font-medium text-[#6c748f]">Account &amp; Plans</p>
         <NavGroup items={account} activeTab={activeTab} onChoose={choose} />
+        <Link to="/contact" className="flex min-h-12 items-center gap-3 rounded-xl px-4 text-sm font-semibold text-slate-600 hover:bg-stone-100 focus-visible:outline-indigo-600"><MessageCircle className="h-5 w-5" />Help &amp; support</Link>
       </nav>
 
-      {/* Prominent Subscription Card */}
-      {!isPro ? (
-        <div className="m-3 p-3.5 rounded-2xl bg-gradient-to-br from-indigo-50 via-purple-50 to-amber-50 border-2 border-indigo-200 text-center shadow-xs">
-          <div className="flex items-center justify-center gap-1.5 mb-1">
-            <Sparkles className="w-4 h-4 text-indigo-600 animate-pulse" />
-            <span className="text-xs font-black uppercase tracking-wider text-indigo-900">
-              {sessionsLeft <= 0 ? 'Limit Reached' : `${sessionsLeft} Free Sessions Left`}
-            </span>
-          </div>
-          <p className="text-[11px] text-slate-600 font-medium mb-2.5 leading-snug">
-            {sessionsLeft <= 0
-              ? 'Get unlimited step-by-step help, exams & audio notes.'
-              : 'Passes start from just KES 20.'}
-          </p>
-          <button
-            type="button"
-            onClick={onPlans}
-            className="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-1.5"
-          >
-            <span>Unlock Pass from KES 20</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-      ) : (
-        <div className="m-3 p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-center">
-          <div className="flex items-center justify-center gap-1.5 mb-1">
-            <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span className="text-xs font-black uppercase tracking-wider text-emerald-900">
-              {subscriptionPlan && subscriptionPlan !== 'FREE' ? `${subscriptionPlan} Plan Active` : 'Pro Active'}
-            </span>
-          </div>
-          <p className="text-[10px] text-emerald-700 font-semibold mb-2">Unlimited learning access</p>
-          <button
-            type="button"
-            onClick={onPlans}
-            className="w-full py-1.5 rounded-lg border border-emerald-300 bg-white text-emerald-800 font-bold text-xs hover:bg-emerald-100 transition-colors shadow-2xs"
-          >
-            Upgrade / Extend Plan
-          </button>
-        </div>
-      )}
     </div>
   );
 
   return (
     <>
+      <nav aria-label="Learner navigation" className="fixed inset-x-0 bottom-0 z-40 flex border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden">
+        {primary.map(item => (
+          <button key={item.tab} type="button" onClick={() => item.tab && onTabChange(item.tab)} aria-current={item.tab === activeTab ? 'page' : undefined} className={`flex min-h-16 flex-1 flex-col items-center justify-center gap-1 text-xs font-semibold focus-visible:outline-indigo-600 ${item.tab === activeTab ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600'}`}>
+            <span className="[&>svg]:h-5 [&>svg]:w-5">{item.icon}</span>{item.label}
+          </button>
+        ))}
+        <button type="button" onClick={onToggle} aria-label="More learner options" className="min-h-16 flex-1 text-xs font-semibold text-slate-600 focus-visible:outline-indigo-600">More</button>
+      </nav>
       <AnimatePresence>
         {isOpen && <motion.button type="button" aria-label="Close learner navigation" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onToggle} className="fixed inset-0 z-[60] bg-[#10143a]/40 backdrop-blur-sm lg:hidden" />}
       </AnimatePresence>
@@ -187,6 +155,7 @@ const NavGroup: React.FC<{ items: SidebarAction[]; activeTab: SidebarTab; onChoo
           key={item.label}
           type="button"
           onClick={() => item.tab ? onChoose(item.tab) : item.action?.()}
+          aria-current={active ? 'page' : undefined}
           className={`relative flex min-h-12 w-full items-center gap-3 rounded-xl px-4 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200 ${
             item.highlight
               ? 'bg-amber-50/70 text-amber-900 border border-amber-200/80 hover:bg-amber-100/70'

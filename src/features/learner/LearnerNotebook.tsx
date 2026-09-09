@@ -4,7 +4,6 @@ import {
   BookOpen,
   CheckCircle2,
   ClipboardList,
-  LogIn,
   MessageCircle,
   Plus,
   RotateCcw,
@@ -57,7 +56,6 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
   isRegistered,
   userId,
   onBack,
-  onOpenNote,
   onListenNote,
   onQuizNote,
   onAskAkili,
@@ -75,16 +73,24 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
   const [draftContent, setDraftContent] = React.useState('');
   const [selectedNoteIds, setSelectedNoteIds] = React.useState<Set<string>>(new Set());
   const [activeAudioNote, setActiveAudioNote] = React.useState<StudyNote | null>(null);
+  const [expandedNoteId, setExpandedNoteId] = React.useState<string | null>(null);
+  const [saveMessage, setSaveMessage] = React.useState('');
+  const editorRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (showComposer) editorRef.current?.focus();
+  }, [showComposer]);
 
   const refresh = React.useCallback(() => {
     setNotes(loadStudyNotes(ownerKey));
   }, [ownerKey]);
 
   React.useEffect(() => {
+    let active = true;
     refresh();
-    void syncNotebookFromCloud(ownerKey, userId).then(notes => setNotes(notes));
+    void syncNotebookFromCloud(ownerKey, userId).then(() => { if (active) refresh(); }).catch(() => { if (active) refresh(); });
     window.addEventListener(NOTEBOOK_CHANGED_EVENT, refresh);
-    return () => window.removeEventListener(NOTEBOOK_CHANGED_EVENT, refresh);
+    return () => { active = false; window.removeEventListener(NOTEBOOK_CHANGED_EVENT, refresh); };
   }, [refresh, ownerKey, userId]);
 
   const subjects = React.useMemo(
@@ -108,6 +114,8 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
 
   const handleSaveManualNote = () => {
     if (!draftTitle.trim() || !draftContent.trim()) return;
+    const existing = notes.find(note => note.source === 'manual' && note.title.trim().toLowerCase() === draftTitle.trim().toLowerCase());
+    if (existing && !window.confirm(`A note called "${existing.title}" already exists. Replace its contents?`)) return;
     const note = saveStudyNote(ownerKey, {
       title: draftTitle,
       content: draftContent,
@@ -121,6 +129,9 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
     setDraftSubject('');
     setDraftContent('');
     setShowComposer(false);
+    setQuery('');
+    setSubject('ALL');
+    setSaveMessage('Note saved.');
     onNoteSaved?.(note);
   };
 
@@ -156,21 +167,21 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 pb-24">
+    <div className={`min-h-screen bg-[#faf9f6] text-slate-900 ${activeAudioNote ? 'pb-72' : 'pb-8'}`}>
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-5xl items-center gap-3 px-4">
+        <div className="mx-auto flex min-h-20 max-w-4xl items-center gap-3 px-5 py-3">
           <button
             type="button"
             onClick={onBack}
             className="inline-flex h-10 w-10 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
-            aria-label="Back to learner dashboard"
+            aria-label="Back to home"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="min-w-0 flex-1">
-            <h1 className="text-lg font-black">My Notebook</h1>
+            <h1 className="text-xl font-bold">My notes</h1>
             <p className="text-xs font-semibold text-slate-500">
-              Save it, listen to it, then test yourself.
+              Your ideas, in your own words.
             </p>
           </div>
           <button
@@ -179,46 +190,19 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
             className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-black text-white hover:bg-indigo-700"
           >
             <Plus className="h-4 w-4" />
-            Add note
+            New note
           </button>
         </div>
       </header>
 
       {!isRegistered && (
-        <section className="border-b border-amber-200 bg-amber-50">
-          <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-            <div>
-              <p className="text-sm font-black text-amber-900">Saved on this device</p>
-              <p className="text-xs font-semibold text-amber-800/80">
-                Register when you are ready to protect your Notebook and learning progress.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={onRegister}
-              className="inline-flex items-center justify-center gap-2 rounded-lg bg-amber-600 px-4 py-2 text-xs font-black text-white hover:bg-amber-700"
-            >
-              <LogIn className="h-4 w-4" />
-              Protect my progress
-            </button>
-          </div>
-        </section>
+        <div className="mx-auto max-w-4xl px-5 pt-5 text-sm text-slate-600">
+          Notes are saved on this device. <button type="button" onClick={onRegister} className="min-h-12 rounded-lg px-2 font-semibold text-indigo-700 underline focus-visible:outline-indigo-600">Create an account to sync them</button>
+        </div>
       )}
 
-      <main className="mx-auto max-w-5xl px-4 py-6">
-        {notes.length > 0 && (
-          <section className="mb-5 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-600 text-white">
-              <MessageCircle className="h-5 w-5" />
-            </span>
-            <div>
-              <h2 className="text-sm font-black text-emerald-950">Share learning, not screenshots</h2>
-              <p className="mt-0.5 text-xs font-semibold leading-5 text-emerald-800/80">
-                Send a clean study note to a parent or study group. You always choose the recipient and tap Send in WhatsApp.
-              </p>
-            </div>
-          </section>
-        )}
+      <main className="mx-auto max-w-4xl px-5 py-6">
+        <p role="status" className="mb-3 text-sm text-indigo-700">{saveMessage}</p>
 
         {selectedNotes.length > 0 && (
           <section className="mb-5 flex flex-col gap-3 rounded-xl border border-[#b9e8cb] bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center">
@@ -248,8 +232,8 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
           <section className="mb-6 border-y border-indigo-200 bg-white px-4 py-5 sm:rounded-lg sm:border">
             <div className="mb-4 flex items-center justify-between">
               <div>
-                <h2 className="font-black">Write a study note</h2>
-                <p className="text-xs font-semibold text-slate-500">Keep it short enough to revise again.</p>
+                <h2 className="font-bold">Write a note</h2>
+                <p className="text-sm text-slate-500">Write an idea, a worked example, or something to remember.</p>
               </div>
               <button
                 type="button"
@@ -261,26 +245,33 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
               </button>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
+              <label className="space-y-2 text-sm font-semibold">Title
               <input
+                ref={editorRef}
                 value={draftTitle}
                 onChange={event => setDraftTitle(event.target.value)}
                 placeholder="Note title"
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+                className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-base outline-none focus:ring-2 focus:ring-indigo-300"
               />
+              </label>
+              <label className="space-y-2 text-sm font-semibold">Subject (optional)
               <input
                 value={draftSubject}
                 onChange={event => setDraftSubject(event.target.value)}
-                placeholder="Subject, e.g. Biology"
-                className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+                placeholder="For example, Mathematics"
+                className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-base outline-none focus:ring-2 focus:ring-indigo-300"
               />
+              </label>
             </div>
+            <label className="mt-4 block text-sm font-semibold">Your note
             <textarea
               value={draftContent}
               onChange={event => setDraftContent(event.target.value)}
               placeholder="Write the key idea, example, or correction you want to remember..."
-              rows={6}
-              className="mt-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-3 text-sm leading-relaxed outline-none focus:border-indigo-500"
+              rows={9}
+              className="mt-2 w-full rounded-lg border border-slate-300 bg-[#fffef9] px-4 py-3 text-base font-normal leading-8 outline-none focus:ring-2 focus:ring-indigo-300"
             />
+            </label>
             <button
               type="button"
               onClick={handleSaveManualNote}
@@ -290,13 +281,17 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
               <BookOpen className="h-4 w-4" />
               Save note
             </button>
+            <p className="mt-3 text-xs text-slate-500">Tap Save note to keep your work. Closing this editor keeps your draft until you leave My notes.</p>
           </section>
         )}
 
+        {!showComposer && <>
         <section className="mb-5 flex flex-col gap-3 sm:flex-row">
           <label className="relative flex-1">
             <Search className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
             <input
+              type="search"
+              aria-label="Search notes"
               value={query}
               onChange={event => setQuery(event.target.value)}
               placeholder="Search notes or topics"
@@ -304,6 +299,7 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
             />
           </label>
           <select
+            aria-label="Filter notes by subject"
             value={subject}
             onChange={event => setSubject(event.target.value)}
             className="rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-bold outline-none focus:border-indigo-500"
@@ -314,31 +310,14 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
         </section>
 
         {filteredNotes.length === 0 ? (
-          <section className="py-14 text-center px-4">
-            <div className="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-4">
-              <BookOpen className="h-8 w-8 text-indigo-500" />
-            </div>
-            <h2 className="text-lg font-black">My Notebook</h2>
-            <p className="mx-auto mt-2 max-w-sm text-sm font-semibold text-slate-500 leading-relaxed">
-              Your personal study notebook. Save smart explanations from Ask Akili, or write your own notes — then listen back or quiz yourself on any note.
-            </p>
-            <div className="mx-auto mt-5 max-w-xs space-y-2 text-left">
-              <div className="flex items-start gap-3 rounded-xl bg-white border border-slate-100 px-3 py-2.5 text-xs font-semibold text-slate-600">
-                <span className="text-base shrink-0">💬</span>
-                <span>Ask Akili a question → tap <strong>Save to Notebook</strong> on any answer</span>
-              </div>
-              <div className="flex items-start gap-3 rounded-xl bg-white border border-slate-100 px-3 py-2.5 text-xs font-semibold text-slate-600">
-                <span className="text-base shrink-0">✏️</span>
-                <span>Or tap <strong>+ New Note</strong> above to write your own revision note</span>
-              </div>
-              <div className="flex items-start gap-3 rounded-xl bg-white border border-slate-100 px-3 py-2.5 text-xs font-semibold text-slate-600">
-                <span className="text-base shrink-0">🎧</span>
-                <span>Each note can be <strong>listened to</strong> or turned into a <strong>quick quiz</strong></span>
-              </div>
-            </div>
+          <section className="rounded-2xl border border-stone-200 bg-white px-5 py-10 text-center">
+            <BookOpen className="mx-auto mb-4 h-8 w-8 text-indigo-600" aria-hidden="true" />
+            <h2 className="text-xl font-bold">{notes.length === 0 ? 'A fresh page for your ideas' : 'No matching notes'}</h2>
+            <p className="mx-auto mt-3 max-w-sm text-base leading-7 text-slate-600">{notes.length === 0 ? 'Write something you learned today. Notes you save from Ask Akili will appear here too.' : 'Try another word or subject. Your saved notes are still here.'}</p>
+            <button type="button" onClick={() => { if (notes.length === 0) setShowComposer(true); else { setQuery(''); setSubject('ALL'); } }} className="mt-5 min-h-12 rounded-xl bg-indigo-700 px-5 py-3 text-sm font-semibold text-white hover:bg-indigo-800">{notes.length === 0 ? 'Write my first note' : 'Show all notes'}</button>
           </section>
         ) : (
-          <section className="grid gap-3 md:grid-cols-2">
+          <section aria-label="Saved notes" className="space-y-4">
             {filteredNotes.map(note => (
               <article
                 key={note.id}
@@ -349,41 +328,25 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
                     <BookOpen className="h-5 w-5" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-black">{note.title}</p>
+                    <h2 className="break-words text-lg font-bold">{note.title}</h2>
                     <p className="mt-1 text-[11px] font-bold text-slate-500">
                       {note.subject}{note.grade ? ' / ' + note.grade : ''} / {masteryCopy[note.masteryStatus]}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => toggleNoteSelection(note.id)}
-                    className={'inline-flex h-8 items-center justify-center rounded-lg px-2 text-[10px] font-black transition ' + (selectedNoteIds.has(note.id) ? 'bg-emerald-600 text-white' : 'bg-slate-50 text-slate-500 hover:bg-emerald-50 hover:text-emerald-700')}
-                    aria-pressed={selectedNoteIds.has(note.id)}
-                    aria-label={(selectedNoteIds.has(note.id) ? 'Remove ' : 'Add ') + note.title + ' from revision pack'}
-                  >
-                    {selectedNoteIds.has(note.id) ? 'Selected' : 'Select'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => deleteStudyNote(ownerKey, note.id)}
-                    className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                    aria-label={'Delete ' + note.title}
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
                 </div>
 
-                <p className="mt-3 line-clamp-4 text-sm font-medium leading-relaxed text-slate-600">
+                <p className={`mt-3 whitespace-pre-wrap break-words leading-8 text-slate-700 ${expandedNoteId === note.id ? 'text-base' : 'line-clamp-3 text-sm'}`}>
                   {note.content}
                 </p>
 
-                <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                <div className="mt-4 flex flex-wrap gap-2">
                   <button
                     type="button"
-                    onClick={() => onOpenNote(note)}
-                    className="rounded-lg bg-slate-100 px-2 py-2 text-[11px] font-black text-slate-700 hover:bg-slate-200"
+                    onClick={() => setExpandedNoteId(expandedNoteId === note.id ? null : note.id)}
+                    aria-expanded={expandedNoteId === note.id}
+                    className="min-h-12 rounded-xl bg-indigo-700 px-4 py-3 text-sm font-semibold text-white hover:bg-indigo-800"
                   >
-                    Open
+                    {expandedNoteId === note.id ? 'Close note' : 'Read note'}
                   </button>
                   <button
                     type="button"
@@ -391,10 +354,23 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
                       setActiveAudioNote(note);
                       onListenNote(note);
                     }}
-                    className="inline-flex items-center justify-center gap-1 rounded-lg bg-indigo-50 px-2 py-2 text-[11px] font-black text-indigo-700 hover:bg-indigo-100"
+                    className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-700 hover:bg-indigo-100"
                   >
                     <Volume2 className="h-3.5 w-3.5" />
                     Listen
+                  </button>
+                </div>
+                <details className="mt-2">
+                  <summary className="min-h-12 w-fit cursor-pointer rounded-lg py-3 text-sm font-semibold text-slate-600 focus-visible:outline-indigo-600">More for this note</summary>
+                  <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => toggleNoteSelection(note.id)}
+                    className={'inline-flex min-h-12 items-center justify-center rounded-lg px-2 text-[10px] font-black transition ' + (selectedNoteIds.has(note.id) ? 'bg-emerald-600 text-white' : 'bg-slate-50 text-slate-500 hover:bg-emerald-50 hover:text-emerald-700')}
+                    aria-pressed={selectedNoteIds.has(note.id)}
+                    aria-label={(selectedNoteIds.has(note.id) ? 'Remove ' : 'Add ') + note.title + (selectedNoteIds.has(note.id) ? ' from revision pack' : ' to revision pack')}
+                  >
+                    {selectedNoteIds.has(note.id) ? 'Selected' : 'Select'}
                   </button>
                   <button
                     type="button"
@@ -463,10 +439,13 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
                     Revise again
                   </button>
                 </div>
+                <button type="button" onClick={() => { if (window.confirm(`Delete "${note.title}"? This cannot be undone.`)) { deleteStudyNote(ownerKey, note.id); setSaveMessage('Note deleted.'); } }} className="mt-3 inline-flex min-h-12 items-center gap-2 rounded-xl px-3 text-sm text-rose-700 hover:bg-rose-50" aria-label={'Delete ' + note.title}><Trash2 className="h-4 w-4" />Delete note</button>
+                </details>
               </article>
             ))}
           </section>
         )}
+        </>}
       </main>
 
       {/* Floating Bottom Audio Player */}

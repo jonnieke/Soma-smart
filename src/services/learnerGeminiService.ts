@@ -3,6 +3,11 @@ import { speak as ttSpeak, stopSpeech as ttStop } from "./elevenLabsService";
 import { buildScaffoldingContext } from "./spacedRepetitionService";
 import { buildTargetedStrategiesInstruction } from "./strategyService";
 import { parseModelJson } from "./jsonResponse";
+import {
+  ACADEMIC_LANGUAGE_CLASSIFICATION_INSTRUCTION,
+  academicLanguageInstruction,
+  isKiswahiliSubject,
+} from "./academicLanguagePolicy";
 
 // --- PROXY CONFIG ---
 // We no longer use VITE_GEMINI_API_KEY on the client.
@@ -328,6 +333,12 @@ const sanitizeExplanationResult = (result: ExplanationResult): ExplanationResult
     point: normalizeLearnerText(node.point),
     details: normalizeLearnerText(node.details)
   })),
+  practice: result.practice ? {
+    isProblem: Boolean(result.practice.isProblem),
+    originalQuestion: normalizeLearnerText(result.practice.originalQuestion),
+    workedExample: normalizeLearnerText(result.practice.workedExample),
+    yourTurnPrompt: normalizeLearnerText(result.practice.yourTurnPrompt)
+  } : undefined,
   flashcard: result.flashcard ? {
     question: normalizeLearnerText(result.flashcard.question),
     answer: normalizeLearnerText(result.flashcard.answer)
@@ -362,13 +373,39 @@ SUBJECT-SPECIFIC EXPLANATION MODES:
 
 const LEARNING_LADDER_INSTRUCTION = `
 LEARNING STYLE — clear answers that build understanding:
-- Give the answer or explanation clearly and directly first. Do NOT make the student wait.
+- For a concept question, give the explanation clearly and directly first.
+- For a specific exercise or homework problem, teach with a closely similar worked example first and preserve the learner's exact question for their own attempt.
 - Show the method step-by-step so the student learns the approach, not just the final answer.
 - After explaining, include ONE short "Check Yourself" question at the end so the student can test their understanding.
 - When the learner asks for a quiz, generate actual questions immediately. Never explain what a quiz is.
 - Keep responses concise. Prefer numbered steps and bullet points over long paragraphs.
 - Avoid long copyable essays unless the learner explicitly asks for one. Prefer structured notes, examples, and one practice task.
 `;
+
+const GUIDED_PROBLEM_PRACTICE_INSTRUCTION = `
+GUIDED PROBLEM PRACTICE — prevent copying while still teaching:
+- Decide whether the learner supplied a specific problem with an answer to calculate, derive, write, or select.
+- Always populate the "practice" object.
+- If it IS a specific problem:
+  1. Set practice.isProblem to true.
+  2. Transcribe the exact problem faithfully into practice.originalQuestion.
+  3. Create ONE closely similar problem that tests the same method and difficulty, but change the figures, names, objects, or context. Put its complete step-by-step solution in practice.workedExample.
+  4. Do NOT reveal the final answer to the learner's exact original problem. In the main explanation, teach only the concept, formula, and method needed.
+  5. Put a short encouraging handoff in practice.yourTurnPrompt telling the learner to solve the question now.
+- If it is NOT a specific problem, set practice.isProblem to false and use empty strings for the other practice fields.
+- Never claim the changed example is the learner's original question.
+`;
+
+const PRACTICE_RESPONSE_SCHEMA = {
+  type: SchemaType.OBJECT,
+  properties: {
+    isProblem: { type: SchemaType.BOOLEAN },
+    originalQuestion: { type: SchemaType.STRING },
+    workedExample: { type: SchemaType.STRING, description: "Markdown worked solution to a similar problem with changed details" },
+    yourTurnPrompt: { type: SchemaType.STRING }
+  },
+  required: ["isProblem", "originalQuestion", "workedExample", "yourTurnPrompt"]
+};
 
 // --- SUPER TEACHER PHASE 2: ADAPTIVE SCAFFOLDING ---
 const ADAPTIVE_SCAFFOLDING_INSTRUCTION = `
@@ -384,7 +421,7 @@ ADAPTIVE TUTORING MODE (Super Teacher Phase 2):
 const SOCRATIC_TUTOR_INSTRUCTION = `
 TUTOR MODE:
 - You are a helpful, encouraging Kenyan AI study companion.
-- Answer questions clearly and directly. The student needs to understand — do not make them wait.
+- Answer concept questions clearly and directly. For a specific exercise, teach through the changed worked example and let the learner attempt the original.
 - Show the reasoning and method, not just the final answer.
 - Focus on conceptual understanding ("Why does this happen?") alongside the facts.
 - After your explanation, end with ONE short check question so the student tests their understanding.
@@ -399,9 +436,9 @@ STEP 1 — IDENTIFY: In one short line, name the concept being tested.
 
 STEP 2 — EXPLAIN: Give a clear, step-by-step explanation of the concept and method. Show full working for Maths and Science.
 
-STEP 3 — ANSWER: Provide the complete model answer so the student can check their understanding.
+STEP 3 — MODEL: Solve a closely similar example with changed figures or details.
 
-STEP 4 — PRACTICE: End with one similar question for the student to try on their own.
+STEP 4 — PRACTICE: Return the learner to their exact original question without revealing its final answer.
 
 TONE: Warm, patient, encouraging. Never make the student feel stupid.
 `;
@@ -464,18 +501,6 @@ export const fileToGenerativePart = async (file: File): Promise<string> => {
 
 // --- LEARNER FEATURES ---
 
-const isSwahiliSubject = (subject?: string, topicOrContent?: string): boolean => {
-  if (subject) {
-    const s = subject.toLowerCase();
-    if (s.includes('swahili') || s.includes('kiswahili')) return true;
-  }
-  if (topicOrContent) {
-    const tc = topicOrContent.toLowerCase();
-    if (tc.includes('swahili') || tc.includes('kiswahili')) return true;
-  }
-  return false;
-};
-
 export const explainImage = async (
   base64Image: string,
   mimeType: string,
@@ -495,16 +520,15 @@ export const explainImage = async (
           topic: { type: SchemaType.STRING },
           explanation: { type: SchemaType.STRING, description: "Markdown formatted explanation" },
           summaryPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-          relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+          relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          practice: PRACTICE_RESPONSE_SCHEMA
         },
-        required: ["topic", "explanation", "summaryPoints", "relatedTopics"]
+        required: ["topic", "explanation", "summaryPoints", "relatedTopics", "practice"]
       }
     }
   });
 
-  const langInstruction = language === 'SW'
-    ? "LANGUAGE RULE: First, determine the subject of the image content. If the subject is 'Kiswahili' or 'Swahili', you MUST respond ENTIRELY in rich, immersive Swahili (Kiswahili Sanifu). For ALL other subjects (e.g. Mathematics, Science, Social Studies, CRE, etc.), you MUST respond ENTIRELY in English, even though the user system language is set to Swahili."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
+  const langInstruction = ACADEMIC_LANGUAGE_CLASSIFICATION_INSTRUCTION;
 
   const educationLevelInstruction = buildEducationLevelInstruction(educationLevel);
 
@@ -515,7 +539,7 @@ export const explainImage = async (
     1. Extract the main topic and identify the underlying subject.
     2. ${langInstruction}
     3. **IMAGE QUESTION SOLVING**: Read ALL text, diagrams, and numbers from the image accurately. Double-check your reading before formulating an answer.
-    4. **DIRECT ANSWER**: If this is a question, answer it DIRECTLY and IMMEDIATELY. Break down complex math or science problems into extremely clear, numbered steps.
+    4. **TEACH THE METHOD**: For a specific exercise, use a changed but closely similar worked example. Do not reveal the exact exercise's final answer.
     5. **FORMAT**: Use neat bullet points for steps, lists, or distinct ideas. Keep paragraphs short and visually appealing.
     6. Explain the content in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
     7. Suggest 3 short related topics for further learning.
@@ -524,6 +548,7 @@ export const explainImage = async (
     ${EXAM_CROSS_LINK_INSTRUCTION}
     ${SUBJECT_SPECIFIC_INSTRUCTION}
     ${LEARNING_LADDER_INSTRUCTION}
+    ${GUIDED_PROBLEM_PRACTICE_INSTRUCTION}
     ${purpose === 'HOMEWORK' ? HOMEWORK_GUARDIAN_INSTRUCTION : SOCRATIC_TUTOR_INSTRUCTION}
 
     Output JSON.
@@ -578,16 +603,15 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
           topic: { type: SchemaType.STRING },
           explanation: { type: SchemaType.STRING, description: "Markdown formatted explanation" },
           summaryPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-          relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+          relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          practice: PRACTICE_RESPONSE_SCHEMA
         },
-        required: ["transcript", "topic", "explanation", "summaryPoints", "relatedTopics"]
+        required: ["transcript", "topic", "explanation", "summaryPoints", "relatedTopics", "practice"]
       }
     }
   });
 
-  const langInstruction = language === 'SW'
-    ? "LANGUAGE RULE: First, determine the subject of the audio content. If the subject is 'Kiswahili' or 'Swahili', you MUST respond ENTIRELY in rich, immersive Swahili (Kiswahili Sanifu). For ALL other subjects (e.g. Mathematics, Science, Social Studies, CRE, etc.), you MUST respond ENTIRELY in English, even though the user system language is set to Swahili."
-    : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English.";
+  const langInstruction = ACADEMIC_LANGUAGE_CLASSIFICATION_INSTRUCTION;
 
   const educationLevelInstruction = buildEducationLevelInstruction(educationLevel);
 
@@ -598,7 +622,7 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
     1. Transcribe the audio to text.
     2. Extract the main topic and identify the subject.
     3. ${langInstruction}
-    4. **DIRECT ANSWER**: Answer the question DIRECTLY. For math or science queries, provide a step-by-step breakdown of how to reach the final answer.
+    4. **TEACH THE METHOD**: For a specific exercise, solve a changed but closely similar example step by step. Do not reveal the exact exercise's final answer.
     5. **FORMAT**: Use neat bullet points for the explanation/answer.
     6. Explain the content in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
     7. Suggest 3 short related topics for further learning.
@@ -606,6 +630,8 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
     ${SYLLABUS_GROUNDING_INSTRUCTION}
     ${EXAM_CROSS_LINK_INSTRUCTION}
     ${SUBJECT_SPECIFIC_INSTRUCTION}
+    ${LEARNING_LADDER_INSTRUCTION}
+    ${GUIDED_PROBLEM_PRACTICE_INSTRUCTION}
 
     Output JSON.
   `;
@@ -692,7 +718,7 @@ You are a senior Kenyan teacher turning a live class recording into a proper les
 RULES:
 1. If the audio is unclear, return a safe fallback object, but still keep the JSON valid.
 2. If the audio is clear, write a full classroom-ready note, not a summary of the prompt.
-3. Use ${isSwahiliSubject(subject) ? 'Swahili (Kiswahili Sanifu)' : 'English'}.
+3. Use ${isKiswahiliSubject(subject) ? 'Swahili (Kiswahili Sanifu)' : 'English'}.
 4. The note must be detailed, structured, and exam-friendly for ${grade} learners.
 5. note.explanation must be rich Markdown with these sections:
    - ### Topic
@@ -742,6 +768,8 @@ const retrieveContext = async (
   subject?: string,
   type?: string
 ): Promise<RetrievedContext> => {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 12000);
   try {
     const { data: { session } } = await supabase.auth.getSession();
     const token = session?.access_token;
@@ -749,6 +777,7 @@ const retrieveContext = async (
 
     const response = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/search-knowledge`, {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
         ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
@@ -767,7 +796,8 @@ const retrieveContext = async (
 
     if (!response.ok) {
       if (response.status !== 401 && response.status !== 403) {
-        console.warn("RAG retrieval returned non-OK status:", response.status);
+        const errorBody = await response.text().catch(() => '');
+        console.warn("RAG retrieval returned non-OK status:", response.status, errorBody.slice(0, 400));
       }
       return { text: "", sources: [] };
     }
@@ -797,6 +827,8 @@ const retrieveContext = async (
   } catch (error) {
     console.warn("RAG Retrieval failed:", error);
     return { text: "", sources: [] };
+  } finally {
+    clearTimeout(timeout);
   }
 };
 
@@ -859,6 +891,7 @@ export const explainTopic = async (
           },
           summaryPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
           relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          practice: PRACTICE_RESPONSE_SCHEMA,
           flashcard: {
             type: SchemaType.OBJECT,
             description: "A single, high-yield Q&A flashcard for Spaced Repetition",
@@ -869,7 +902,7 @@ export const explainTopic = async (
             required: ["question", "answer"]
           }
         },
-        required: ["topic", "explanation", "subtopics", "recapNodes", "summaryPoints", "relatedTopics", "flashcard"]
+        required: ["topic", "explanation", "subtopics", "recapNodes", "summaryPoints", "relatedTopics", "practice", "flashcard"]
       }
     }
   });
@@ -899,9 +932,9 @@ export const explainTopic = async (
     `;
   }
 
-  const useSwahili = isSwahiliSubject(subject || searchSubject, topic);
+  const useSwahili = isKiswahiliSubject(subject || searchSubject);
   const langInstruction = useSwahili
-    ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili."
+    ? "LANGUAGE RULE: Respond ENTIRELY in concise, grammatical Kiswahili Sanifu. Do not include English translations, English headings, or English glosses in parentheses. Use accepted Kiswahili educational terminology."
     : "LANGUAGE RULE: You MUST respond exclusively in English. For all academic concepts, questions, notes, explanations, and flashcards, use clear, precise academic English. Do NOT respond in Swahili, even if the student language setting is Swahili.";
 
   // Build adaptive scaffolding context if mastery data is available
@@ -936,10 +969,10 @@ export const explainTopic = async (
     ${personaInstruction}
 
     STRICT TASK:
-    1. Answer the learning problem directly. Do NOT spend time explaining the question setup, grade level, or subject classification unless it changes the answer.
+    1. Teach the learning problem directly. For a specific exercise, demonstrate the method on a changed, closely similar example instead of revealing the original final answer.
     2. ${langInstruction}
     3. If an image or audio recording is provided, analyze it (transcribe audio if present) and answer the student's question in the context of the source document snippets provided.
-    4. Provide a direct, learner-friendly explanation in the 'explanation' field. Start with the actual answer or method, then expand into the learning steps.
+    4. Provide a direct, learner-friendly explanation in the 'explanation' field. For concept questions, start with the answer. For a specific exercise, explain the method without giving the original problem's final answer.
     5. DEEP LEARNING (subtopics): Break the topic down into EXACTLY 3 distinct, logical subtopics using the FORMATTING RULES above. For EACH subtopic, provide highly readable, bite-sized paragraph notes in plain text. Do NOT use ** (bold markers) or ## (headers) in the content. Use numbered lists and bullet points frequently to break down processes or features.
        - CRITICAL LIMIT: Do not generate excessively long notes. You MUST ensure the full JSON output is completed and valid without truncating. Keep it concise.
        - Length constraints: For EACH subtopic block, limit paragraphs to a maximum of 3 sentences (under 60 words) and lists to a maximum of 4 items. Keep 'explanation' under 200 words. Keep 'recapNodes' details under 80 words. Strictly avoid verbose output so the JSON does not get truncated.
@@ -949,6 +982,7 @@ export const explainTopic = async (
     ${EXAM_CROSS_LINK_INSTRUCTION}
     ${SUBJECT_SPECIFIC_INSTRUCTION}
     ${LEARNING_LADDER_INSTRUCTION}
+    ${GUIDED_PROBLEM_PRACTICE_INSTRUCTION}
     ${purpose === 'HOMEWORK' ? HOMEWORK_GUARDIAN_INSTRUCTION : SOCRATIC_TUTOR_INSTRUCTION}
 
     7. Provide EXACTLY 3 short bullet points summarizing the most critical takeaways for "stickiness" in the 'summaryPoints' field.
@@ -1109,7 +1143,7 @@ export const summarizeDocument = async (title: string, documentId: string, langu
     
     5. RELATED TOPICS: Suggest EXACTLY 3 related study topics for further learning.
     
-    6. Use ${isSwahiliSubject(subject, title) ? 'Swahili (Kiswahili Sanifu)' : 'English'}. All subjects other than Swahili/Kiswahili must be generated exclusively in English.
+    6. Use ${isKiswahiliSubject(subject) ? 'Swahili (Kiswahili Sanifu)' : 'English'}. All subjects other than Swahili/Kiswahili must be generated exclusively in English.
     
     Output JSON.
   `;
@@ -1178,7 +1212,7 @@ GUIDELINES:
     4. ** Tone **: Educational, encouraging, friendly, active, and professional (Teacher-to-Student). Keep explanations clear and relatable.
     5. ** Richness **: Provide depth.If a concept is mentioned in the source, explain the 'why' and 'how', not just the 'what'.
     6. ** Formatting **: Use Markdown with clear H2 and H3 headers, bold text for emphasis, bullet points, numbered lists, and visual spacing between sections.
-    7. ** Language **: Use ${isSwahiliSubject(subject, title) ? 'Swahili (Kiswahili Sanifu)' : 'English'}. All subjects other than Swahili/Kiswahili must be generated exclusively in English.
+    7. ** Language **: Use ${isKiswahiliSubject(subject) ? 'Swahili (Kiswahili Sanifu)' : 'English'}. All subjects other than Swahili/Kiswahili must be generated exclusively in English.
     
     Output JSON.
   `;
@@ -1212,14 +1246,15 @@ export const continueResearch = async (
           topic: { type: SchemaType.STRING },
           explanation: { type: SchemaType.STRING, description: "Markdown formatted explanation" },
           summaryPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
-          relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
+          relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
+          practice: PRACTICE_RESPONSE_SCHEMA
         },
-        required: ["topic", "explanation", "summaryPoints", "relatedTopics"]
+        required: ["topic", "explanation", "summaryPoints", "relatedTopics", "practice"]
       }
     }
   });
 
-  const useSwahili = isSwahiliSubject(undefined, currentTopic) || isSwahiliSubject(undefined, currentExplanation) || isSwahiliSubject(undefined, userQuery);
+  const useSwahili = isKiswahiliSubject(currentTopic);
   const langInstruction = useSwahili
     ? "LANGUAGE RULE: You MUST respond ENTIRELY in rich, immersive, grammatical Swahili (Kiswahili Sanifu). Use comprehensive educational vocabulary in Swahili."
     : "LANGUAGE RULE: You MUST respond exclusively in English. For all academic concepts, questions, notes, and explanations, use clear, precise academic English. Do NOT respond in Swahili, even if the student language setting is Swahili.";
@@ -1236,6 +1271,7 @@ TASK:
     3. ${langInstruction}
 4. Explain in ${level === 'Simple' ? 'very simple language' : 'academic language'}.
 5. Provide updated summary points and related topics.
+6. ${GUIDED_PROBLEM_PRACTICE_INSTRUCTION}
     
     Output JSON.
   `;
@@ -1282,7 +1318,7 @@ export const generateQuiz = async (content: string, topic: string, language: 'EN
     }
   });
 
-  const useSwahili = isSwahiliSubject(undefined, topic) || isSwahiliSubject(undefined, content);
+  const useSwahili = isKiswahiliSubject(topic);
   const langInstruction = useSwahili
     ? "LANGUAGE RULE: You MUST generate the quiz in Swahili (Kiswahili Sanifu)."
     : "LANGUAGE RULE: You MUST generate the quiz exclusively in English. All questions, options, and explanations must be strictly in English, even if the user language setting is Swahili.";
@@ -1342,7 +1378,7 @@ export const generateQuickQuiz = async (content: string, topic: string, language
     }
   });
 
-  const useSwahili = isSwahiliSubject(undefined, topic) || isSwahiliSubject(undefined, content);
+  const useSwahili = isKiswahiliSubject(topic);
   const langInstruction = useSwahili
     ? "LANGUAGE RULE: You MUST generate the quiz in Swahili (Kiswahili Sanifu)."
     : "LANGUAGE RULE: You MUST generate the quiz exclusively in English. All questions, options, and explanations must be strictly in English, even if the user language setting is Swahili.";
@@ -1418,7 +1454,7 @@ export const generateLessonRecap = async (inputBase64: string, mimeType: string,
   const learnerPrompt = `
     You are an expert tutor helping a student understand a live lesson they just attended.
     1. Analyze the recording / notes and identify the subject.
-    2. ${language === 'SW' ? "LANGUAGE RULE: First, determine the subject of the lesson. If the subject is 'Kiswahili' or 'Swahili', you MUST respond ENTIRELY in Swahili (Kiswahili Sanifu). For ALL other subjects, you MUST respond exclusively in English, even though the user system language is set to Swahili." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
+    2. ${ACADEMIC_LANGUAGE_CLASSIFICATION_INSTRUCTION}
 3. Extract the Main Topic.
     4. Write a fun, simple Summary(2 - 3 sentences).
     5. List 5 Key Points(Bullet points).
@@ -1431,7 +1467,7 @@ export const generateLessonRecap = async (inputBase64: string, mimeType: string,
   const teacherPrompt = `
     You are a curriculum expert summarizing a lesson for a fellow teacher.
     1. Analyze the recording / notes and identify the subject.
-    2. ${language === 'SW' ? "LANGUAGE RULE: First, determine the subject of the lesson. If the subject is 'Kiswahili' or 'Swahili', you MUST respond ENTIRELY in Swahili (Kiswahili Sanifu). For ALL other subjects, you MUST respond exclusively in English, even though the user system language is set to Swahili." : "LANGUAGE RULE: If the subject is 'Kiswahili' or 'Swahili' or the question/content is in Swahili, you MUST respond exclusively in Swahili. For ALL other subjects and questions, you MUST respond exclusively in English."}
+    2. ${ACADEMIC_LANGUAGE_CLASSIFICATION_INSTRUCTION}
 3. Extract Topic and Competencies covered.
     4. Provide a professional Summary.
     5. List Key Teaching Points.

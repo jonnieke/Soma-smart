@@ -133,7 +133,7 @@ export const NotebookAudioPlayer: React.FC<NotebookAudioPlayerProps> = ({
   if (!note) return null;
 
   return (
-    <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-indigo-200 bg-slate-950 text-white shadow-2xl backdrop-blur-lg">
+    <div className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom))] left-0 right-0 z-50 border-t border-indigo-200 bg-slate-950 text-white shadow-2xl backdrop-blur-lg lg:bottom-0 lg:left-[260px]">
       <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         {/* Note Info */}
         <div className="flex min-w-0 items-center gap-3">

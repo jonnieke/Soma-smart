@@ -1,13 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-student-code",
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-};
+import { createSearchHandler, SearchFailure } from './handler.ts';
 
-const EMBEDDING_MODEL = Deno.env.get("GEMINI_EMBEDDING_MODEL") || "text-embedding-005";
+// Keep search vectors compatible with ingest-document and knowledge_vectors.embedding
+// (vector(768)). The previous text-embedding-005 default could return a rejected
+// request or a dimension mismatch after a learner recorded a voice question.
+const EMBEDDING_MODEL = Deno.env.get("GEMINI_EMBEDDING_MODEL") || "gemini-embedding-001";
 
 type KnowledgeChunk = {
   id: number;
@@ -27,11 +26,6 @@ type KnowledgeChunk = {
   metadata?: Record<string, unknown> | null;
 };
 
-const json = (body: unknown, status = 200) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { ...corsHeaders, "Content-Type": "application/json" },
-  });
 
 const embedQuery = async (query: string, apiKey: string) => {
   const response = await fetch(
@@ -39,18 +33,24 @@ const embedQuery = async (query: string, apiKey: string) => {
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
+      signal: AbortSignal.timeout(10000),
       body: JSON.stringify({
         content: { parts: [{ text: query }] },
+        outputDimensionality: 768,
       }),
     },
   );
 
   const result = await response.json();
   if (!response.ok || !result.embedding?.values) {
-    throw new Error(`Gemini embedding failed: ${JSON.stringify(result).slice(0, 800)}`);
+    throw new SearchFailure('EMBEDDING_UNAVAILABLE', 502, 'Library search is temporarily unavailable. Please try again.');
   }
 
-  return result.embedding.values;
+  const values = result.embedding.values;
+  if (!Array.isArray(values) || values.length !== 768 || !values.every((value: unknown) => typeof value === 'number' && Number.isFinite(value))) {
+    throw new SearchFailure('EMBEDDING_INVALID', 502, 'Library search is temporarily unavailable. Please try again.');
+  }
+  return values;
 };
 
 const buildSources = (chunks: KnowledgeChunk[]) => {
@@ -106,56 +106,30 @@ const buildContext = (chunks: KnowledgeChunk[]) =>
     })
     .join("\n\n---\n\n");
 
-serve(async (req) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
+serve(createSearchHandler(async (body) => {
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  );
+  const apiKey = Deno.env.get('GEMINI_API_KEY');
+  if (!apiKey) throw new SearchFailure('SEARCH_CONFIGURATION', 503, 'Library search is temporarily unavailable.');
+  let embedding: number[];
+  try { embedding = await embedQuery(body.query, apiKey); }
+  catch (failure) {
+    if (failure instanceof SearchFailure) throw failure;
+    throw new SearchFailure('EMBEDDING_UNAVAILABLE', 502, 'Library search is temporarily unavailable. Please try again.');
   }
-
-  try {
-    const body = await req.json();
-    const query = String(body.query || "").trim();
-
-    if (!query) {
-      return json({ error: "No query provided" }, 400);
-    }
-
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
-    );
-
-    const apiKey = Deno.env.get("GEMINI_API_KEY");
-    if (!apiKey) throw new Error("GEMINI_API_KEY is not set");
-
-    const embedding = await embedQuery(query, apiKey);
-    const matchCount = Math.min(Math.max(Number(body.match_count || 8), 1), 20);
-    const threshold = Number.isFinite(Number(body.match_threshold))
-      ? Number(body.match_threshold)
-      : 0.38;
-
-    const { data, error } = await supabase.rpc("match_documents", {
-      query_embedding: embedding,
-      match_threshold: threshold,
-      match_count: matchCount,
-      filter_document_id: body.document_id || null,
-      filter_grade: body.grade || null,
-      filter_subject: body.subject || null,
-      filter_type: body.type || null,
-      query_text: query,
-    });
-
-    if (error) throw error;
-
-    const chunks = (data || []) as KnowledgeChunk[];
-    return json({
-      chunks,
-      sources: buildSources(chunks),
-      context: buildContext(chunks),
-      query,
-      match_count: chunks.length,
-    });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    return json({ error: message }, 400);
-  }
-});
+  const { data, error } = await supabase.rpc('match_documents', {
+    query_embedding: embedding,
+    match_threshold: body.match_threshold,
+    match_count: body.match_count,
+    filter_document_id: body.document_id,
+    filter_grade: body.grade,
+    filter_subject: body.subject,
+    filter_type: body.type,
+    query_text: body.query,
+  });
+  if (error) throw new SearchFailure('SEARCH_DATABASE', 503, 'Library search is temporarily unavailable. Please try again.');
+  const chunks = (data || []) as KnowledgeChunk[];
+  return { chunks, sources: buildSources(chunks), context: buildContext(chunks), query: body.query, match_count: chunks.length };
+}));

@@ -33,6 +33,9 @@ import { ThemeToggle } from '../../components/ThemeToggle';
 import { SidebarTab } from '../../components/DashboardSidebar';
 import { LearnerHome } from './home/LearnerHome';
 import { LearnerSidebar } from './home/LearnerSidebar';
+import { LearnerLibrary } from './home/LearnerLibrary';
+import { QuestionCamera } from './camera/QuestionCamera';
+import { ReadingNavigation, ReadingToolbar, ReadingPager } from './home/ReadingControls';
 import { classroomService, StudentClassroomSummary } from '../../services/classroomService';
 import { getBulkMasteryMemories } from '../../services/learnerMemoryService';
 import { getLearnerCtaVariant } from '../../utils/abExperiments';
@@ -47,6 +50,7 @@ import { extractTextFromURL } from '../../services/contextService';
 import { LearnerNotebook } from './LearnerNotebook';
 import { getNotebookOwnerKey, migrateGuestNotebook, saveStudyNote, syncNotebookFromCloud } from '../../services/notebookService';
 import { formatAkiliAnswerForWhatsApp, formatParentConnectionForWhatsApp, formatQuizResultForWhatsApp, formatWeeklyProgressForWhatsApp, normalizeWhatsAppPhone, openWhatsAppShare } from '../../services/whatsappService';
+import { isKiswahiliSubject } from '../../services/academicLanguagePolicy';
 
 const RevisionLanding = React.lazy(() => safeImport(() => import('../revision/RevisionLanding').then(module => ({ default: module.RevisionLanding }))));
 const RevisionSession = React.lazy(() => safeImport(() => import('../revision/RevisionSession').then(module => ({ default: module.RevisionSession }))));
@@ -59,6 +63,7 @@ const loadMemoryService = () => safeImport(() => import('../../services/learnerM
 
 const loadGeminiService = () => safeImport(() => import('../../services/learnerGeminiService'));
 import { RateLimitError, transcribeAudioForChat } from '../../services/geminiService';
+import { VoiceQuestionRecorder } from './voice/VoiceQuestionRecorder';
 
 const fileToGenerativePart = async (...args: any[]) => (await loadGeminiService()).fileToGenerativePart(...args as [File]);
 const explainImage = async (...args: any[]) => (await loadGeminiService()).explainImage(...args as [string, string, 'Simple' | 'Exam', 'EN' | 'SW', any]);
@@ -384,7 +389,7 @@ const DeferredViewLoader = () => (
       />
     </div>
     <style>{`@keyframes soma-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}`}</style>
-    <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Loading Somo&hellip;</p>
+    <p className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">Loading Soma AI&hellip;</p>
   </div>
 );
 
@@ -813,7 +818,6 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<{ title: string; message: string; action?: 'voice_retry' | 'paywall' | 'go_home' | 'menu' } | null>(null);
   const [micPermissionNotice, setMicPermissionNotice] = useState(false);
-  const voiceSubmitTimerRef = useRef<number | null>(null);
   const [loadingText, setLoadingText] = useState("Akili is on it...");
   const [audioData, setAudioData] = useState<{ base64: string, mimeType: string } | null>(null);
 
@@ -858,6 +862,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [imageData, setImageData] = useState<{ base64: string, mimeType: string } | null>(null);
 
   const [explanation, setExplanation] = useState<ExplanationResult | null>(null);
+  const [explanationSubject, setExplanationSubject] = useState<string | undefined>(undefined);
   const [stickyQuizTaken, setStickyQuizTaken] = useState(false);
   const [stickyQuizData, setStickyQuizData] = useState<QuizData | null>(null);
   const [quizData, setQuizData] = useState<QuizData | null>(null);
@@ -950,10 +955,13 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [recordingTime, setRecordingTime] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [showCamera, setShowCamera] = useState(false);
-  const [scanStatus, setScanStatus] = useState<'idle' | 'scanning' | 'success' | 'STABILIZING' | 'CAPTURING' | 'LOOKING'>('idle');
+  const [showVoiceQuestion, setShowVoiceQuestion] = useState(false);
+  const [showPracticeNudge, setShowPracticeNudge] = useState(false);
+  const [similarExamplesUsed, setSimilarExamplesUsed] = useState(0);
+  const similarExampleFollowUpRef = useRef(false);
+  const practiceNudgeTimerRef = useRef<number | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
   const [promptText, setPromptText] = useState("");
-  const [voiceTranscriptPreview, setVoiceTranscriptPreview] = useState<string | null>(null);
   const [groundedAnswerMode, setGroundedAnswerMode] = useState(() => localStorage.getItem('soma_grounded_answer_mode') !== 'off');
 
   useEffect(() => {
@@ -1827,9 +1835,7 @@ Stay anchored to this context unless I ask for something broader.`;
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [studyChat, loading]);
-  const scanVideoRef = useRef<HTMLVideoElement>(null);
   const scanAudioRef = useRef<HTMLAudioElement | null>(null);
-  const isCameraActiveRef = useRef(false);
 
   useEffect(() => {
     let interval: NodeJS.Timeout;
@@ -1853,6 +1859,7 @@ Stay anchored to this context unless I ask for something broader.`;
   };
 
   useEffect(() => {
+    if (mode === 'MENU') void fetchResources();
     if (mode === 'MARKETPLACE' || mode === 'RESOURCES' || mode === 'LIBRARY') {
       fetchResources();
       setMaterialCategory('ALL');
@@ -2298,6 +2305,14 @@ Stay anchored to this context unless I ask for something broader.`;
 
     setCurrentDocument(material);
     setMode('STUDY');
+    setStudyTab('LESSON');
+    setReaderPage(0);
+    setExplanation(null);
+    setReaderSearchTerm('');
+    setExpandedRecaps([]);
+    cancelPodcast();
+    setIsPodcastPlaying(false);
+    setPodcastScript(null);
     setLoading(true);
     setLoadingText("Akili is building your study guide...");
     setIsSummarizing(true);
@@ -2466,7 +2481,7 @@ Stay anchored to this context unless I ask for something broader.`;
       doc.setFontSize(10);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(100, 116, 139); // Slate-500
-      doc.text(`Subject: ${material.subject} | Grade: ${effectiveGrade} | Teacher: ${material.isVerified ? "Somo AI Specialist" : material.teacherName}`, margin, yPos);
+      doc.text(`Subject: ${material.subject} | Grade: ${effectiveGrade} | Teacher: ${material.isVerified ? "Soma AI Specialist" : material.teacherName}`, margin, yPos);
 
       yPos += 8;
       doc.setDrawColor(226, 232, 240); // Slate-200
@@ -2715,76 +2730,11 @@ Stay anchored to this context unless I ask for something broader.`;
     return `${mins}:${secs < 10 ? '0' : ''}${secs}`;
   };
 
-  const streamRef = useRef<MediaStream | null>(null);
-
-  const stopCameraStream = () => {
-    isCameraActiveRef.current = false; // Mark as inactive immediately
-
-    // 1. Stop tracks from the video element's srcObject
-    if (scanVideoRef.current && scanVideoRef.current.srcObject) {
-      const stream = scanVideoRef.current.srcObject as MediaStream;
-      stream.getTracks().forEach(track => {
-        track.stop();
-        console.log("Stopped video track from scanVideoRef");
-      });
-      scanVideoRef.current.srcObject = null;
-    }
-
-    // 2. Stop tracks from the streamRef (most reliable if DOM is already gone)
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => {
-        track.stop();
-        console.log("Stopped video track from streamRef");
-      });
-      streamRef.current = null;
-    }
-  };
-
-  const startCamera = async () => {
-    try {
-      setLoading(true);
-      setShowCamera(true);
-      isCameraActiveRef.current = true; // Mark as active intention
-      try {
-        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          throw new Error("Camera access is not supported in this browser or context (HTTPS may be required).");
-        }
-        const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-
-        // RACING CONDITION CHECK: If user closed camera while initializing
-        if (!isCameraActiveRef.current) {
-          console.log("Camera started but was cancelled. Stopping immediately.");
-          stream.getTracks().forEach(track => track.stop());
-          return;
-        }
-
-        streamRef.current = stream; // Save stream to ref for cleanup
-        if (scanVideoRef.current) {
-          scanVideoRef.current.srcObject = stream;
-        }
-        setLoading(false);
-      } catch (err: any) {
-        console.error(err);
-        setError({ title: "Camera Error", message: err.message?.includes('Camera access is not supported') ? err.message : "Unable to access camera." });
-        setLoading(false);
-        setShowCamera(false);
-        isCameraActiveRef.current = false;
-      }
-    } catch (err) {
-      console.error(err);
-      setError({ title: "Camera Error", message: "Unable to access camera." });
-      setLoading(false);
-      setShowCamera(false);
-      isCameraActiveRef.current = false;
-    }
-  };
+  const startCamera = async () => { setShowCamera(true); };
 
   // Fix: Stop camera and mic when component unmounts
   useEffect(() => {
     return () => {
-      // Cleanup Camera
-      stopCameraStream();
-
       // Cleanup Microphone
       if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
         mediaRecorderRef.current.stop();
@@ -2796,28 +2746,39 @@ Stay anchored to this context unless I ask for something broader.`;
     };
   }, []);
 
-  useEffect(() => {
-    if (!showCamera) {
-      stopCameraStream();
-    }
-  }, [showCamera]);
 
-  const capturePhoto = () => {
-    if (scanVideoRef.current) {
-      const canvas = document.createElement('canvas');
-      canvas.width = scanVideoRef.current.videoWidth;
-      canvas.height = scanVideoRef.current.videoHeight;
-      canvas.getContext('2d')?.drawImage(scanVideoRef.current, 0, 0);
-      canvas.toBlob(blob => {
-        if (blob) {
-          const file = new File([blob], "camera_capture.jpg", { type: "image/jpeg" });
-          processFile(file);
-          setShowCamera(false);
-          stopCameraStream(); // Explicitly stop
-        }
-      }, 'image/jpeg');
+  useEffect(() => {
+    if (mode !== 'RESULT' || !explanation?.practice?.isProblem) {
+      setShowPracticeNudge(false);
+      return;
     }
-  };
+
+    if (similarExampleFollowUpRef.current) {
+      similarExampleFollowUpRef.current = false;
+    } else {
+      setSimilarExamplesUsed(1);
+    }
+
+    setShowPracticeNudge(true);
+    if (practiceNudgeTimerRef.current) window.clearTimeout(practiceNudgeTimerRef.current);
+    practiceNudgeTimerRef.current = window.setTimeout(() => setShowPracticeNudge(false), 9000);
+
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      const useKiswahili = isKiswahiliSubject(explanationSubject || currentDocument?.subject || explanation.topic);
+      const encouragement = useKiswahili
+        ? 'Sasa ni zamu yako kujaribu swali lako. Unaweza!'
+        : "Now it's your turn to try the question. You can do it!";
+      const utterance = new SpeechSynthesisUtterance(encouragement);
+      utterance.lang = useKiswahili ? 'sw-KE' : 'en-KE';
+      utterance.rate = 0.95;
+      window.speechSynthesis.speak(utterance);
+    }
+
+    return () => {
+      if (practiceNudgeTimerRef.current) window.clearTimeout(practiceNudgeTimerRef.current);
+    };
+  }, [mode, explanation, explanationSubject, currentDocument?.subject]);
 
 
 
@@ -3081,111 +3042,9 @@ Stay anchored to this context unless I ask for something broader.`;
   };
 
   const startVoiceQuestion = async () => {
-    // ConversationalTutor (TALKBACK) manages its own recording - don't interfere.
     if (mode === 'TALKBACK') return;
-    try {
-      setMicPermissionNotice(false);
-
-      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-        throw new Error("Microphone access is not supported in this browser or context (HTTPS may be required).");
-      }
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-      let mimeType = 'audio/webm';
-      if (MediaRecorder.isTypeSupported('audio/webm')) {
-        mimeType = 'audio/webm';
-      } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
-        mimeType = 'audio/mp4';
-      }
-
-      const mediaRecorder = new MediaRecorder(stream, { mimeType });
-      mediaRecorderRef.current = mediaRecorder;
-      chunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunksRef.current.push(e.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        console.log('Voice question recorder stopped. Chunks:', chunksRef.current.length);
-        const blob = new Blob(chunksRef.current, { type: mimeType });
-        stream.getTracks().forEach(t => t.stop());
-
-        if (blob.size === 0) {
-          setIsRecording(false);
-          setError({ title: 'Voice Not Captured', message: 'We could not hear a clear question. Please try again.', action: 'voice_retry' });
-          return;
-        }
-
-        setLoading(true);
-        setLoadingText('Transcribing your question...');
-        setMode('SCAN');
-
-        try {
-          const transcriptFile = new File([blob], `voice_${Date.now()}.webm`, { type: mimeType });
-          const base64Data = await fileToGenerativePart(transcriptFile);
-          const transcript = (await transcribeAudioForChat(base64Data, mimeType, language === 'SW' ? 'sw' : 'en')).trim();
-
-          if (!transcript) {
-            setError({ title: 'Voice Not Clear', message: 'I could not transcribe that recording. Please try again closer to the microphone.', action: 'voice_retry' });
-            return;
-          }
-
-          setVoiceTranscriptPreview(transcript);
-          setPromptText(transcript);
-          if (voiceSubmitTimerRef.current) window.clearTimeout(voiceSubmitTimerRef.current);
-          voiceSubmitTimerRef.current = window.setTimeout(async () => {
-            try {
-              await handlePromptSubmit(transcript);
-            } finally {
-              setVoiceTranscriptPreview(null);
-            }
-          }, 1200);
-        } catch (err: any) {
-          console.error('Voice transcription failed:', err);
-          const voiceLimitReached = err instanceof RateLimitError || err?.name === 'RateLimitError';
-          if (voiceLimitReached) {
-            setError(null);
-            setPendingPaywallAction({ type: 'VOICE_QUESTION' });
-            setMode('MENU');
-            setShowLimitModal(true);
-          } else {
-            setError({
-              title: 'Voice Question Failed',
-              message: err?.message || 'We could not transcribe your voice question. Please try again.',
-              action: 'voice_retry'
-            });
-          }
-        } finally {
-          setLoading(false);
-          setIsRecording(false);
-        }
-      };
-
-      mediaRecorder.start(1000);
-      setIsRecording(true);
-      console.log('Voice question recording started...');
-    } catch (e: any) {
-      console.error('Failed to start voice question recording:', e);
-      setIsRecording(false);
-      const message = String(e?.message || '');
-      const isPermissionError =
-        e?.name === 'NotAllowedError' ||
-        e?.name === 'PermissionDeniedError' ||
-        message.toLowerCase().includes('denied') ||
-        message.toLowerCase().includes('permission');
-
-      if (isPermissionError) {
-        setError(null);
-        setMicPermissionNotice(true);
-        return;
-      }
-
-      setError({
-        title: 'Microphone Error',
-        message: 'Your browser could not start the microphone. Check that your device has a working mic, then try again.'
-      });
-    }
+    setError(null);
+    setShowVoiceQuestion(true);
   };
 
   const startRecording = async () => {
@@ -3273,13 +3132,6 @@ Stay anchored to this context unless I ask for something broader.`;
     }
   };
 
-  useEffect(() => {
-    return () => {
-      if (voiceSubmitTimerRef.current) {
-        window.clearTimeout(voiceSubmitTimerRef.current);
-      }
-    };
-  }, []);
 
   const handleAudioExplanation = async (blob: Blob, mimeType: string) => {
     if (!checkLimit({ type: 'AUDIO_EXPLANATION', blob, mimeType })) return;
@@ -3465,7 +3317,11 @@ Stay anchored to this context unless I ask for something broader.`;
     return restored;
   };
 
-  const handleTopicClick = async (topic: string, multimedia?: { data: string, mimeType: string }) => {
+  const handleTopicClick = async (
+    topic: string,
+    multimedia?: { data: string, mimeType: string },
+    subjectOverride?: string
+  ) => {
     if (!checkLimit({ type: 'TOPIC_CLICK', topic, multimedia })) return;
 
     setLoading(true);
@@ -3496,12 +3352,13 @@ Stay anchored to this context unless I ask for something broader.`;
 
       const startupPrompt = buildFocusedStartupPrompt(topic || (multimedia?.mimeType.includes('audio') ? "Voice Message" : "Image Analysis"));
 
+      const declaredSubject = subjectOverride || currentDocument?.subject;
       const result = await explainTopic(
         startupPrompt,
         level,
         language,
         undefined,
-        currentDocument?.subject,
+        declaredSubject,
         currentDocument?.grade,
         multimedia,
         { masteryGraph, recentHurdles: weakTopics },
@@ -3511,6 +3368,7 @@ Stay anchored to this context unless I ask for something broader.`;
         groundedAnswerMode
       );
       setExplanation(result);
+      setExplanationSubject(declaredSubject);
       trackFunnelEvent('learner_grounding_result', {
         requested: groundedAnswerMode,
         used: !!result.grounding?.used,
@@ -3521,7 +3379,7 @@ Stay anchored to this context unless I ask for something broader.`;
       if (result.flashcard) {
         addSpacedRepetitionItem({
           topic: result.topic,
-          subject: currentDocument?.subject || 'General',
+          subject: declaredSubject || 'General',
           grade: studentProfile?.grade || currentDocument?.grade || '',
           nextReviewDate: new Date().toISOString(),
           intervalDays: 1,
@@ -3585,6 +3443,9 @@ Stay anchored to this context unless I ask for something broader.`;
           message: "We couldn't generate an explanation. Please try again."
         });
       }
+      // Never leave a learner trapped on the loading/scan screen after a
+      // downstream AI or retrieval failure (including a failed RAG lookup).
+      setMode('MENU');
     } finally {
       setLoading(false);
     }
@@ -3597,6 +3458,52 @@ Stay anchored to this context unless I ask for something broader.`;
     setPromptText("");
     setPendingMedia(null);
     await handleTopicClick(query, media);
+  };
+
+  const isAnotherExamplePrompt = (query: string) =>
+    /\b(another|more|different|similar)\b.*\b(example|question|problem)\b|\bgive me.*\bexample\b/i.test(query);
+
+  const requestAnotherSimilarExample = async () => {
+    if (!explanation?.practice?.isProblem) return;
+    if (similarExamplesUsed >= 3) {
+      triggerToast("You've seen 3 examples. Now try the question—you've got this!");
+      setShowPracticeNudge(true);
+      return;
+    }
+
+    const originalQuestion = explanation.practice.originalQuestion;
+    similarExampleFollowUpRef.current = true;
+    setLoading(true);
+    setLoadingText("Akili is creating another similar example...");
+    setMode('SCAN');
+
+    try {
+      const result = await continueResearch(
+        explanation.topic,
+        explanation.explanation,
+        `Create one new worked example that tests the same method as this original problem, but use different figures, names, objects, or context. Do not solve or reveal the final answer to the original problem. Keep this exact original question for the learner's turn: "${originalQuestion}"`,
+        level,
+        language
+      );
+      setExplanation({
+        ...result,
+        practice: {
+          isProblem: true,
+          originalQuestion,
+          workedExample: result.practice?.workedExample || result.explanation,
+          yourTurnPrompt: result.practice?.yourTurnPrompt || "Now try the question. You can do it!"
+        }
+      });
+      setSimilarExamplesUsed((count) => Math.min(3, count + 1));
+      setMode('RESULT');
+    } catch (err) {
+      similarExampleFollowUpRef.current = false;
+      console.error(err);
+      setError({ title: "Example Failed", message: "Akili couldn't create another example just now. Please try again." });
+      setMode('RESULT');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDownload = () => {
@@ -3716,10 +3623,13 @@ ${explanation.explanation}
     setLoading(true);
     setLoadingText("Generating high-quality voice...");
     try {
+      const narrationLanguage = isKiswahiliSubject(explanationSubject || currentDocument?.subject || explanation.topic) ? 'SW' : 'EN';
       // Build a natural spoken script - avoid raw markdown being read aloud
-      const spokenIntro = `Today we're learning about ${explanation.topic}.`;
+      const spokenIntro = narrationLanguage === 'SW'
+        ? `Leo tunajifunza kuhusu ${explanation.topic}.`
+        : `Today we're learning about ${explanation.topic}.`;
       const spokenSummary = explanation.summaryPoints.length > 0
-        ? `Here are the key points. ${explanation.summaryPoints.join('. ')}.`
+        ? `${narrationLanguage === 'SW' ? 'Haya ndiyo mambo muhimu.' : 'Here are the key points.'} ${explanation.summaryPoints.join('. ')}.`
         : '';
       // Use plain explanation text, stripping markdown
       const plainExplanation = explanation.explanation
@@ -3734,7 +3644,7 @@ ${explanation.explanation}
       const textToRead = `${spokenIntro} ${spokenSummary} ${plainExplanation}`.slice(0, 4500);
 
       setIsPlaying(true);
-      await generateSpeech(textToRead, language);
+      await generateSpeech(textToRead, narrationLanguage);
     } catch (e: any) {
       console.error("TTS Error:", e);
       if (e instanceof PlanLimitError || e?.name === 'PlanLimitError') {
@@ -4367,120 +4277,29 @@ ${explanation.explanation}
       );
     }
 
+    if (showVoiceQuestion) {
+      return <VoiceQuestionRecorder
+        onClose={() => setShowVoiceQuestion(false)}
+        onTranscribe={async blob => {
+          const mimeType = blob.type || 'audio/webm';
+          const extension = mimeType.includes('mp4') ? 'm4a' : mimeType.includes('ogg') ? 'ogg' : 'webm';
+          const file = new File([blob], `voice_${Date.now()}.${extension}`, { type: mimeType });
+          const data = await fileToGenerativePart(file);
+          return transcribeAudioForChat(data, mimeType, language === 'SW' ? 'sw' : 'en');
+        }}
+        onSubmit={transcript => {
+          setPromptText(transcript);
+          setShowVoiceQuestion(false);
+          void handlePromptSubmit(transcript);
+        }}
+      />;
+    }
     if (showCamera) {
-      return (
-        <div className="fixed inset-0 z-[60] bg-white/85 backdrop-blur-md flex flex-col items-center justify-center p-4 md:p-6 animate-in fade-in duration-200">
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="w-full max-w-lg bg-white rounded-[2.5rem] overflow-hidden shadow-2xl relative flex flex-col md:aspect-[3/4] h-full md:h-auto max-h-[90vh]"
-          >
-          {/* TOP BAR */}
-            <div className="absolute top-0 left-0 right-0 p-6 z-20 flex justify-between items-start bg-gradient-to-b from-black/60 to-transparent">
-              <div className="text-white/90">
-                <p className="font-bold text-lg shadow-sm">Take Photo</p>
-                <p className="text-xs font-medium opacity-80">Fit question in frame</p>
-              </div>
-              <button
-                onClick={() => setShowCamera(false)}
-                className="w-10 h-10 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-slate-700 border border-slate-200 hover:bg-slate-50 transition-all"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            {/* Camera Viewport */}
-            <div className="flex-1 relative bg-slate-50">
-              <video
-                ref={scanVideoRef}
-                autoPlay
-                playsInline
-                className="w-full h-full object-cover"
-              />
-
-              {/* Intelligent Overlay */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none p-8">
-                <div className={`w-full aspect-[3/4] border-2 rounded-[2rem] transition-all duration-300 relative shadow-[0_0_0_9999px_rgba(0,0,0,0.5)] ${scanStatus === 'STABILIZING' ? 'border-yellow-400' : scanStatus === 'CAPTURING' ? 'border-green-500' : 'border-white/30'}`}>
-                  {/* Status Pills */}
-                  <div className="absolute -top-14 left-0 right-0 flex justify-center">
-                    <span className={`px-4 py-1.5 rounded-full text-xs font-bold backdrop-blur-xl shadow-lg transition-colors ${scanStatus === 'STABILIZING' ? 'bg-yellow-400 text-yellow-900' : scanStatus === 'CAPTURING' ? 'bg-green-500 text-white' : 'bg-white/10 text-white border border-white/20'}`}>
-                      {scanStatus === 'LOOKING' && "Looking for question..."}
-                      {scanStatus === 'STABILIZING' && "Hold Steady..."}
-                      {scanStatus === 'CAPTURING' && "Capturing!"}
-                    </span>
-                  </div>
-
-                  {/* Scan Line Animation */}
-                  {scanStatus === 'LOOKING' && (
-                    <div className="absolute top-0 left-0 right-0 h-0.5 bg-blue-400 shadow-[0_0_15px_rgba(96,165,250,0.8)] animate-scan-y opacity-80" />
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom Controls */}
-            <div className="bg-white/95 backdrop-blur-xl p-6 md:p-8 flex items-center justify-around gap-6 relative z-20 border-t border-slate-200">
-
-              {/* Switch to Audio */}
-              <button
-                onClick={() => {
-                  setShowCamera(false);
-                  setTimeout(() => startRecording(), 100);
-                }}
-                className="flex flex-col items-center gap-1.5 group"
-              >
-                <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center group-hover:bg-slate-50 transition-colors border border-slate-200 group-active:scale-95">
-                  <Mic className="w-5 h-5 text-indigo-400" />
-                </div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Audio</span>
-              </button>
-
-              {/* Shutter Button */}
-              <button
-                onClick={capturePhoto}
-                className="w-20 h-20 rounded-full border-4 border-white/20 flex items-center justify-center relative group transition-all hover:border-white/40 active:scale-95"
-              >
-                <div className="w-16 h-16 bg-white rounded-full shadow-[0_0_20px_rgba(255,255,255,0.3)] transition-all group-hover:scale-90 group-active:scale-100" />
-              </button>
-
-              {/* Gallery Import */}
-              <button
-                onClick={() => {
-                  setShowCamera(false);
-                  // Locate and trigger the file input from the parent scope or create new
-                  const input = document.createElement('input');
-                  input.type = 'file';
-                  input.accept = 'image/*';
-                  input.onchange = (e) => {
-                    const file = (e.target as HTMLInputElement).files?.[0];
-                    if (file) {
-                      setLoading(true);
-                      setLoadingText("Analyzing...");
-                      setTimeout(() => {
-                        setLoading(false);
-                        const reader = new FileReader();
-                        reader.onloadend = () => {
-                          const base64 = (reader.result as string).split(',')[1];
-                          setImageData({ base64, mimeType: file.type });
-                          setMode('SCAN_EXPLAIN');
-                        };
-                        reader.readAsDataURL(file);
-                      }, 1500);
-                    }
-                  };
-                  input.click();
-                }}
-                className="flex flex-col items-center gap-1.5 group"
-              >
-                <div className="w-12 h-12 rounded-2xl bg-white flex items-center justify-center group-hover:bg-slate-50 transition-colors border border-slate-200 group-active:scale-95">
-                  <ImageIcon className="w-5 h-5 text-indigo-400" />
-                </div>
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Gallery</span>
-              </button>
-            </div>
-          </motion.div>
-        </div>
-      );
+      return <QuestionCamera
+        onClose={() => setShowCamera(false)}
+        onUsePhoto={file => { setShowCamera(false); void processFile(file); }}
+        onAudio={() => { setShowCamera(false); void startVoiceQuestion(); }}
+      />;
     }
 
     if (mode === 'RECAP_RESULT' && recapData) {
@@ -4958,35 +4777,24 @@ ${explanation.explanation}
     }
 
     if (mode === 'MENU') {
-      const latestLearningActivity = history.find((item: LearnerActivity) => (item.type === 'EXPLANATION' || item.type === 'STUDY') && !isSyllabusActivity(item));
-      const latestQuizActivity = history.find((item: LearnerActivity) => item.type === 'QUIZ');
-      const latestLearningSnapshot = buildContinueLearningSnapshot(latestLearningActivity, latestQuizActivity?.topic || 'Photosynthesis');
-      const featuredSubject = inferSubjectFromTopic(latestLearningSnapshot.topic || latestQuizActivity?.topic || latestLearningActivity?.topic);
-      const recommendedHomeTopic = weakTopics?.[0]
-        || (latestQuizActivity?.score !== undefined && latestQuizActivity.score < 70 ? latestQuizActivity.topic : 'Linear Equations');
-      const sessionsLeft = Math.max(0, 5 - usageCount);
-
+      const latestLearningActivity = history.find((item: LearnerActivity) => {
+        if (isSyllabusActivity(item) || !item.details) return false;
+        try {
+          const details = JSON.parse(item.details);
+          return (item.type === 'EXPLANATION' && Boolean(details.explanation))
+            || (item.type === 'STUDY' && Boolean(details.materialId && details.fileUrl));
+        } catch { return false; }
+      });
       return (
         <LearnerHome
           learnerName={studentProfile?.name || profile?.name || 'Learner'}
-          grade={studentProfile?.grade || 'Grade 7'}
-          sessionsLeft={sessionsLeft}
-          isPro={isPro}
-          subscriptionPlan={subscriptionPlan}
-          latestTopic={latestLearningSnapshot.topic}
-          latestTopicDescription={latestLearningSnapshot.description}
-          latestTopicSummary={latestLearningSnapshot.summaryPoints}
-          latestProgress={latestLearningSnapshot.progress}
-          recommendedTopic={recommendedHomeTopic}
-          recommendationReason={latestQuizActivity?.score !== undefined && latestQuizActivity.score < 70
-            ? 'Your last quiz suggests this is the best place to strengthen marks.'
-            : weakTopics?.[0]
-              ? 'This topic came from your weak-topic list and is worth a quick review.'
-              : 'A short revision lesson should help lock in the idea.'}
-          featuredSubject={featuredSubject}
+          grade={studentProfile?.grade || 'Choose your grade'}
+          subjects={Array.from(new Set(gradeFilteredMaterials
+            .filter(material => Boolean(studentProfile?.grade) && normalizeGrade(material.grade) === normalizeGrade(studentProfile?.grade))
+            .map(material => material.subject?.trim()).filter((subject): subject is string => Boolean(subject) && subject.toLowerCase() !== 'all'))).sort()}
+          latestTopic={latestLearningActivity?.topic}
           onOpenMenu={() => setSidebarOpen(true)}
           onProfile={() => setMode('PROFILE')}
-          onPlans={() => runWithRecallExitGuard(() => setMode('PRICING'))}
           onTeach={(topic) => {
             setPromptText(topic);
             void handlePromptSubmit(topic);
@@ -4994,21 +4802,17 @@ ${explanation.explanation}
           onScan={() => void startCamera()}
           onUpload={() => fileInputRef.current?.click()}
           onVoice={() => void startVoiceQuestion()}
-          voiceTranscript={voiceTranscriptPreview}
           onSubject={(subject) => {
-            if (subject === 'More Subjects') {
-              handleSidebarTabChange('RESOURCES');
-              return;
-            }
-            const subjectPrompt = `Teach me an important ${subject} topic for ${studentProfile?.grade || 'my grade'}.`;
-            setPromptText(subjectPrompt);
-            void handlePromptSubmit(subjectPrompt);
+            setActiveLibrarySubject(subject);
+            setActiveLibraryCategory('ALL');
+            setLibraryView('UNLOCKED');
+            setSelectedGrade(studentProfile?.grade || 'ALL');
+            setSelectedSource('ALL');
+            handleSidebarTabChange('RESOURCES');
           }}
-          onContinue={(topic) => void handleQuestTakeQuiz(topic)}
-          onViewAll={() => handleSidebarTabChange('PROGRESS')}
-          onOpenRevision={() => setMode('REVISION')}
-          onStartRecommendation={(topic) => void handleTopicClick(topic)}
-          onStartWeakDrill={(topic) => void handleQuestTakeQuiz(topic)}
+          onContinue={() => { if (latestLearningActivity) restoreActivity(latestLearningActivity); }}
+          onViewAll={() => { setActiveLibrarySubject('ALL'); setActiveLibraryCategory('ALL'); setLibraryView('UNLOCKED'); setSelectedGrade(studentProfile?.grade || 'ALL'); setSelectedSource('ALL'); handleSidebarTabChange('RESOURCES'); }}
+          onOpenRevision={() => handleSidebarTabChange('SUBJECTS')}
         />
       );
     }
@@ -5073,6 +4877,7 @@ ${explanation.explanation}
               level: 'Simple',
               relatedTopics: [],
             });
+            setExplanationSubject(note.subject);
             setSidebarTab('NOTEBOOK');
             setMode('RESULT');
           }}
@@ -5089,7 +4894,7 @@ ${explanation.explanation}
           }}
           onListenNote={async (note) => {
             try {
-              await speak(note.content, language);
+              await speak(note.content, isKiswahiliSubject(note.subject) ? 'SW' : 'EN');
             } catch {
               triggerToast('Audio is not available on this device right now.');
             }
@@ -5410,7 +5215,7 @@ ${explanation.explanation}
                     <div>
                       <div className="flex items-center gap-2 mb-1.5">
                         <span className="text-lg font-black text-slate-900 tracking-tight">
-                          {activePlanDetails?.name || subscriptionPlan || 'Somo Basic'}
+                          {activePlanDetails?.name || subscriptionPlan || 'Soma Basic'}
                         </span>
                         {isPro && (
                           <span className="bg-emerald-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase tracking-widest shadow-sm">
@@ -5835,30 +5640,6 @@ ${explanation.explanation}
 
           </div>
 
-          {/* Global Bottom Nav */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 pb-safe flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-            <button onClick={() => setMode('MENU')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
-              <Home className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">Home</span>
-            </button>
-            <button onClick={() => setMode('NOTEBOOK')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
-              <BookMarked className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">My Notes</span>
-            </button>
-            <div className="relative -mt-10">
-              <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
-                <ScanLine className="w-8 h-8" />
-              </button>
-            </div>
-            <button onClick={() => setMode('LIBRARY')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
-              <Library className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">Library</span>
-            </button>
-            <button onClick={() => isRegistered ? setMode('PROFILE') : setShowLogin(true)} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-indigo-600 scale-110">
-              <UserCircle className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">Me</span>
-            </button>
-          </div>
         </div >
       );
     }
@@ -5890,234 +5671,46 @@ ${explanation.explanation}
         setReaderPage(Math.max(0, Math.min(totalPages - 1, p)));
         setSelectedText('');
         setSelectionCoords(null);
+        requestAnimationFrame(() => document.getElementById('reading-page')?.scrollIntoView({ block: 'start' }));
       };
 
       const handleOriginalPageChange = (p: number) => {
         setOriginalPageIndex(Math.max(0, Math.min(extractedOriginalPages.length - 1, p)));
         setSelectedText('');
         setSelectionCoords(null);
+        requestAnimationFrame(() => document.getElementById('reading-page')?.scrollIntoView({ block: 'start' }));
       };
 
 
       return (
-        <div className="bg-slate-50 min-h-screen flex flex-col md:flex-row max-w-[1440px] mx-auto shadow-2xl border-x border-slate-100 overflow-hidden relative">
+        <div className="bg-[#faf9f6] min-h-screen flex flex-col max-w-4xl mx-auto relative">
           
-          {/* Virtual Classroom Sidebar Navigation */}
-          <div className="w-full md:w-72 bg-white border-r border-slate-200 flex flex-col h-auto md:h-screen shrink-0 relative z-20">
-            {/* Header Area */}
-            <div className="p-6 pb-8 border-b border-slate-200 bg-gradient-to-b from-indigo-50 to-white">
-              <button
-                onClick={() => setMode('LIBRARY')}
-                className="flex items-center gap-2 mb-6 px-3 py-1.5 rounded-full bg-white hover:bg-slate-50 text-slate-600 hover:text-slate-900 border border-slate-200 transition-colors w-fit"
-                title="Exit Classroom"
-              >
-                <ArrowRight className="w-4 h-4 rotate-180" />
-                <span className="text-[10px] font-black uppercase tracking-widest">Exit Class</span>
-              </button>
-
-              <div className="flex items-start gap-4 mt-2">
-                <div className="p-2.5 bg-indigo-50 rounded-xl mt-1 border border-indigo-100 shrink-0">
-                  <BookOpen className="w-6 h-6 text-indigo-600" />
-                </div>
-                <div>
-                  <h1 className="text-xl font-black text-slate-900 leading-tight mb-3 tracking-tight">{currentDocument.title}</h1>
-                  <div className="flex flex-wrap gap-2">
-                    <span className="text-[9px] font-black uppercase tracking-widest text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded w-fit border border-indigo-100">{currentDocument.grade}</span>
-                    <span className="text-[9px] font-black uppercase tracking-widest text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded w-fit border border-emerald-100">{currentDocument.subject}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Navigation Tabs */}
-            <div className="flex-1 overflow-y-auto py-6 px-4 space-y-2 no-scrollbar">
-              <p className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-4 px-2">Classroom Activities</p>
-
-              <button
-                onClick={() => setStudyTab('LESSON')}
-                className={`w-full flex items-center gap-3 p-3.5 rounded-xl transition-all ${studyTab === 'LESSON' ? 'bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
-              >
-                <FileText className={`w-5 h-5 ${studyTab === 'LESSON' ? 'text-indigo-200' : ''}`} />
-                <span className="text-[15px] tracking-wide">The Lesson</span>
-              </button>
-
-              <button
-                onClick={() => setStudyTab('RECAP')}
-                className={`w-full flex items-center gap-3 p-3.5 rounded-xl transition-all ${studyTab === 'RECAP' ? 'bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
-              >
-                <ListChecks className={`w-5 h-5 ${studyTab === 'RECAP' ? 'text-indigo-200' : ''}`} />
-                <span className="text-[15px] tracking-wide">Quick Recap</span>
-              </button>
-
-              <button
-                onClick={() => setStudyTab('QNA')}
-                className={`w-full flex items-center justify-between p-3.5 rounded-xl transition-all ${studyTab === 'QNA' ? 'bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className="relative">
-                    <Sparkles className={`w-5 h-5 ${studyTab === 'QNA' ? 'text-indigo-200' : ''}`} />
-                    {studyChat.length > 0 && studyTab !== 'QNA' && (
-                      <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-emerald-500 border-2 border-slate-900"></span>
-                    )}
-                  </div>
-                  <span className="text-[15px] tracking-wide">Raise Hand</span>
-                </div>
-              </button>
-
-              <button
-                onClick={() => setStudyTab('REFERENCES')}
-                className={`w-full flex items-center gap-3 p-3.5 rounded-xl transition-all ${studyTab === 'REFERENCES' ? 'bg-indigo-50 border border-indigo-100 text-indigo-700 font-bold' : 'text-slate-500 hover:bg-slate-50 hover:text-slate-900'}`}
-              >
-                <ClipboardList className={`w-5 h-5 ${studyTab === 'REFERENCES' ? 'text-indigo-200' : ''}`} />
-                <span className="text-[15px] tracking-wide">Citations & Syllabus</span>
-              </button>
-
-              <div className="pt-4 mt-4 border-t border-slate-200">
-                <button
-                  onClick={() => setStudyTab('QUIZ')}
-                  className={`w-full flex items-center justify-between p-3.5 rounded-xl transition-all border border-dashed ${studyTab === 'QUIZ' ? 'bg-emerald-50 shadow-none border-emerald-100 text-emerald-700 font-bold' : 'border-slate-200 text-slate-600 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <CheckCircle className="w-5 h-5" />
-                    <span className="text-[15px] tracking-wide">Pop Quiz</span>
-                  </div>
-                  <ArrowRight className="w-4 h-4 opacity-50" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-6 border-t border-slate-200 bg-white/90 backdrop-blur-md">
-              <div className="mb-5 rounded-2xl bg-slate-50 border border-slate-200 p-4">
-                <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700 mb-2">Study Mission</p>
-                <div className="h-2 rounded-full bg-slate-200 overflow-hidden mb-2">
-                  <div
-                    className="h-full bg-emerald-500 rounded-full transition-all"
-                    style={{ width: `${Math.round((studyMissionChecks.length / 3) * 105)}%` }}
-                  />
-                </div>
-                <p className="text-xs font-bold text-slate-600">
-                  {studyMissionRewarded ? 'Mission complete. Study XP added.' : `${studyMissionChecks.length}/3 active steps done`}
-                </p>
-              </div>
-            </div>
-          </div>
+          <ReadingNavigation
+            title={currentDocument.title}
+            subject={currentDocument.subject}
+            grade={currentDocument.grade}
+            tab={studyTab}
+            onTab={setStudyTab}
+            onBack={() => { setActiveLibrarySubject(currentDocument.subject || 'ALL'); handleSidebarTabChange('RESOURCES'); }}
+          />
 
           {/* SPLIT PANE MAIN CONTENT AREA */}
-          <div className="flex-1 flex flex-col lg:flex-row bg-slate-100 relative h-[50vh] md:h-screen overflow-hidden">
+          <div className="flex-1 flex flex-col bg-[#faf9f6] relative min-w-0">
             
             {/* LEFT PANE: The Document Reader */}
-            <div className={`flex-1 flex flex-col h-full overflow-hidden bg-slate-50 ${studyTab === 'LESSON' ? 'flex' : 'hidden lg:flex'}`}>
+            <div className={`flex-1 flex-col min-w-0 bg-[#faf9f6] ${studyTab === 'LESSON' ? 'flex' : 'hidden'}`}>
               
-              {/* Reader Header / Toolbar */}
-              <div className="bg-white border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 shrink-0 z-10 shadow-sm">
-                <div className="flex flex-wrap items-center gap-3">
-                  {studyViewMode === 'guide' ? (
-                    <span className="text-xs font-black bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full uppercase tracking-wider font-semibold">
-                      Page {readerPage + 1} of {totalPages}
-                    </span>
-                  ) : (
-                    <span className="text-xs font-black bg-indigo-100 text-indigo-700 px-2.5 py-1 rounded-full uppercase tracking-wider font-semibold">
-                      Page {originalPageIndex + 1} of {extractedOriginalPages.length || 1}
-                    </span>
-                  )}
-
-                  {currentDocument.fileUrl && (
-                    <div className="flex bg-slate-100 p-0.5 rounded-lg text-[10px] font-black select-none border border-slate-200/10 ml-2">
-                      <button
-                        onClick={() => setStudyViewMode('guide')}
-                        className={`px-2.5 py-1 rounded-md transition-all ${studyViewMode === 'guide' ? 'bg-white text-indigo-700 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700'}`}
-                      >
-                        Study Guide
-                      </button>
-                      <button
-                        onClick={() => setStudyViewMode('original')}
-                        className={`px-2.5 py-1 rounded-md transition-all ${studyViewMode === 'original' ? 'bg-white text-indigo-700 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700'}`}
-                      >
-                        Original Book
-                      </button>
-                    </div>
-                  )}
-
-                  {studyViewMode === 'original' && extractedOriginalPages.length > 0 && (
-                    <div className="flex bg-slate-100 p-0.5 rounded-lg text-[10px] font-black select-none border border-slate-200/10 ml-2">
-                      <button
-                        onClick={() => setOriginalViewType('text')}
-                        className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'text' ? 'bg-white text-indigo-700 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700'}`}
-                      >
-                        Text
-                      </button>
-                      <button
-                        onClick={() => setOriginalViewType('pdf')}
-                        className={`px-2.5 py-1 rounded-md transition-all ${originalViewType === 'pdf' ? 'bg-white text-indigo-700 shadow-sm font-black' : 'text-slate-500 hover:text-slate-700'}`}
-                      >
-                        PDF
-                      </button>
-                    </div>
-                  )}
-                  
-                  {/* Listen & Learn Audio Lesson Button */}
-                  <button
-                    onClick={handlePodcastToggle}
-                    disabled={podcastLoading}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all text-xs font-black uppercase tracking-wider ${
-                      isPodcastPlaying ? 'bg-indigo-700 text-white shadow-inner animate-pulse' : 'bg-indigo-50 hover:bg-indigo-100 text-indigo-700'
-                    }`}
-                  >
-                    {podcastLoading ? (
-                      <div className="w-3.5 h-3.5 rounded-full border-2 border-indigo-700/30 border-t-indigo-700 animate-spin" />
-                    ) : isPodcastPlaying ? (
-                      <Pause className="w-3.5 h-3.5" />
-                    ) : (
-                      <Headphones className="w-3.5 h-3.5" />
-                    )}
-                    <span>Listen</span>
-                  </button>
-
-                  <div className="flex items-center gap-1.5 border-l border-slate-200 pl-3">
-                    <button
-                      onClick={() => setFontScale(prev => Math.max(0.8, prev - 0.1))}
-                      className="w-8 h-8 rounded bg-slate-50 border border-slate-200 text-slate-600 font-bold hover:bg-slate-100 text-xs flex items-center justify-center transition-colors"
-                      title="Make text smaller"
-                    >
-                      A-
-                    </button>
-                    <button
-                      onClick={() => setFontScale(prev => Math.min(1.5, prev + 0.1))}
-                      className="w-8 h-8 rounded bg-slate-50 border border-slate-200 text-slate-600 font-bold hover:bg-slate-100 text-xs flex items-center justify-center transition-colors"
-                      title="Make text larger"
-                    >
-                      A+
-                    </button>
-                    <button
-                      onClick={() => setFontFamily(prev => prev === 'sans' ? 'serif' : 'sans')}
-                      className="px-2.5 h-8 rounded bg-slate-50 border border-slate-200 text-slate-600 font-bold hover:bg-slate-100 text-[10px] uppercase tracking-wider flex items-center justify-center transition-colors font-semibold"
-                      title="Change font style"
-                    >
-                      {fontFamily === 'sans' ? 'Serif' : 'Sans'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Inline Search Bar */}
-                <div className="relative max-w-xs w-full">
-                  <input
-                    type="text"
-                    value={readerSearchTerm}
-                    onChange={(e) => setReaderSearchTerm(e.target.value)}
-                    placeholder="Search in notes..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-full px-4 py-1.5 pl-9 outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-xs text-slate-700 placeholder:text-slate-400"
-                  />
-                  <Sparkles className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-                  {readerSearchTerm && (
-                    <button
-                      onClick={() => setReaderSearchTerm('')}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 p-0.5 text-slate-400 hover:text-red-500"
-                    >
-                      <X className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-              </div>
+              <ReadingToolbar
+                sourceAvailable={Boolean(currentDocument.fileUrl || currentDocument.file_url)}
+                view={studyViewMode} onView={setStudyViewMode}
+                originalType={originalViewType} onOriginalType={setOriginalViewType}
+                playing={isPodcastPlaying} busy={podcastLoading}
+                ready={!isSummarizing && Boolean(explanation)}
+                onListen={() => void handlePodcastToggle()}
+                fontScale={fontScale} onFontScale={setFontScale}
+                fontFamily={fontFamily} onFontFamily={setFontFamily}
+                search={readerSearchTerm} onSearch={setReaderSearchTerm}
+              />
 
               {/* Reader Scrollable Notes Pane */}
               <div
@@ -6125,12 +5718,14 @@ ${explanation.explanation}
                   setSelectedText('');
                   setSelectionCoords(null);
                 }}
-                className="flex-1 overflow-y-auto p-6 md:p-10 no-scrollbar bg-slate-50"
+                id="reading-page"
+                className="flex-1 p-3 sm:p-6 bg-[#faf9f6]"
               >
-                <div className="max-w-3xl mx-auto bg-white p-8 md:p-14 rounded-3xl shadow-sm border border-slate-200 relative">
+                <div className="max-w-3xl mx-auto bg-white p-5 sm:p-10 rounded-2xl border border-stone-200 relative">
                   {studyViewMode === 'guide' ? (
                     isSummarizing ? (
-                      <div className="space-y-6 animate-pulse">
+                      <div role="status" className="space-y-6 animate-pulse">
+                        <p className="text-sm text-slate-600">Preparing your study guide… You can read the source document while you wait.</p>
                         <div className="h-8 bg-slate-100 rounded-lg w-1/3 mb-10"></div>
                         <div className="h-4 bg-slate-100 rounded w-full"></div>
                         <div className="h-4 bg-slate-100 rounded w-11/12"></div>
@@ -6140,45 +5735,6 @@ ${explanation.explanation}
                       </div>
                     ) : explanation ? (
                       <div className="prose prose-slate prose-lg max-w-none">
-                        {/* Active Study Mission Banner */}
-                        {readerPage === 0 && (
-                          <div className="mb-10 rounded-2xl border border-emerald-100 bg-emerald-50 p-5 not-prose">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                              <div>
-                                <p className="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-700 mb-1">Active Study Mission</p>
-                                <h3 className="text-base font-black text-slate-900">Learn actively, unlock your future</h3>
-                                <p className="text-xs font-semibold text-slate-600 mt-1">Check off the classroom steps to record your progress.</p>
-                              </div>
-                              <div className="rounded-xl bg-white border border-emerald-100 px-3.5 py-2 min-w-[80px] text-center">
-                                <p className="text-[8px] font-black uppercase tracking-widest text-emerald-600">Done</p>
-                                <p className="text-xl font-black text-emerald-800">{studyMissionChecks.length}/3</p>
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 mt-4">
-                              {['Read Notes', 'Ask Questions', 'Take Quiz'].map((lbl, idx) => {
-                                const done = studyMissionChecks.includes(idx);
-                                return (
-                                  <button
-                                    key={lbl}
-                                    onClick={() => {
-                                      if (idx === 1) setStudyTab('QNA');
-                                      else if (idx === 2) setStudyTab('QUIZ');
-                                      else {
-                                        toggleStudyMissionCheck(0);
-                                      }
-                                    }}
-                                    className={`px-3 py-2 rounded-xl border text-xs font-black uppercase tracking-wider flex items-center justify-between transition-all ${
-                                      done ? 'bg-emerald-600 border-emerald-600 text-white font-semibold' : 'bg-white border-slate-200 text-slate-600 hover:border-emerald-400 font-semibold'
-                                    }`}
-                                  >
-                                    <span>{lbl}</span>
-                                    <CheckCircle className={`w-3.5 h-3.5 ${done ? 'text-white' : 'text-slate-600'}`} />
-                                  </button>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
 
                         {/* PAGE 0: Overview */}
                         {readerPage === 0 && (
@@ -6390,7 +5946,8 @@ ${explanation.explanation}
                         <div className="w-20 h-20 bg-slate-100 rounded-full flex items-center justify-center mb-6">
                           <BookOpen className="w-10 h-10 text-slate-600 animate-pulse" />
                         </div>
-                        <h3 className="text-xl font-black text-slate-400">Loading lesson material...</h3>
+                        <h3 className="text-xl font-semibold text-slate-700">The study guide is not available yet.</h3>
+                        <p className="mt-3 text-sm text-slate-600">Try opening it again from subjects, or read the source document if one is available.</p>
                       </div>
                     )
                   ) : (
@@ -6456,82 +6013,19 @@ ${explanation.explanation}
                 </div>
               </div>
 
-              {/* Reader Footer Page Navigation controls */}
-              {((studyViewMode === 'guide' && !isSummarizing && explanation) || 
+              {((studyViewMode === 'guide' && !isSummarizing && explanation) ||
                 (studyViewMode === 'original' && !isExtractingOriginal && extractedOriginalPages.length > 0 && originalViewType === 'text')) && (
-                <div className="bg-white border-t border-slate-200 px-6 py-4 flex items-center justify-between shrink-0">
-                  <button
-                    disabled={studyViewMode === 'guide' ? readerPage === 0 : originalPageIndex === 0}
-                    onClick={() => {
-                      if (studyViewMode === 'guide') {
-                        handlePageChange(readerPage - 1);
-                      } else {
-                        handleOriginalPageChange(originalPageIndex - 1);
-                      }
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 hover:bg-slate-50 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
-                  >
-                     Previous
-                  </button>
-                  <div className="flex items-center gap-1 overflow-x-auto max-w-[200px] sm:max-w-none no-scrollbar">
-                    {Array.from({ length: studyViewMode === 'guide' ? totalPages : extractedOriginalPages.length }).map((_, i) => {
-                      const isActive = studyViewMode === 'guide' ? readerPage === i : originalPageIndex === i;
-                      return (
-                        <button
-                          key={i}
-                          onClick={() => {
-                            if (studyViewMode === 'guide') {
-                              handlePageChange(i);
-                            } else {
-                              handleOriginalPageChange(i);
-                            }
-                          }}
-                          className={`w-7 h-7 rounded-full text-xs font-bold transition-all flex items-center justify-center shrink-0 ${
-                            isActive ? 'bg-indigo-600 text-white shadow-sm' : 'text-slate-400 hover:bg-slate-50 hover:bg-slate-50'
-                          }`}
-                        >
-                          {i + 1}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <button
-                    disabled={studyViewMode === 'guide' ? readerPage === totalPages - 1 : originalPageIndex === extractedOriginalPages.length - 1}
-                    onClick={() => {
-                      if (studyViewMode === 'guide') {
-                        handlePageChange(readerPage + 1);
-                      } else {
-                        handleOriginalPageChange(originalPageIndex + 1);
-                      }
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-full text-xs font-black uppercase tracking-wider text-slate-650 hover:bg-slate-50 hover:bg-slate-50 disabled:opacity-50 disabled:hover:bg-transparent transition-all font-semibold"
-                  >
-                     Next
-                  </button>
-                </div>
+                <ReadingPager
+                  page={studyViewMode === 'guide' ? readerPage : originalPageIndex}
+                  count={studyViewMode === 'guide' ? totalPages : extractedOriginalPages.length}
+                  onPage={studyViewMode === 'guide' ? handlePageChange : handleOriginalPageChange}
+                />
               )}
             </div>
 
             {/* RIGHT PANE: Contextual Tools (Chat, Recap, Quiz, References) */}
-            <div className={`w-full lg:w-[450px] shrink-0 flex flex-col h-full bg-white border-l border-slate-250 ${studyTab !== 'LESSON' ? 'flex' : 'hidden lg:flex'}`}>
+            <div className={`w-full min-w-0 flex-col h-[75dvh] min-h-[480px] bg-white ${studyTab !== 'LESSON' ? 'flex' : 'hidden'}`}>
               
-              {/* Desktop Secondary tab header */}
-              <div className="lg:flex hidden bg-slate-50 p-2 border-b border-slate-200 gap-1 select-none">
-                {([
-                  { id: 'QNA', label: 'Ask Akili', icon: Sparkles },
-                  { id: 'RECAP', label: 'Quick Recap', icon: ListChecks },
-                  { id: 'REFERENCES', label: 'Syllabus/Citations', icon: ClipboardList }
-                ] as const).map(tab => (
-                  <button
-                    key={tab.id}
-                    onClick={() => setStudyTab(tab.id)}
-                    className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-black uppercase tracking-wider transition-all font-semibold ${(studyTab === 'LESSON' ? 'QNA' : studyTab) === tab.id ? 'bg-white text-indigo-600 shadow-sm border border-slate-200' : 'text-slate-500 hover:text-slate-700'}`}
-                  >
-                    <tab.icon className="w-3.5 h-3.5" />
-                    <span>{tab.label}</span>
-                  </button>
-                ))}
-              </div>
 
               {/* RENDER ACTIVE TOOL */}
               <div className="flex-1 overflow-y-auto no-scrollbar relative flex flex-col h-full">
@@ -6553,7 +6047,7 @@ ${explanation.explanation}
                           <Sparkles className="w-5 h-5 text-indigo-600" />
                         </div>
                         <div>
-                          <h4 className="font-bold text-slate-850 text-sm">Teacher Somo</h4>
+                          <h4 className="font-bold text-slate-850 text-sm">Teacher Akili</h4>
                           <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest flex items-center gap-1 font-semibold">
                             <span className="w-1.5 h-1.5 inline-block rounded-full bg-emerald-500 animate-pulse"></span> Grounded AI Teacher
                           </span>
@@ -7113,10 +6607,12 @@ ${explanation.explanation}
                       </button>
                       <button
                         onClick={startCamera}
-                        className="p-3 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-xl transition-colors"
-                        title="Open Camera"
+                        className="flex items-center gap-2 rounded-xl bg-[#6d43ef] px-3 py-3 font-black text-white shadow-md shadow-indigo-200 transition-all hover:bg-[#5e34dd] hover:shadow-lg active:scale-95"
+                        title="Scan a question with the camera"
+                        aria-label="Scan a question with the camera"
                       >
-                        <Camera className="w-6 h-6" />
+                        <Camera className="h-5 w-5" />
+                        <span className="text-xs">Scan</span>
                       </button>
                     </>
                   )}
@@ -7209,6 +6705,35 @@ ${explanation.explanation}
             </button>
           </div>
 
+          <AnimatePresence>
+            {showPracticeNudge && explanation.practice?.isProblem && (
+              <motion.div
+                initial={{ opacity: 0, y: -24, scale: 0.96 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: -16, scale: 0.98 }}
+                className="fixed left-3 right-3 top-20 z-[200] mx-auto flex max-w-xl items-center gap-3 rounded-2xl border border-emerald-300 bg-emerald-600 p-4 text-white shadow-2xl shadow-emerald-900/25"
+                role="status"
+                aria-live="polite"
+              >
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/20">
+                  <Sparkles className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-100">Your turn</p>
+                  <p className="text-sm font-bold">Now try the question. You can do it!</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowPracticeNudge(false)}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/15 hover:bg-black/25"
+                  aria-label="Dismiss encouragement"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           <div className="p-4 space-y-6 max-w-2xl mx-auto">
 
             {/* Media Section (Your Question - Image/Audio) */}
@@ -7257,6 +6782,53 @@ ${explanation.explanation}
                   </div>
                 </div>
               </motion.div>
+            )}
+
+            {explanation.practice?.isProblem && (
+              <motion.section
+                initial={{ opacity: 0, y: 18 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="overflow-hidden rounded-[2rem] border-2 border-violet-200 bg-white shadow-lg shadow-violet-100/60"
+                aria-labelledby="akili-guided-practice-title"
+              >
+                <div className="bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-4 text-white sm:px-6">
+                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-100">Learn the method, then try yours</p>
+                  <h2 id="akili-guided-practice-title" className="mt-1 text-xl font-black">A similar worked example</h2>
+                  <p className="mt-1 text-sm font-medium text-violet-100">Akili changed the figures so you can learn without copying.</p>
+                </div>
+
+                <div className="space-y-5 p-5 sm:p-6">
+                  <div className="prose prose-sm max-w-none rounded-2xl border border-violet-100 bg-violet-50/60 p-4 text-slate-700">
+                    <MarkdownText content={explanation.practice.workedExample} />
+                  </div>
+
+                  <div className="rounded-2xl border-2 border-emerald-300 bg-emerald-50 p-4 sm:p-5">
+                    <div className="flex items-start gap-3">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white">
+                        <PenTool className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">Now it is your turn</p>
+                        <p className="mt-1 whitespace-pre-wrap text-base font-black leading-6 text-slate-900">{explanation.practice.originalQuestion}</p>
+                        <p className="mt-2 text-sm font-semibold text-emerald-800">{explanation.practice.yourTurnPrompt || "Try it using the same steps. You can do it!"}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="text-xs font-bold text-slate-500">Similar examples used: {similarExamplesUsed} of 3</p>
+                    <button
+                      type="button"
+                      onClick={() => void requestAnotherSimilarExample()}
+                      disabled={loading || similarExamplesUsed >= 3}
+                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-black text-white shadow-md transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
+                    >
+                      <Sparkles className="h-4 w-4" />
+                      {similarExamplesUsed >= 3 ? '3 examples used — try yours' : 'Show another similar example'}
+                    </button>
+                  </div>
+                </div>
+              </motion.section>
             )}
 
             {/* Detailed explanation + Key Takeaways */}
@@ -7860,6 +7432,12 @@ ${explanation.explanation}
                       const query = target.value;
                       if (!query.trim() || !explanation) return;
 
+                      if (explanation.practice?.isProblem && isAnotherExamplePrompt(query)) {
+                        target.value = '';
+                        void requestAnotherSimilarExample();
+                        return;
+                      }
+
                       runWithRecallExitGuard(async () => {
                         target.value = '';
                         setLoading(true);
@@ -7886,6 +7464,12 @@ ${explanation.explanation}
                     const input = e.currentTarget.previousElementSibling as HTMLInputElement;
                     const query = input.value;
                     if (!query.trim() || !explanation) return;
+
+                    if (explanation.practice?.isProblem && isAnotherExamplePrompt(query)) {
+                      input.value = '';
+                      void requestAnotherSimilarExample();
+                      return;
+                    }
 
                     runWithRecallExitGuard(async () => {
                       input.value = '';
@@ -8062,30 +7646,6 @@ ${explanation.explanation}
             </div>
           )}
 
-          {/* Global Bottom Nav */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 pb-safe flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-            <button onClick={() => runWithRecallExitGuard(() => setMode('MENU'))} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
-              <Home className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">Home</span>
-            </button>
-            <button onClick={() => runWithRecallExitGuard(() => setMode('NOTEBOOK'))} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
-              <BookMarked className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">My Notes</span>
-            </button>
-            <div className="relative -mt-10">
-              <button onClick={() => runWithRecallExitGuard(() => setMode('SCAN'))} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
-                <ScanLine className="w-8 h-8" />
-              </button>
-            </div>
-            <button onClick={() => runWithRecallExitGuard(() => setMode('LIBRARY'))} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
-              <Library className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">Library</span>
-            </button>
-            <button onClick={() => runWithRecallExitGuard(() => isRegistered ? setMode('PROFILE') : setShowLogin(true))} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
-              <UserCircle className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">Me</span>
-            </button>
-          </div>
         </div>
       );
     }
@@ -8724,544 +8284,45 @@ ${explanation.explanation}
             </div>
           </div>
 
-          {/* Global Bottom Nav */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 pb-safe flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-            <button onClick={() => setMode('MENU')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
-              <Home className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">Home</span>
-            </button>
-            <button onClick={() => setMode('NOTEBOOK')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-indigo-600 scale-110">
-              <BookMarked className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">My Notes</span>
-            </button>
-            <div className="relative -mt-10">
-              <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
-                <ScanLine className="w-8 h-8" />
-              </button>
-            </div>
-            <button onClick={() => setMode('LIBRARY')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
-              <Library className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">Library</span>
-            </button>
-            <button onClick={() => isRegistered ? setMode('PROFILE') : setShowLogin(true)} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
-              <UserCircle className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">Me</span>
-            </button>
-          </div>
         </div>
       );
     }
 
     if (mode === 'LIBRARY') {
-      const libraryGradeScope = selectedGrade !== 'ALL' ? selectedGrade : (studentProfile?.grade || enrolledGrade);
-      const learnerGradeKey = normalizeGrade(libraryGradeScope || '');
-      const isPublishedPaper = (material: any) => normalizeMaterialCategory(material?.category) === 'PAST_PAPER';
-      const isSomaOriginalPaper = (material: any) => {
-        const normalizedCategory = normalizeMaterialCategory(material?.category);
-        const source = String(material?.source || material?.marking_scheme_source || '').toUpperCase();
-        const title = String(material?.title || '').toLowerCase();
-        return normalizedCategory === 'PAST_PAPER' && (
-          source.includes('STRUCTURED_IMPORT') ||
-          /somaai\s+original|original mock|originals/.test(title)
-        );
-      };
-      const parseGradeNumber = (grade: string) => {
-        const g = String(grade || '').toLowerCase();
-        const match = g.match(/\b(?:grade|form)\s*(\d{1,2})\b/) || g.match(/\b(\d{1,2})\b/);
-        return match ? Number(match[1]) : null;
-      };
-      const compareGradeProximity = (a: string, b: string) => {
-        const aGrade = normalizeGrade(a || '');
-        const bGrade = normalizeGrade(b || '');
-        if (learnerGradeKey) {
-          if (aGrade === learnerGradeKey && bGrade !== learnerGradeKey) return -1;
-          if (bGrade === learnerGradeKey && aGrade !== learnerGradeKey) return 1;
-        }
-        const aClusterMatch = !libraryGradeScope ? false : getAcademicCluster(a || '') === getAcademicCluster(libraryGradeScope);
-        const bClusterMatch = !libraryGradeScope ? false : getAcademicCluster(b || '') === getAcademicCluster(libraryGradeScope);
-        if (aClusterMatch !== bClusterMatch) return aClusterMatch ? -1 : 1;
-        const learnerNum = parseGradeNumber(libraryGradeScope || '');
-        const aNum = parseGradeNumber(a || '');
-        const bNum = parseGradeNumber(b || '');
-        const aDistance = learnerNum != null && aNum != null ? Math.abs(aNum - learnerNum) : 99;
-        const bDistance = learnerNum != null && bNum != null ? Math.abs(bNum - learnerNum) : 99;
-        if (aDistance !== bDistance) return aDistance - bDistance;
-        return String(a || '').localeCompare(String(b || ''));
-      };
-      const purchasedResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'OWNED');
-      const freeStarterResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'FREE');
-      const preferredStarterResources = freeStarterResources.filter(m => {
-        if (!libraryGradeScope) return true;
-        return normalizeGrade(m.grade || '') === normalizeGrade(libraryGradeScope);
-      });
-      const featuredPaperResources = (preferredStarterResources.length > 0 ? preferredStarterResources : freeStarterResources)
-        .filter(m => isPublishedPaper(m))
-        .sort((a, b) => compareGradeProximity(a.grade || '', b.grade || ''))
-        .slice(0, 3);
-      const proVaultResources = unifiedMaterials.filter(m => getMaterialAccessStatus(m) === 'PRO_INCLUDED' || getMaterialAccessStatus(m) === 'PRO_LOCKED');
-      const unlockedResources = unifiedMaterials.filter(m => {
-        const status = getMaterialAccessStatus(m);
-        const normalizedCategory = normalizeMaterialCategory(m.category);
-        if (isStarterCategory(normalizedCategory)) return true;
-        return status === 'OWNED' || status === 'FREE' || status === 'PRO_INCLUDED';
-      });
-      const starterPaperResources = featuredPaperResources.length > 0
-        ? featuredPaperResources
-        : unlockedResources
-            .filter(m => isPublishedPaper(m))
-            .sort((a, b) => compareGradeProximity(a.grade || '', b.grade || ''))
-            .slice(0, 3);
-
-      const activeList =
-        libraryView === 'PURCHASED'
-          ? purchasedResources
-          : libraryView === 'PRO_VAULT'
-            ? (isPro ? proVaultResources : [])
-            : unlockedResources;
-
-      // Extract unique subjects from current view for filtering
-      const subjectsList = ['ALL', ...Array.from(new Set(activeList.map(m => m.subject).filter(Boolean))).sort()];
-
-
-      const gradeScopedLibraryMaterials = activeList
-        .filter(m => {
-          const materialLevel = getGradeLevel(m.grade || '');
-          const matchesEducationLevel = materialLevel === educationLevel;
-          const matchesStudentRange = !studentProfile?.grade || isGradeInStudentRange(m.grade || '', studentProfile.grade);
-          return matchesEducationLevel && matchesStudentRange;
-        })
-        .sort((a, b) => compareGradeProximity(a.grade || '', b.grade || ''));
-
-      const exactGradeLibraryMaterials = gradeScopedLibraryMaterials.filter(m => {
-        const matchesSubject = activeLibrarySubject === 'ALL' || m.subject === activeLibrarySubject;
-        const matchesGrade = !libraryGradeScope || normalizeGrade(m.grade || '') === normalizeGrade(libraryGradeScope);
-        return matchesSubject && matchesGrade;
-      });
-
-      const visibleLibraryMaterials = (exactGradeLibraryMaterials.length > 0
-        ? exactGradeLibraryMaterials
-        : gradeScopedLibraryMaterials.filter(m => activeLibrarySubject === 'ALL' || m.subject === activeLibrarySubject))
-        .filter(m => normalizeMaterialCategory(m.category) !== 'SYLLABUS');
-      const showingGradeFallback = exactGradeLibraryMaterials.length === 0 && gradeScopedLibraryMaterials.length > 0;
-      const categoryLibraryMaterials = activeLibraryCategory === 'ALL'
-        ? visibleLibraryMaterials
-        : visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === activeLibraryCategory);
-
-      // Group filtered books by category
-      const syllabuses = [] as typeof categoryLibraryMaterials;
-      const originalPapers = categoryLibraryMaterials.filter(m => isPublishedPaper(m));
-      const studyNotes = categoryLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'NOTES');
-
-      // Helper to generate a gradient background class based on the subject name
-      const getSubjectGradient = (subj: string) => {
-        const s = String(subj || '').toLowerCase();
-        if (s.includes('math') || s.includes('calc')) return 'from-blue-600 to-indigo-800 text-blue-100';
-        if (s.includes('bio') || s.includes('scie') || s.includes('agri')) return 'from-emerald-600 to-teal-800 text-emerald-100';
-        if (s.includes('chem') || s.includes('phys')) return 'from-cyan-600 to-blue-800 text-cyan-100';
-        if (s.includes('kisw') || s.includes('swah')) return 'from-amber-500 to-orange-700 text-amber-100';
-        if (s.includes('cre') || s.includes('ire') || s.includes('hist') || s.includes('geog') || s.includes('social')) return 'from-purple-600 to-fuchsia-800 text-purple-100';
-        return 'from-slate-700 to-slate-900 text-slate-100';
-      };
-
-      const libraryCategoryMeta = {
-        ALL: { label: 'All', count: visibleLibraryMaterials.length, pill: 'bg-slate-50 text-slate-600 border border-slate-200' },
-        PAST_PAPER: { label: 'Exam Papers', count: visibleLibraryMaterials.filter(m => isPublishedPaper(m)).length, pill: 'bg-slate-50 text-slate-600 border border-slate-200' },
-        NOTES: { label: 'Notes', count: visibleLibraryMaterials.filter(m => normalizeMaterialCategory(m.category) === 'NOTES').length, pill: 'bg-slate-50 text-slate-600 border border-slate-200' },
-      } as const;
-
-      // Helper to get cover illustration emoji
-      const getSubjectEmoji = (subj: string) => {
-        const s = String(subj || '').toLowerCase();
-        if (s.includes('math') || s.includes('calc')) return 'Math';
-        if (s.includes('bio')) return 'Biology';
-        if (s.includes('agri')) return 'Agriculture';
-        if (s.includes('scie')) return 'Science';
-        if (s.includes('chem')) return 'Chemistry';
-        if (s.includes('phys')) return 'Physics';
-        if (s.includes('kisw') || s.includes('swah')) return 'Kiswahili';
-        if (s.includes('cre') || s.includes('ire')) return 'CRE';
-        if (s.includes('hist') || s.includes('social')) return 'History';
-        return 'Books';
-      };
-
       return (
-        <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100 flex flex-col">
-          {/* Header */}
-          <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-6 py-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-black text-slate-900 tracking-tight leading-none">My Library</h1>
-              <p className="text-[10px] font-black text-indigo-500 uppercase tracking-[0.15em] mt-1.5">Published Papers / Exam Papers</p>
-            </div>
-            <button onClick={() => setMode('MENU')} className="p-2 hover:bg-slate-100 rounded-full transition-colors"><X className="w-5 h-5" /></button>
-          </div>
-
-          <div className="p-6 flex-1 overflow-y-auto no-scrollbar">
-            <div className="relative overflow-hidden rounded-[2rem] bg-white p-5 text-slate-900 shadow-sm border border-slate-200 mb-6">
-              <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-slate-100 blur-2xl" />
-              <div className="relative flex items-start justify-between gap-4">
-                <div className="min-w-0">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Published papers first</p>
-                  <h2 className="mt-2 text-xl font-black leading-tight text-slate-900">Welcome and start learning with a real paper.</h2>
-                  <p className="mt-2 text-sm text-slate-600 max-w-xl">Open a curated original mock, work through it under time, and use the feedback to recover marks fast.</p>
-                </div>
-                <div className="hidden sm:flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-50 border border-slate-200 shadow-sm">
-                  <Layers className="h-6 w-6 text-slate-400" />
-                </div>
-              </div>
-              {starterPaperResources.length > 0 ? (
-                <div className="relative mt-5 -mx-1 flex gap-3 overflow-x-auto pb-2 pr-2 scrollbar-none no-scrollbar">
-                  {starterPaperResources.slice(0, 6).map((item, idx) => (
-                    <button
-                      key={item.id || idx}
-                      onClick={() => { setMode('REVISION'); setPendingMaterialId(item.id); }}
-                      className="min-w-[230px] flex-1 snap-start rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-indigo-200 hover:shadow-md"
-                    >
-                      <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Latest paper</p>
-                      <p className="mt-2 text-sm font-bold leading-snug line-clamp-2 text-slate-900">{item.title}</p>
-                      <p className="mt-2 text-[11px] text-slate-500">{item.subject} ? {item.grade}</p>
-                      <p className="mt-3 text-[11px] font-black text-indigo-600">Open paper</p>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="relative mt-5 rounded-2xl border border-slate-200 bg-white p-4 text-sm text-slate-700">
-                  We&apos;re preparing your published papers. As soon as one is ready, it appears here first.
-                </div>
-              )}
-            </div>
-
-            {showingGradeFallback && (
-              <div className="mb-5 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-700">
-                Showing Grade {studentProfile?.grade || enrolledGrade || 'ready'} materials while we finish matching exact papers.
-              </div>
-            )}
-
-            {/* Library Category Tabs */}
-            <div className="grid grid-cols-3 gap-3 mb-6 bg-white p-1 rounded-2xl border border-slate-200 shadow-sm">
-              <button
-                onClick={() => {
-                  setLibraryView('UNLOCKED');
-                  setActiveLibrarySubject('ALL');
-                  trackFunnelEvent('library_view_changed', { view: 'UNLOCKED' });
-                }}
-                className={`rounded-xl px-3 py-2 text-center transition-all font-black text-xs ${libraryView === 'UNLOCKED'
-                  ? 'bg-white text-indigo-600 shadow-sm border border-slate-200'
-                  : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Unlocked ({unlockedResources.length})
-              </button>
-              <button
-                onClick={() => {
-                  setLibraryView('PURCHASED');
-                  setActiveLibrarySubject('ALL');
-                  trackFunnelEvent('library_view_changed', { view: 'PURCHASED' });
-                }}
-                className={`rounded-xl px-3 py-2 text-center transition-all font-black text-xs ${libraryView === 'PURCHASED'
-                  ? 'bg-white text-indigo-600 shadow-sm border border-slate-200'
-                  : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Purchased ({purchasedResources.length})
-              </button>
-              <button
-                onClick={() => {
-                  setLibraryView('PRO_VAULT');
-                  setActiveLibrarySubject('ALL');
-                  trackFunnelEvent('library_view_changed', { view: 'PRO_VAULT' });
-                }}
-                className={`rounded-xl px-3 py-2 text-center transition-all font-black text-xs ${libraryView === 'PRO_VAULT'
-                  ? 'bg-white text-amber-600 shadow-sm border border-slate-200/50'
-                  : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Pro Vault ({proVaultResources.length})
-              </button>
-            </div>
-
-            {/* Category Tabs */}
-            <div className="grid grid-cols-3 gap-2 mb-6 bg-white p-1 rounded-2xl border border-slate-200 shadow-sm">
-              {(['ALL', 'PAST_PAPER', 'NOTES'] as const).map(tabKey => {
-                const tab = libraryCategoryMeta[tabKey];
-                return (
-                  <button
-                    key={tabKey}
-                    onClick={() => setActiveLibraryCategory(tabKey)}
-                    className={`rounded-xl px-3 py-2 text-center transition-all font-black text-[10px] sm:text-xs leading-tight ${activeLibraryCategory === tabKey
-                      ? 'bg-white text-slate-900 shadow-sm border border-slate-200'
-                      : 'text-slate-500 hover:text-slate-700'
-                    }`}
-                  >
-                    <span className={`inline-flex items-center justify-center rounded-full px-2 py-0.5 uppercase tracking-[0.14em] ${tab.pill}`}>{tab.label}</span>
-                    <span className="mt-1 block text-[9px] opacity-70">{tab.count}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Subject Filters Row */}
-            {subjectsList.length > 2 && (
-              <div className="flex gap-2 overflow-x-auto pb-4 mb-6 scrollbar-none no-scrollbar shrink-0">
-                {subjectsList.map(subj => (
-                  <button
-                    key={subj}
-                    onClick={() => setActiveLibrarySubject(subj)}
-                    className={`px-4 py-2 rounded-full text-xs font-black shrink-0 transition-all ${activeLibrarySubject === subj
-                      ? 'bg-indigo-600 text-white shadow-md'
-                      : 'bg-white text-slate-650 border border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    {subj === 'ALL' ? 'All Subjects' : `${getSubjectEmoji(subj)} ${subj}`}
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {libraryView === 'PRO_VAULT' && !isPro ? (
-              /* Premium Paywall Page */
-              <div className="py-16 md:py-24 text-center bg-white border-2 border-dashed border-amber-200 rounded-[3rem] mb-6">
-                <div className="w-24 h-24 bg-amber-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border-2 border-amber-200">
-                  <Lock className="w-10 h-10 text-amber-500" />
-                </div>
-                <h4 className="text-xl font-black text-slate-800 mb-2 tracking-tight">Pro Vault is locked</h4>
-                <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.2em] mb-8 max-w-sm mx-auto leading-relaxed">Upgrade to unlock premium teacher resources curated for faster exam prep.</p>
-                <Button onClick={() => handlePricingNavigation()} className="px-10 py-4 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl shadow-xl shadow-amber-100 font-black uppercase tracking-widest text-[10px] border-none">
-                  Unlock Pro Vault
-                </Button>
-              </div>
-            ) : categoryLibraryMaterials.length === 0 ? (
-              /* Empty Library State */
-              <div className="py-16 md:py-28 text-center bg-white border-2 border-dashed border-slate-200 rounded-[3rem]">
-                <div className="w-24 h-24 bg-slate-50 rounded-[2.5rem] flex items-center justify-center mx-auto mb-6 border-2 border-slate-300">
-                  <Library className="w-10 h-10 text-slate-600" />
-                </div>
-                <h4 className="text-xl font-black text-slate-800 mb-2 tracking-tight">Nothing in this section yet</h4>
-                <p className="text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] mb-8 max-w-sm mx-auto leading-relaxed">
-                  {activeLibraryCategory === 'PAST_PAPER'
-                    ? 'Exam papers for your grade will appear here once they are ready.'
-                    : activeLibraryCategory === 'NOTES'
-                      ? 'Notes for your grade will appear here once they are ready.'
-                      : libraryView === 'PURCHASED'
-                        ? 'No purchased materials match this filter yet.'
-                        : 'We are matching the closest materials for your grade and subject. Open one now if it looks close enough.'}
-                </p>
-                {starterPaperResources.length > 0 ? (
-                  <div className="mx-auto mb-10 grid max-w-3xl gap-3 text-left sm:grid-cols-3">
-                    {starterPaperResources.map((item, idx) => (
-                      <button
-                        key={item.id || idx}
-                        onClick={() => { setMode('REVISION'); setPendingMaterialId(item.id); }}
-                        className="rounded-2xl border border-slate-200 bg-white p-4 transition hover:border-indigo-300 hover:shadow-sm"
-                      >
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500">Ready original</p>
-                        <p className="mt-2 text-sm font-bold leading-snug text-slate-900 line-clamp-2">{item.title}</p>
-                        <p className="mt-2 text-[11px] text-slate-500">{item.subject} ? {item.grade}</p>
-                        <p className="mt-2 text-[11px] font-black text-indigo-600">Open now</p>
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-                <div className="flex flex-wrap items-center justify-center gap-3">
-                  <Button onClick={() => setMode('REVISION')} className="px-10 py-4 bg-indigo-600 text-white rounded-2xl shadow-xl shadow-indigo-100 font-black uppercase tracking-widest text-[10px] border-none">
-                    Open originals
-                  </Button>
-                  <Button onClick={() => setMode('MARKETPLACE')} variant="outline" className="px-10 py-4 rounded-2xl font-black uppercase tracking-widest text-[10px]">
-                    Back to library
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              /* Redesigned Bookshelf UI */
-              <div className="space-y-10 pb-24">
-                {/* 2. SomaAI Original Papers */}
-                {originalPapers.length > 0 && (
-                  <div>
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <span className="p-1 rounded bg-slate-100 text-slate-600">PDF</span>
-                      Exam Papers lane ({originalPapers.length})
-                    </h3>
-                    <div className="-mx-1 flex gap-4 overflow-x-auto pb-2 pr-2 scrollbar-none no-scrollbar">
-                      {originalPapers.slice(0, 6).map(item => (
-                        <motion.button
-                          key={item.id}
-                          whileHover={{ y: -4 }}
-                          onClick={() => setLibraryItemPreview(item)}
-                          className="min-w-[235px] flex-none snap-start rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-indigo-200 hover:shadow-md"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Exam paper</p>
-                              <p className="mt-1 text-[11px] font-semibold text-slate-500">{item.subject} ? {item.grade}</p>
-                            </div>
-                            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-sm font-black text-indigo-600">{getSubjectEmoji(item.subject).slice(0, 2)}</span>
-                          </div>
-                          <h4 className="mt-4 line-clamp-3 text-sm font-bold leading-snug text-slate-900">{item.title}</h4>
-                          <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
-                            <span>Open paper</span>
-                            <span className="text-indigo-600">Preview</span>
-                          </div>
-                        </motion.button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* 3. Study Notes & Guides */}
-                {studyNotes.length > 0 && (
-                  <div>
-                    <h3 className="text-xs font-black text-slate-400 uppercase tracking-widest mb-4 flex items-center gap-2">
-                      <span className="p-1 rounded bg-slate-100 text-slate-600">Note</span>
-                      Notes lane ({studyNotes.length})
-                    </h3>
-                    <div className="-mx-1 flex gap-4 overflow-x-auto pb-2 pr-2 scrollbar-none no-scrollbar">
-                      {studyNotes.slice(0, 6).map(item => (
-                        <motion.button
-                          key={item.id}
-                          whileHover={{ y: -4 }}
-                          onClick={() => setLibraryItemPreview(item)}
-                          className="min-w-[235px] flex-none snap-start rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-indigo-200 hover:shadow-md"
-                        >
-                          <div className="flex items-start justify-between gap-3">
-                            <div>
-                              <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Study note</p>
-                              <p className="mt-1 text-[11px] font-semibold text-slate-500">{item.subject} ? {item.grade}</p>
-                            </div>
-                            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-indigo-50 text-sm font-black text-indigo-600">{getSubjectEmoji(item.subject).slice(0, 2)}</span>
-                          </div>
-                          <h4 className="mt-4 line-clamp-3 text-sm font-bold leading-snug text-slate-900">{item.title}</h4>
-                          <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-[10px] font-black uppercase tracking-[0.14em] text-slate-500">
-                            <span>Quick revision</span>
-                            <span className="text-indigo-600">Preview</span>
-                          </div>
-                        </motion.button>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Premium Setup/Rewrite Modal */}
-          <AnimatePresence>
-            {libraryItemPreview && (
-              <div className="fixed inset-0 z-50 bg-white/85 backdrop-blur-md flex items-center justify-center p-4">
-                <motion.div
-                  initial={{ scale: 0.95, opacity: 0, y: 15 }}
-                  animate={{ scale: 1, opacity: 1, y: 0 }}
-                  exit={{ scale: 0.95, opacity: 0, y: 15 }}
-                  className="bg-white rounded-[2.5rem] p-6 max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden"
-                >
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <span className="text-[9px] font-black text-indigo-600 uppercase tracking-widest">Soma Study Setup</span>
-                      <h3 className="text-lg font-black text-slate-900 leading-tight mt-0.5">Read & Rewrite Material</h3>
-                    </div>
-                    <button
-                      onClick={() => setLibraryItemPreview(null)}
-                      className="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-full text-slate-500 transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-
-                  {/* Book Preview Detail */}
-                  <div className="flex gap-4 mb-6 bg-slate-50 p-4 rounded-3xl border border-slate-100">
-                    <div className="w-20 aspect-[3/4] rounded-xl shrink-0 bg-white p-2 flex flex-col justify-between overflow-hidden shadow-sm relative border border-slate-200">
-                      <div className="absolute top-0 bottom-0 left-0 w-2 bg-slate-100" />
-                      <span className="text-[7px] font-black bg-slate-50 text-slate-600 px-1 py-0.5 rounded w-fit leading-none border border-slate-200">{libraryItemPreview.grade}</span>
-                      <span className="text-xl block text-center my-auto">{getSubjectEmoji(libraryItemPreview.subject)}</span>
-                      <span className="text-[7px] font-black uppercase text-center text-slate-600 leading-none truncate">{libraryItemPreview.subject}</span>
-                    </div>
-                    <div className="flex-1 min-w-0 flex flex-col justify-center">
-                      <span className="text-[9px] font-black text-indigo-500 uppercase tracking-widest">{libraryItemPreview.subject} - {libraryItemPreview.grade}</span>
-                      <h4 className="font-black text-base text-slate-900 truncate mt-1 leading-tight">{libraryItemPreview.title}</h4>
-                      <p className="text-[11px] font-medium text-slate-500 leading-snug mt-1.5 line-clamp-2">{libraryItemPreview.description || 'Verified curriculum source notes and resources.'}</p>
-                    </div>
-                  </div>
-
-                  {/* Feature Breakdown */}
-                  <div className="space-y-4 mb-6">
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0 border border-indigo-100/50">
-                        <BookOpen className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h5 className="text-xs font-black text-slate-900">Book AI Study Guide</h5>
-                        <p className="text-[11px] font-medium text-slate-500 mt-0.5">Soma reads the PDF and rewrites it into clean, bite-sized lessons with visual emojis, bold highlights, and curriculum-aligned outlines.</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center shrink-0 border border-purple-100/50">
-                        <Headphones className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h5 className="text-xs font-black text-slate-900">Audio Lectures</h5>
-                        <p className="text-[11px] font-medium text-slate-500 mt-0.5">Generate a narrated audio pod. Sit back and listen to Akili explain the material hands-free.</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-start gap-3">
-                      <div className="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 border border-emerald-100/50">
-                        <CheckCircle className="w-4 h-4" />
-                      </div>
-                      <div>
-                        <h5 className="text-xs font-black text-slate-900">Pop Quizzes & Flashcards</h5>
-                        <p className="text-[11px] font-medium text-slate-500 mt-0.5">Turn the material into interactive practice drills instantly to test your memory and lock in grades.</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => setLibraryItemPreview(null)}
-                      className="flex-1 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold transition-all text-xs"
-                    >
-                      Go Back
-                    </button>
-                    <button
-                      onClick={() => {
-                        const target = libraryItemPreview;
-                        setLibraryItemPreview(null);
-                        startStudySession(target);
-                      }}
-                      className="flex-1 py-3 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-black transition-all text-xs shadow-lg shadow-indigo-200"
-                    >
-                      Sparkle Read & Rewrite
-                    </button>
-                  </div>
-                </motion.div>
-              </div>
-            )}
-          </AnimatePresence>
-
-          {/* Global Bottom Nav */}
-          <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-slate-200 px-4 py-2.5 pb-safe flex justify-between items-center z-50 max-w-4xl mx-auto shadow-[0_-4px_20px_rgba(0,0,0,0.05)]">
-            <button onClick={() => setMode('MENU')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
-              <Home className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">Home</span>
-            </button>
-            <button onClick={() => setMode('NOTEBOOK')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
-              <BookMarked className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">My Notes</span>
-            </button>
-            <div className="relative -mt-10">
-              <button onClick={() => setMode('SCAN')} className="relative w-16 h-16 bg-indigo-600 rounded-full flex items-center justify-center shadow-xl shadow-indigo-200 text-white transform hover:scale-110 active:scale-90 transition-all border-4 border-white">
-                <ScanLine className="w-8 h-8" />
-              </button>
-            </div>
-            <button onClick={() => setMode('LIBRARY')} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-indigo-600 scale-110">
-              <Library className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">Library</span>
-            </button>
-            <button onClick={() => isRegistered ? setMode('PROFILE') : setShowLogin(true)} className="flex min-h-[52px] min-w-[52px] flex-col items-center justify-center gap-1 text-slate-400 hover:text-slate-600">
-              <UserCircle className="w-6 h-6" />
-              <span className="text-[11px] font-black uppercase tracking-tight">Me</span>
-            </button>
-          </div>
-        </div>
+        <LearnerLibrary
+          entries={unifiedMaterials.map(material => ({
+            id: material.id,
+            title: material.title,
+            subject: material.subject,
+            grade: material.grade,
+            category: normalizeMaterialCategory(material.category),
+            access: getMaterialAccessStatus(material),
+          }))}
+          grade={selectedGrade !== 'ALL' ? selectedGrade : ''}
+          subject={activeLibrarySubject}
+          onGrade={grade => setSelectedGrade(grade || 'ALL')}
+          onSubject={setActiveLibrarySubject}
+          onHome={() => handleSidebarTabChange('HOME')}
+          onPractice={() => handleSidebarTabChange('SUBJECTS')}
+          onOpen={id => {
+            const material = unifiedMaterials.find(item => item.id === id);
+            if (!material) return;
+            const access = getMaterialAccessStatus(material);
+            if (access === 'PRO_LOCKED') {
+              setPendingMaterialId(material.id);
+              if (!isRegistered) setShowLogin(true);
+              else handlePricingNavigation();
+              return;
+            }
+            if (access === 'PURCHASE') {
+              // Browsing a title must never charge the learner's wallet.
+              setMode('MARKETPLACE');
+              return;
+            }
+            void startStudySession(material);
+          }}
+        />
       );
     }
 
@@ -9297,7 +8358,7 @@ ${explanation.explanation}
 
               <div className="relative z-10">
                 <p className="text-slate-600 font-medium leading-relaxed mb-8 text-center bg-slate-50 p-4 rounded-xl border-2 border-slate-300">
-                  Snap a clear photo of your question. Somo will explain it simply.
+                  Snap a clear photo of your question. Akili will explain it simply.
                 </p>
 
                 <div className="grid grid-cols-1 gap-4">
@@ -9418,7 +8479,7 @@ ${explanation.explanation}
       />
 
       {/* Main Content */}
-      <div className="lg:ml-[260px] min-h-screen overflow-x-hidden min-w-0">
+      <div className="lg:ml-[260px] min-h-screen overflow-x-hidden min-w-0 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
         {renderMode()}
       </div>
 

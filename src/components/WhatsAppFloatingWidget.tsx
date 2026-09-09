@@ -8,7 +8,7 @@ export const WhatsAppFloatingWidget: React.FC = () => {
     const [isOpen, setIsOpen] = useState(false);
 
     // Hide widget on admin routes or contact page itself (to avoid duplicate elements)
-    if (location.pathname.startsWith('/admin') || location.pathname === '/contact' || location.pathname === '/contact-us') {
+    if (location.pathname.startsWith('/learner') || location.pathname.startsWith('/admin') || location.pathname === '/contact' || location.pathname === '/contact-us') {
         return null;
     }
 

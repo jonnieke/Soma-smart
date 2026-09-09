@@ -50,6 +50,12 @@ export interface RecapNode {
 }
 
 export interface ExplanationResult {
+  practice?: {
+    isProblem: boolean;
+    originalQuestion: string;
+    workedExample: string;
+    yourTurnPrompt: string;
+  };
   topic: string;
   explanation: string; // Markdown (Overview)
   subtopics?: Subtopic[]; // Deeper scrollable topics
