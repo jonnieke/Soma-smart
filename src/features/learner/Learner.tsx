@@ -22,6 +22,7 @@ import { AIFeedbackButtons } from '../../components/AIFeedbackButtons';
 import { LogoutModal } from '../../components/LogoutModal';
 import { ParentPinModal } from '../../components/ParentPinModal';
 import { MarkdownText, Button, Card } from '../../components/Shared';
+import { LearnerAnswerNotes } from './answer/LearnerAnswerNotes';
 import { MasteryDashboard } from '../../components/MasteryDashboard';
 import {
   calculateTotalXP, calculateLevel,
@@ -864,7 +865,6 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [explanation, setExplanation] = useState<ExplanationResult | null>(null);
   const [explanationSubject, setExplanationSubject] = useState<string | undefined>(undefined);
   const [stickyQuizTaken, setStickyQuizTaken] = useState(false);
-  const [stickyQuizData, setStickyQuizData] = useState<QuizData | null>(null);
   const [quizData, setQuizData] = useState<QuizData | null>(null);
   const [lastQuizReview, setLastQuizReview] = useState<QuizReviewSummary | null>(null);
   const [learningProofStatus, setLearningProofStatus] = useState<'idle' | 'copied' | 'shared'>('idle');
@@ -1258,29 +1258,9 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   };
 
   const runWithRecallExitGuard = React.useCallback((action: () => void) => {
-    if (mode === 'RESULT' && explanation && !stickyQuizTaken) {
-      setPendingExitAction(() => action);
-
-      if (stickyQuizData) {
-        setQuizData(stickyQuizData);
-        setMode('QUIZ');
-      } else {
-        setLoading(true);
-        setLoadingText("Akili is preparing a short quiz to verify your understanding...");
-        generateQuickQuiz(explanation.explanation, explanation.topic, language)
-          .then(quiz => {
-            setQuizData(quiz);
-            setMode('QUIZ');
-          })
-          .catch(() => {
-            action();
-          })
-          .finally(() => setLoading(false));
-      }
-      return;
-    }
+    // Practice is learner-initiated; leaving notes must never launch a quiz.
     action();
-  }, [mode, explanation, stickyQuizTaken, stickyQuizData, language]);
+  }, []);
 
   useEffect(() => {
     setCompletedRecallChecks([]);
@@ -1290,7 +1270,6 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     setLearnerTryText('');
     setLearningBreakRewarded(false);
     setStickyQuizTaken(false);
-    setStickyQuizData(null);
   }, [explanation?.topic]);
 
   const shareLearningProof = React.useCallback(async () => {
@@ -2952,7 +2931,6 @@ Stay anchored to this context unless I ask for something broader.`;
       const result = await explainImage(base64, file.type, level, language, 'TUTOR', educationLevel);
       setExplanation(result);
       setStickyQuizTaken(false); // Reset sticky quiz status for new content
-      setStickyQuizData(null); // Clear prefetched quiz
       setPodcastScript(null); // Clear podcast script
       setIsPodcastPlaying(false); // Stop podcast
       setMode('RESULT');
@@ -2970,10 +2948,6 @@ Stay anchored to this context unless I ask for something broader.`;
         })
       });
 
-      // Trigger background quiz generation
-      generateQuickQuiz(result.explanation, result.topic, language)
-        .then(data => setStickyQuizData(data))
-        .catch(err => console.error("Background quiz gen failed", err));
 
     } catch (error: any) {
       console.error("Scan error:", error);
@@ -3195,7 +3169,6 @@ Stay anchored to this context unless I ask for something broader.`;
         const result = await explainAudio(base64Data, mimeType, level, language, educationLevel);
         setExplanation(result);
         setStickyQuizTaken(false); // Reset sticky quiz
-        setStickyQuizData(null); // Clear prefetched quiz
         setPodcastScript(null); // Clear podcast script
         setIsPodcastPlaying(false); // Stop podcast
         setMode('RESULT');
@@ -3214,10 +3187,6 @@ Stay anchored to this context unless I ask for something broader.`;
         });
         setLoading(false);
 
-        // Trigger background quiz generation
-        generateQuickQuiz(result.explanation, result.topic, language)
-          .then(data => setStickyQuizData(data))
-          .catch(err => console.error("Background quiz gen failed", err));
       } catch (e: any) {
         handleAudioFailure(e);
       }
@@ -3264,15 +3233,10 @@ Stay anchored to this context unless I ask for something broader.`;
         }
 
         setStickyQuizTaken(false); // Reset since content changed/refreshed
-        setStickyQuizData(null);
         setPodcastScript(null); // Clear podcast script
         setIsPodcastPlaying(false); // Stop podcast
         setMode('RESULT');
 
-        // Trigger background quiz generation
-        generateQuickQuiz(result.explanation, result.topic, language)
-          .then(data => setStickyQuizData(data))
-          .catch(err => console.error("Background quiz gen failed", err));
       }
     } catch (e) {
       console.error(e);
@@ -3392,7 +3356,6 @@ Stay anchored to this context unless I ask for something broader.`;
       }
 
       setStickyQuizTaken(false); // Reset sticky quiz
-      setStickyQuizData(null);
       setPodcastScript(null); // Clear podcast script
       setIsPodcastPlaying(false); // Stop podcast
       setMode('RESULT');
@@ -3412,10 +3375,6 @@ Stay anchored to this context unless I ask for something broader.`;
       updateTopicMastery(result.topic, 40);
       triggerMemorySync();
 
-      // Trigger background quiz generation
-      generateQuickQuiz(result.explanation, result.topic, language)
-        .then(data => setStickyQuizData(data))
-        .catch(err => console.error("Background quiz gen failed", err));
     } catch (e: any) {
       console.error("Topic explain error:", e);
 
@@ -3550,7 +3509,6 @@ ${explanation.explanation}
         }
 
         setStickyQuizTaken(true); // Treat restored history as "done" so we don't nag them again immediately
-        setStickyQuizData(null);
         setPodcastScript(null); // Clear podcast script
         setIsPodcastPlaying(false); // Stop podcast
         setMode('RESULT');
@@ -3576,13 +3534,19 @@ ${explanation.explanation}
   };
 
   const handleGenerateQuiz = async () => {
-    if (!explanation) return;
+    if (!explanation || loading) return;
     if (!checkLimit({ type: 'STUDY_QUIZ' })) return;
     setLoading(true);
     setLoadingText("Creating your quiz...");
     try {
       const quiz = await generateQuiz(explanation.explanation, explanation.topic, language);
-      setQuizData(quiz);
+      if (!quiz?.questions || quiz.questions.length < 3) {
+        throw new Error('Incomplete quick quiz');
+      }
+      cancelPodcast();
+      stopSpeech();
+      setIsPlaying(false);
+      setQuizData({ ...quiz, questions: quiz.questions.slice(0, 3) });
       setStickyQuizTaken(true); // Marked as taken so they aren't bugged on exit
       trackFunnelEvent('learner_quiz_started', {
         source: 'result_view',
@@ -3590,7 +3554,7 @@ ${explanation.explanation}
       });
       setMode('QUIZ');
     } catch (error) {
-      alert("Failed to generate quiz."); // Keep alert for in-flow minor error or upgrade to setError if critical
+      triggerToast('Your notes are still here. We could not prepare the quiz; please try again.');
       setLoading(false);
     } finally {
       setLoading(false);
@@ -6663,584 +6627,19 @@ ${explanation.explanation}
 
     if (mode === 'RESULT' && explanation) {
       return (
-        <div className="bg-slate-50 min-h-screen pb-32 max-w-4xl mx-auto shadow-2xl border-x border-slate-100">
-          {/* Sticky Glass Header */}
-          <div className="sticky top-0 z-40 bg-white/80 backdrop-blur-md border-b border-slate-200 px-4 py-3 flex items-center gap-3">
-            <button onClick={() => runWithRecallExitGuard(() => { cancelPodcast(); handleExitResult(); })} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 hover:bg-slate-50 rounded-xl transition-all group">
-              <ArrowRight className="w-5 h-5 text-slate-500 rotate-180 group-hover:text-blue-600" />
-              <span className="text-xs font-bold text-slate-500 group-hover:text-blue-600">Dashboard</span>
-            </button>
-            <h1 className="font-bold text-lg text-slate-900 truncate flex-1">{explanation.topic}</h1>
-
-            <button
-              onClick={handlePodcastToggle}
-              disabled={podcastLoading}
-              className={`
-                hidden md:flex items-center gap-3 px-4 py-2 rounded-2xl transition-all shadow-sm hover:shadow-md hover:-translate-y-0.5
-                ${podcastLoading
-                  ? 'bg-indigo-50 text-indigo-400 border-2 border-indigo-200 cursor-wait'
-                  : isPodcastPlaying
-                  ? 'bg-indigo-100 text-indigo-700 ring-2 ring-indigo-500 ring-offset-2'
-                  : 'bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-indigo-200'}
-              `}
-            >
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${podcastLoading ? 'bg-indigo-100' : isPodcastPlaying ? 'bg-indigo-200' : 'bg-white/20'}`}>
-                {podcastLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : (isPodcastPlaying ? <Pause className="w-4 h-4" /> : <Headphones className="w-4 h-4" />)}
-              </div>
-              <div className="text-left flex flex-col">
-                <span className="text-xs font-black uppercase tracking-wide leading-none mb-0.5">
-                  {podcastLoading ? 'Generating...' : isPodcastPlaying ? 'Pause' : 'Listen & Learn'}
-                </span>
-                <span className={`text-[9px] font-bold uppercase tracking-wider ${isPodcastPlaying ? 'text-indigo-500' : podcastLoading ? 'text-indigo-400' : 'text-indigo-100'}`}>
-                  {isPodcastPlaying && podcastTotalSegments > 0
-                    ? `Segment ${currentSegmentIndex + 1} of ${podcastTotalSegments}`
-                    : podcastLoading ? 'Scripting your episode...' : 'Audio Lesson'}
-                </span>
-              </div>
-            </button>
-
-
-            <button onClick={handleDownload} className="p-2 text-blue-600 hover:bg-blue-50 rounded-full transition-colors">
-              <Download className="w-5 h-5" />
-            </button>
-          </div>
-
-          <AnimatePresence>
-            {showPracticeNudge && explanation.practice?.isProblem && (
-              <motion.div
-                initial={{ opacity: 0, y: -24, scale: 0.96 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -16, scale: 0.98 }}
-                className="fixed left-3 right-3 top-20 z-[200] mx-auto flex max-w-xl items-center gap-3 rounded-2xl border border-emerald-300 bg-emerald-600 p-4 text-white shadow-2xl shadow-emerald-900/25"
-                role="status"
-                aria-live="polite"
-              >
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/20">
-                  <Sparkles className="h-5 w-5" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-100">Your turn</p>
-                  <p className="text-sm font-bold">Now try the question. You can do it!</p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowPracticeNudge(false)}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/15 hover:bg-black/25"
-                  aria-label="Dismiss encouragement"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-
-          <div className="p-4 space-y-6 max-w-2xl mx-auto">
-
-            {/* Media Section (Your Question - Image/Audio) */}
-            {(imageData || audioData) && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-white p-2 rounded-2xl shadow-sm border-2 border-slate-300 animate-in fade-in zoom-in duration-300"
-              >
-                {imageData && (
-                  <div className="relative rounded-xl overflow-hidden bg-slate-100 max-h-60">
-                    <img src={`data:${imageData.mimeType};base64,${imageData.base64}`} alt="Scanned Content" className="w-full h-full object-contain" />
-                  </div>
-                )}
-                {audioData && (
-                  <div className="p-4">
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                        <Mic className="w-5 h-5 text-purple-600" />
-                      </div>
-                      <div>
-                        <p className="font-bold text-slate-700 text-sm">Your Question</p>
-                        <p className="text-xs text-slate-400">Audio Recording</p>
-                      </div>
-                    </div>
-                    <audio controls src={`data:${audioData.mimeType};base64,${audioData.base64}`} className="w-full h-10" />
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {/* Your Question (Text query) */}
-            {!imageData && !audioData && explanation?.topic && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="bg-white p-5 rounded-[2rem] shadow-sm border-2 border-slate-300 animate-in fade-in zoom-in duration-300"
-              >
-                <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                    <Brain className="w-5 h-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-1">Your Question</p>
-                    <h3 className="font-bold text-slate-800 text-base leading-snug">{explanation.topic}</h3>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {explanation.practice?.isProblem && (
-              <motion.section
-                initial={{ opacity: 0, y: 18 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="overflow-hidden rounded-[2rem] border-2 border-violet-200 bg-white shadow-lg shadow-violet-100/60"
-                aria-labelledby="akili-guided-practice-title"
-              >
-                <div className="bg-gradient-to-r from-violet-600 to-indigo-600 px-5 py-4 text-white sm:px-6">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-violet-100">Learn the method, then try yours</p>
-                  <h2 id="akili-guided-practice-title" className="mt-1 text-xl font-black">A similar worked example</h2>
-                  <p className="mt-1 text-sm font-medium text-violet-100">Akili changed the figures so you can learn without copying.</p>
-                </div>
-
-                <div className="space-y-5 p-5 sm:p-6">
-                  <div className="prose prose-sm max-w-none rounded-2xl border border-violet-100 bg-violet-50/60 p-4 text-slate-700">
-                    <MarkdownText content={explanation.practice.workedExample} />
-                  </div>
-
-                  <div className="rounded-2xl border-2 border-emerald-300 bg-emerald-50 p-4 sm:p-5">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white">
-                        <PenTool className="h-5 w-5" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-700">Now it is your turn</p>
-                        <p className="mt-1 whitespace-pre-wrap text-base font-black leading-6 text-slate-900">{explanation.practice.originalQuestion}</p>
-                        <p className="mt-2 text-sm font-semibold text-emerald-800">{explanation.practice.yourTurnPrompt || "Try it using the same steps. You can do it!"}</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                    <p className="text-xs font-bold text-slate-500">Similar examples used: {similarExamplesUsed} of 3</p>
-                    <button
-                      type="button"
-                      onClick={() => void requestAnotherSimilarExample()}
-                      disabled={loading || similarExamplesUsed >= 3}
-                      className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-3 text-sm font-black text-white shadow-md transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:bg-slate-300"
-                    >
-                      <Sparkles className="h-4 w-4" />
-                      {similarExamplesUsed >= 3 ? '3 examples used — try yours' : 'Show another similar example'}
-                    </button>
-                  </div>
-                </div>
-              </motion.section>
-            )}
-
-            {/* Detailed explanation + Key Takeaways */}
-            {explanation.explanation && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.06 }}
-                className="bg-white p-6 rounded-3xl border-2 border-indigo-200 shadow-sm relative overflow-hidden"
-              >
-                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-indigo-500"></div>
-                <div className="flex items-start justify-between gap-3 mb-4">
-                  <div className="min-w-0">
-                    <h3 className="font-bold text-slate-900 flex items-center gap-3 text-lg">
-                      <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
-                        <Lightbulb className="w-5 h-5 text-indigo-600" />
-                      </div>
-                      Detailed explanation
-                    </h3>
-                    <p className="mt-1 text-[11px] font-black uppercase tracking-[0.2em] text-indigo-500">Grade-sensitive depth - {getExplanationDepthProfile(studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level).label}</p>
-                  </div>
-                </div>
-                <div className="prose prose-sm max-w-none rounded-2xl border border-indigo-100/60 bg-indigo-50/30 p-4 text-slate-700 leading-relaxed">
-                  <MarkdownText content={buildDetailedExplanationPreview(explanation.explanation, explanation.topic, studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level)} />
-                </div>
-                {Array.isArray(explanation.subtopics) && explanation.subtopics.length > 0 && (
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                    {explanation.subtopics.slice(0, getExplanationDepthProfile(studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level).subtopics).map((subtopic, index) => (
-                      <div key={`${subtopic.title}-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                        <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">{index + 1}. {subtopic.title}</p>
-                        {subtopic.content && (
-                          <div className="mt-2 text-sm leading-6 text-slate-600 prose prose-sm max-w-none">
-                            <MarkdownText content={buildDetailedExplanationPreview(subtopic.content, subtopic.title, studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level)} />
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-                {Array.isArray(explanation.recapNodes) && explanation.recapNodes.length > 0 && (
-                  <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 mb-3">Step-by-step recap</p>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {explanation.recapNodes.slice(0, getExplanationDepthProfile(studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level).recapNodes).map((node, index) => (
-                        <div key={`${node.point}-${index}`} className="rounded-2xl border border-slate-200 bg-white p-4">
-                          <p className="text-sm font-black text-slate-900">{node.point}</p>
-                          <p className="mt-2 text-sm leading-6 text-slate-600">{node.details}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </motion.div>
-            )}
-
-            {explanation.summaryPoints && explanation.summaryPoints.length > 0 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-                className="bg-white p-6 rounded-3xl border-2 border-slate-300 shadow-sm relative overflow-hidden"
-              >
-                <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-400"></div>
-                <h3 className="font-bold text-slate-900 mb-6 flex items-center gap-3 text-lg">
-                  <div className="w-8 h-8 rounded-lg bg-amber-50 flex items-center justify-center">
-                    <BookOpen className="w-5 h-5 text-amber-600" />
-                  </div>
-                  Key Takeaways
-                </h3>
-                <div className="text-slate-600 text-sm md:text-base leading-relaxed mb-6 font-medium bg-amber-50/20 p-4 rounded-2xl border border-amber-100/50 prose prose-sm max-w-none">
-                  <MarkdownText content={getBriefDefinition(explanation.explanation, explanation.topic)} />
-                </div>
-                <ul className="space-y-4">
-                  {explanation.summaryPoints.map((point, i) => (
-                    <li key={i} className="flex gap-4 text-slate-600 leading-relaxed font-medium">
-                      <div className="w-6 h-6 rounded-full bg-slate-50 text-slate-400 border-2 border-slate-300 flex items-center justify-center text-[10px] font-bold shrink-0 mt-0.5">{i + 1}</div>
-                      <span className="text-sm md:text-base">{point}</span>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-            )}
-
-             {/* Podcast Player Overlay - Premium Media Player */}
-            <AnimatePresence>
-              {(isPodcastPlaying || podcastLoading) && (isPodcastPlaying ? podcastScript : true) && (
-                <motion.div
-                  initial={{ y: 120, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  exit={{ y: 120, opacity: 0 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
-                  className="fixed bottom-20 left-3 right-3 md:left-1/2 md:-translate-x-1/2 md:w-[92%] md:max-w-xl z-[100]"
-                >
-                  <div className="bg-white backdrop-blur-2xl rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
-                    {/* Progress Bar Track */}
-                    {podcastTotalSegments > 0 && (
-                      <div className="h-1 bg-white/10 w-full">
-                        <div
-                          className="h-full bg-gradient-to-r from-indigo-500 to-violet-500 transition-all duration-700"
-                          style={{ width: `${Math.round(((currentSegmentIndex + 1) / podcastTotalSegments) * 100)}%` }}
-                        />
-                      </div>
-                    )}
-
-                    <div className="p-4">
-                      {/* Episode Header */}
-                      <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-violet-600 rounded-2xl flex items-center justify-center shrink-0 shadow-lg shadow-indigo-900/50">
-                          {podcastLoading ? <Loader2 className="w-5 h-5 text-white animate-spin" /> : <Headphones className="w-5 h-5 text-white" />}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[10px] font-black text-indigo-400 uppercase tracking-[0.15em] leading-none mb-1">Soma AI Audio</p>
-                          <p className="text-white font-bold text-sm truncate leading-tight">
-                            {podcastScript?.title || (explanation?.topic ? 'Generating episode...' : '')}
-                          </p>
-                        </div>
-                        {podcastTotalSegments > 0 && (
-                          <span className="shrink-0 text-[10px] font-bold text-slate-400 tabular-nums">
-                            {currentSegmentIndex + 1}/{podcastTotalSegments}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Current Segment Transcript */}
-                      {isPodcastPlaying && podcastScript && currentSegmentIndex >= 0 && (() => {
-                        const seg = podcastScript.script[currentSegmentIndex];
-                        return (
-                          <div className="bg-slate-50 rounded-2xl px-4 py-3 mb-4 border border-slate-200">
-                            <span className={`inline-block text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full mb-2 ${
-                              seg.speaker === 'Host'
-                                ? 'bg-indigo-500/40 text-indigo-200'
-                                : 'bg-violet-500/40 text-violet-200'
-                            }`}>
-                              {seg.speaker === 'Host' ? 'Host' : 'Expert'}
-                            </span>
-                            <p className="text-white text-sm leading-relaxed font-medium">{seg.text}</p>
-                          </div>
-                        );
-                      })()}
-
-                      {podcastLoading && (
-                        <div className="bg-slate-50 rounded-2xl px-4 py-3 mb-4 flex items-center gap-3 border border-slate-200">
-                          <Loader2 className="w-4 h-4 text-indigo-400 animate-spin shrink-0" />
-                          <p className="text-slate-600 text-sm font-medium">Scripting your audio episode with AI...</p>
-                        </div>
-                      )}
-
-                      {/* Controls Row */}
-                      <div className="flex items-center gap-2">
-                        {/* Re-generate */}
-                        <button
-                          onClick={handlePodcastRegenerate}
-                          className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 transition-all text-xs font-bold border border-slate-200"
-                        >
-                          <Sparkles className="w-3.5 h-3.5" />
-                          Re-generate
-                        </button>
-
-                        {/* Skip Segment */}
-                        <button
-                          onClick={handlePodcastSkip}
-                          disabled={!podcastScript || currentSegmentIndex >= podcastScript.script.length - 1}
-                          className="flex items-center justify-center w-10 h-10 rounded-xl bg-white hover:bg-slate-50 text-slate-700 hover:text-slate-900 transition-all disabled:opacity-30 disabled:cursor-not-allowed border border-slate-200"
-                          title="Skip segment"
-                        >
-                          <ChevronRight className="w-5 h-5" />
-                        </button>
-
-                        {/* Pause / Play */}
-                        <button
-                          onClick={handlePodcastToggle}
-                          className={`flex items-center justify-center w-12 h-12 rounded-2xl transition-all shadow-lg ${
-                            isPodcastPlaying
-                              ? 'bg-indigo-500 hover:bg-indigo-400 shadow-indigo-900/50'
-                              : 'bg-white/15 hover:bg-white/20'
-                          }`}
-                        >
-                          {isPodcastPlaying ? <Pause className="w-5 h-5 text-white" /> : <Play className="w-5 h-5 text-white fill-white" />}
-                        </button>
-
-                        {/* Stop & Close */}
-                        <button
-                          onClick={() => { cancelPodcast(); setIsPodcastPlaying(false); setCurrentSegmentIndex(-1); }}
-                          className="flex items-center justify-center w-10 h-10 rounded-xl bg-white hover:bg-red-50 text-slate-700 hover:text-red-600 transition-all border border-slate-200"
-                          title="Stop playback"
-                        >
-                          <X className="w-5 h-5" />
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
-            {/* General Akili answer / Grounded by Soma Library notice */}
-            <div className={`rounded-3xl border-2 p-4 shadow-sm ${
-              explanation.grounding?.used
-                ? 'bg-emerald-50 border-emerald-200'
-                : 'bg-white border-slate-200'
-            }`}>
-              <div className="flex items-start gap-3">
-                <div className={`w-10 h-10 rounded-2xl flex items-center justify-center shrink-0 ${
-                  explanation.grounding?.used
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-slate-100 text-slate-500'
-                }`}>
-                  <Library className="w-5 h-5" />
-                </div>
-                <div className="min-w-0">
-                  <p className={`text-xs font-black uppercase tracking-[0.16em] ${
-                    explanation.grounding?.used ? 'text-emerald-700' : 'text-slate-500'
-                  }`}>
-                    {explanation.grounding?.used ? 'Grounded by Soma Library' : 'General Akili answer'}
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-slate-700">
-                    {explanation.grounding?.used
-                      ? 'This answer used indexed Soma notes, curriculum guides, or original papers where relevant.'
-                      : groundedAnswerMode
-                        ? 'No matching indexed source was found, so Akili answered from general curriculum knowledge.'
-                        : 'Soma Library grounding was switched off for this answer.'}
-                  </p>
-                  {explanation.grounding?.sources && explanation.grounding.sources.length > 0 && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {explanation.grounding.sources.slice(0, 4).map((source) => (
-                        <span key={source} className="rounded-full bg-white border border-emerald-200 px-3 py-1 text-[11px] font-bold text-emerald-800 truncate max-w-full">
-                          {source}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Level Switcher */}
-            <div className="flex bg-white p-1.5 rounded-xl shadow-sm border-2 border-slate-300">
-              {(['Simple', 'Exam'] as const).map((l) => (
-                <button
-                  key={l}
-                  onClick={() => handleRegenerate(l)}
-                  disabled={loading || explanation.level === l}
-                  className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-all ${explanation.level === l ? (l === 'Simple' ? 'bg-indigo-100 text-indigo-700 shadow-sm' : 'bg-blue-100 text-blue-700 shadow-sm') : 'text-slate-400 hover:text-slate-600'}`}
-                >
-                  {l === 'Simple' ? 'Explain Simply' : 'Exam Mode'}
-                </button>
-              ))}
-            </div>
-
-            {/* Mobile-Only Audio Button (Prominent) */}
-            <div className="md:hidden w-full mb-6">
-              <button
-                onClick={handlePodcastToggle}
-                disabled={podcastLoading}
-                className={`
-                  w-full flex items-center justify-between px-5 py-4 rounded-3xl transition-all shadow-lg hover:shadow-xl active:scale-[0.98]
-                  ${podcastLoading
-                    ? 'bg-indigo-50 border-2 border-dashed border-indigo-300 text-indigo-400 cursor-wait'
-                    : isPodcastPlaying
-                    ? 'bg-indigo-50 border-2 border-indigo-500 text-indigo-700'
-                    : 'bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-indigo-200'}
-                `}
-              >
-                <div className="flex items-center gap-4">
-                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                    podcastLoading ? 'bg-indigo-100' : isPodcastPlaying ? 'bg-indigo-200' : 'bg-white/20'
-                  }`}>
-                    {podcastLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : isPodcastPlaying ? <Pause className="w-5 h-5" /> : <Headphones className="w-5 h-5" />}
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-black uppercase tracking-wide">
-                      {podcastLoading ? 'Generating...' : isPodcastPlaying ? 'Pause' : 'Listen & Learn'}
-                    </p>
-                    {isPodcastPlaying && podcastScript && currentSegmentIndex >= 0 ? (
-                      <>
-                        <p className="text-[11px] font-bold text-indigo-500 truncate max-w-[180px]">
-                          {podcastScript.script[currentSegmentIndex].speaker === 'Host' ? 'Host' : 'Expert'}
-                        </p>
-                        {podcastTotalSegments > 0 && (
-                          <div className="mt-1 h-1 w-28 bg-indigo-200 rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-indigo-500 rounded-full transition-all duration-700"
-                              style={{ width: `${Math.round(((currentSegmentIndex + 1) / podcastTotalSegments) * 100)}%` }}
-                            />
-                          </div>
-                        )}
-                      </>
-                    ) : (
-                      <p className={`text-xs font-medium ${isPodcastPlaying ? 'text-indigo-600' : podcastLoading ? 'text-indigo-400' : 'text-indigo-100'}`}>
-                        {podcastLoading ? 'Scripting episode...' : 'Audio Lesson Explanation'}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                {podcastLoading
-                  ? <Loader2 className="w-5 h-5 animate-spin opacity-50" />
-                  : isPodcastPlaying
-                  ? <div className="w-2 h-2 bg-indigo-500 rounded-full animate-pulse" />
-                  : <Play className="w-5 h-5 fill-current opacity-80" />}
-              </button>
-            </div>
-
-            {lastQuizReview && lastQuizReview.missedQuestions.length > 0 && lastQuizReview.score < 100 && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="bg-rose-50 p-6 rounded-3xl border-2 border-rose-200 shadow-sm"
-              >
-                <div className="flex items-start justify-between gap-4 mb-4">
-                  <div>
-                    <p className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-700 mb-1">Repair Your Misses</p>
-                    <h3 className="font-bold text-slate-900 text-lg">
-                      Fix {lastQuizReview.missedQuestions.length} weak spot{lastQuizReview.missedQuestions.length === 1 ? '' : 's'} from your last quiz
-                    </h3>
-                    <p className="text-sm font-semibold text-slate-600 mt-1">
-                      Score: {lastQuizReview.score}%. Review the exact questions you missed before moving on.
-                    </p>
-                  </div>
-                  <div className="w-10 h-10 rounded-2xl bg-white text-rose-600 flex items-center justify-center shrink-0">
-                    <AlertTriangle className="w-5 h-5" />
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  {lastQuizReview.missedQuestions.slice(0, 3).map(({ question, index, selectedAnswer }) => (
-                    <div key={`${question.id}-${index}`} className="rounded-2xl bg-white border border-rose-200 p-4">
-                      <p className="text-[10px] font-black uppercase tracking-widest text-rose-600 mb-2">Question {index + 1}</p>
-                      <p className="text-sm font-bold text-slate-900 mb-2">{question.question}</p>
-                      <div className="grid gap-1 text-xs font-semibold">
-                        <p className="text-rose-700">Your answer: {selectedAnswer || 'No answer'}</p>
-                        <p className="text-emerald-700">Correct answer: {String(question.correctAnswer)}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                <div className="mt-4 flex flex-col sm:flex-row gap-3">
-                  <button
-                    onClick={() => {
-                      const repairPrompt = `Help me repair my mistakes on ${lastQuizReview.missedQuestions.length} quiz question(s) about ${explanation.topic}. For each missed question, explain the concept, show the method, then give me one similar practice question without the answer first.\n\n${lastQuizReview.missedQuestions.map(({ question, selectedAnswer }, i) => `${i + 1}. Question: ${question.question}\nMy answer: ${selectedAnswer || 'No answer'}\nCorrect answer: ${String(question.correctAnswer)}\nExplanation: ${question.explanation}`).join('\n\n')}`;
-                      handlePromptSubmit(repairPrompt);
-                    }}
-                    className="flex-1 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white px-5 py-3 text-xs font-black uppercase tracking-wider transition-colors"
-                  >
-                    Repair With Akili
-                  </button>
-                  <button
-                    onClick={() => {
-                      const repairQuestions = lastQuizReview.missedQuestions.map(({ question }) => question);
-                      if (repairQuestions.length === 0) return;
-                      setQuizData({
-                        topic: `${explanation.topic} Repair Drill`,
-                        questions: repairQuestions
-                      });
-                      setLastQuizReview(null);
-                      trackFunnelEvent('learner_repair_drill_started', {
-                        topic: explanation.topic,
-                        missedQuestions: repairQuestions.length
-                      });
-                      setMode('QUIZ');
-                    }}
-                    className="flex-1 rounded-2xl bg-white border border-rose-200 text-rose-700 px-5 py-3 text-xs font-black uppercase tracking-wider hover:bg-rose-50 transition-colors"
-                  >
-                    Retry Missed Only
-                  </button>
-                </div>
-              </motion.div>
-            )}
-
-            {/* Detailed Explanation */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.08 }}
-              className="mb-5 rounded-3xl border border-slate-200 bg-white p-6 shadow-sm"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Step-by-step answer</p>
-                  <h3 className="mt-1 text-lg font-black text-slate-900">Akili explains it in learner order</h3>
-                  <p className="mt-1 text-sm font-medium text-slate-500">Read the quick steps first, then open the full explanation, then listen or test yourself.</p>
-                </div>
-                <div className="rounded-2xl bg-indigo-50 px-3 py-2 text-right">
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-500">Account save</p>
-                  <p className="text-xs font-semibold text-slate-600">Saved to your learner notebook</p>
-                </div>
-              </div>
-
-              {buildStepByStepGuide(explanation, studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level).length > 0 ? (
-                <div className="mt-5 grid gap-3 md:grid-cols-2">
-                  {buildStepByStepGuide(explanation, studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level).map((step, index) => (
-                    <div key={`${step.title}-${index}`} className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                      <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-500">Step {index + 1}</p>
-                      <p className="mt-1 text-sm font-black text-slate-900">{step.title}</p>
-                      {step.detail && <p className="mt-2 text-sm leading-6 text-slate-600">{step.detail}</p>}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
-                  Akili is preparing the expanded answer now. The full explanation is shown below.
-                </div>
-              )}
-            </motion.div>
-
-            <motion.article
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-              className="bg-white p-6 rounded-3xl shadow-sm border-2 border-slate-300 prose prose-sm md:prose-base prose-slate max-w-none prose-p:text-slate-600 prose-headings:text-slate-800 prose-strong:text-slate-900"
-            >
-              <div>
-                <MarkdownText content={explanation.explanation} />
-              </div>
+        <>
+          <LearnerAnswerNotes
+            answer={explanation}
+            onBack={() => runWithRecallExitGuard(() => { cancelPodcast(); handleExitResult(); })}
+            onListen={handleTTS}
+            listening={isPlaying}
+            onPractise={handleGenerateQuiz}
+            onExample={() => void requestAnotherSimilarExample()}
+            examplesUsed={similarExamplesUsed}
+            busy={loading}
+            media={imageData ? <img className="mt-3 max-h-80 w-full object-contain" alt="Scanned question" src={`data:${imageData.mimeType};base64,${imageData.base64}`} /> : audioData ? <audio className="mt-3 w-full" controls src={`data:${audioData.mimeType};base64,${audioData.base64}`} /> : undefined}
+          >
+            <button onClick={handleDownload} className="min-h-12 rounded-xl border px-4 py-3 font-semibold">Download notes</button>
               {/* ACTION FOOTER */}
               <div className="mt-8 pt-6 border-t border-slate-100 flex flex-wrap gap-2 sm:gap-4">
                 <button
@@ -7272,22 +6671,6 @@ ${explanation.explanation}
                 >
                   <Download className="w-4 h-4" />
                   Save Offline
-                </button>
-
-                <button
-                  onClick={handleTTS}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-sm px-4 sm:px-5 py-3 rounded-xl transition-colors"
-                >
-                  {isPlaying ? <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" /> : <Volume2 className="w-4 h-4" />}
-                  {isPlaying ? "Stop" : "Hear Akili Read"}
-                </button>
-
-                <button
-                  onClick={handleGenerateQuiz}
-                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-sm px-4 sm:px-5 py-3 rounded-xl transition-colors border border-indigo-100"
-                >
-                  <Clock className="w-4 h-4" />
-                  Test Me
                 </button>
 
                 <button
@@ -7376,37 +6759,6 @@ ${explanation.explanation}
                   </div>
                 );
               })()}
-            </motion.article>
-
-            {/* QUIZ NUDGE: convert explanation intent into quiz starts */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.12 }}
-              className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-3xl p-5 text-white shadow-lg shadow-emerald-200"
-            >
-              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                <div>
-                  <p className="text-[10px] font-black uppercase tracking-[0.2em] text-emerald-100 mb-1">Next Step</p>
-                  <h3 className="text-lg font-black">Lock this in with a 60-second quiz</h3>
-                  <p className="text-xs font-semibold text-emerald-100 mt-1">Best results come when you test immediately after learning.</p>
-                </div>
-                <button
-                  onClick={() => {
-                    trackFunnelEvent('learner_quiz_nudge_clicked', {
-                      source: 'result_quiz_nudge',
-                      topic: explanation.topic
-                    });
-                    handleGenerateQuiz();
-                  }}
-                  className="bg-white text-emerald-700 hover:bg-emerald-50 rounded-2xl px-5 py-3 text-sm font-black uppercase tracking-wider"
-                >
-                  Start Quiz
-                </button>
-              </div>
-            </motion.div>
-
-            {/* Need more help? - Phase 2 */}
 
             {/* CONTINUE RESEARCHING */}
             <motion.div
@@ -7544,7 +6896,8 @@ ${explanation.explanation}
               </motion.div>
             )}
 
-          </div>
+          </LearnerAnswerNotes>
+          {showPracticeNudge && explanation.practice?.isProblem && <div role="status" className="fixed bottom-20 left-4 right-4 z-[140] mx-auto flex max-w-lg items-center gap-3 rounded-xl bg-emerald-700 p-4 text-white shadow-lg"><p className="flex-1">Now it’s your turn to try the question. You can do it!</p><button className="min-h-11 px-3" aria-label="Dismiss encouragement" onClick={() => setShowPracticeNudge(false)}>Close</button></div>}
 
           {/* --- ONBOARDING MODAL --- */}
           {showOnboarding && (
@@ -7646,12 +6999,12 @@ ${explanation.explanation}
             </div>
           )}
 
-        </div>
+        </>
       );
     }
 
     if (mode === 'QUIZ' && quizData) {
-      return <QuizRunner data={quizData} onComplete={(score, review) => {
+      return <QuizRunner data={quizData} exitLabel={explanation ? 'Back to notes' : 'Back to learning'} onComplete={(score, review) => {
         setStickyQuizTaken(true);
         setLastQuizReview(review);
         // Enrich topic with subject for better gamification tracking
@@ -7697,7 +7050,7 @@ ${explanation.explanation}
         }
       }} onExit={() => {
         setPendingExitAction(null);
-        setMode('RESULT');
+        setMode(explanation ? 'RESULT' : 'MARKETPLACE');
       }} />;
     }
 

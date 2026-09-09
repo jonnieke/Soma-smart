@@ -18,8 +18,9 @@ export interface QuizReviewSummary {
 export const QuizRunner: React.FC<{
     data: QuizData;
     onComplete: (score: number, review: QuizReviewSummary) => void;
-    onExit: () => void
-}> = ({ data, onComplete, onExit }) => {
+    onExit: () => void;
+    exitLabel?: string;
+}> = ({ data, onComplete, onExit, exitLabel = 'Dashboard' }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [selectedAnswer, setSelectedAnswer] = useState<string>("");
     const [showResult, setShowResult] = useState(false);
@@ -102,7 +103,7 @@ export const QuizRunner: React.FC<{
                 <div className="bg-white px-4 py-3 shadow-sm z-10 flex items-center justify-between sticky top-0">
                     <button onClick={onExit} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 rounded-xl transition-all group">
                         <X className="w-5 h-5 text-slate-400 group-hover:text-red-500 transition-colors" />
-                        <span className="text-xs font-bold text-slate-400 group-hover:text-red-500">Dashboard</span>
+                        <span className="text-xs font-bold text-slate-400 group-hover:text-red-500">{exitLabel}</span>
                     </button>
                     <div className="text-xs font-black uppercase tracking-widest text-slate-400">Quiz Review</div>
                 </div>
@@ -226,7 +227,7 @@ export const QuizRunner: React.FC<{
             <div className="bg-white px-4 py-3 shadow-sm z-10 flex items-center justify-between sticky top-0">
                 <button onClick={onExit} className="flex items-center gap-2 px-3 py-1.5 hover:bg-slate-100 rounded-xl transition-all group">
                     <X className="w-5 h-5 text-slate-400 group-hover:text-red-500 transition-colors" />
-                    <span className="text-xs font-bold text-slate-400 group-hover:text-red-500">Dashboard</span>
+                    <span className="text-xs font-bold text-slate-400 group-hover:text-red-500">{exitLabel}</span>
                 </button>
                 <div className="flex-1 px-4">
                     <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
