@@ -631,6 +631,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
 
       if (profile) {
         if (profile.role === 'LEARNER' || profile.role === 'REVISION') {
+          setStudentCode(profile.student_id || '');
           setStudentProfile({
             id: profile.id,
             name: profile.full_name,
@@ -869,6 +870,7 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
           if (profile.role === 'LEARNER' || profile.role === 'REVISION') {
             const level = getEducationLevelFromGrade(profile.grade || '');
             const usageIsCurrent = profile.usage_date === new Date().toISOString().slice(0, 10);
+            setStudentCode(profile.student_id || '');
             setStudentProfile({
               id: profile.id,
               name: profile.full_name,

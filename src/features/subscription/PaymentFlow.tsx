@@ -19,7 +19,7 @@ interface Props {
 }
 
 export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCancel }) => {
-    const { userId, studentProfile, teacherProfile, role, login, registerStudent, refreshProfile, grantLearningCredits } = useApp();
+    const { userId, studentProfile, teacherProfile, role, login, refreshProfile, grantLearningCredits } = useApp();
     const [step, setStep] = useState<'INPUT' | 'IFRAME' | 'PROCESSING' | 'SUCCESS' | 'ERROR'>('INPUT');
     const [phone, setPhone] = useState('');
     const [firstName, setFirstName] = useState('');
@@ -371,7 +371,13 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
             }
         }
 
-        if (profileId && isSubscriptionCheckout) {
+        // Never create a replacement learner or send a payment for an unresolved account.
+        if (!profileId || profileId === GUEST_DUMMY_UUID) {
+            setError('We could not confirm your learning account. Go back to Profile and sign in or create your Student ID, then return to pay. No payment has been started.');
+            return;
+        }
+
+        if (isSubscriptionCheckout) {
             const existingSub = await hasActiveSubscription(profileId);
             if (existingSub.active) {
                 setError(`Already subscribed: ${getPlanLabel(existingSub.plan)} is still active. Redirecting...`);
@@ -397,28 +403,8 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
         });
 
         try {
-            let finalUid = profileId;
-            let finalEmail = email || studentProfile?.email || teacherProfile?.email;
-            
-            // Auto-register new guest learners who have no student code yet
-            if (!finalUid && !localCode) {
-                setIsResolvingStudent(true);
-                const defaultName = `${firstName || 'Learner'} ${lastName || 'User'}`.trim();
-                const regResult = await registerStudent(defaultName, 'Unknown', '1234', `254${cleanPhone}`);
-                if (regResult?.success && regResult?.data) {
-                    const newCode = regResult.data;
-                    const { data: newProfile } = await supabase.from('profiles').select('id, email').eq('student_id', newCode).maybeSingle();
-                    if (newProfile?.id) {
-                        finalUid = newProfile.id;
-                        finalEmail = email || newProfile.email;
-                        setExistingStudentCode(newCode);
-                    }
-                }
-                setIsResolvingStudent(false);
-            }
-
-            const uid = finalUid || GUEST_DUMMY_UUID;
-            finalEmail = finalEmail || (role === 'TEACHER' ? 'teacher@soma.app' : 'learner@soma.app');
+            const uid = profileId;
+            const finalEmail = email || studentProfile?.email || teacherProfile?.email || (role === 'TEACHER' ? 'teacher@soma.app' : 'learner@soma.app');
 
             const response = await pesapalService.initiatePayment(uid, plan, {
                 email: finalEmail,
@@ -556,7 +542,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                                 </div>
 
                                 {error && (
-                                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold text-center">
+                                    <div role="alert" className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold text-center">
                                         {error}
                                     </div>
                                 )}
