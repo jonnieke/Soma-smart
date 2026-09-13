@@ -34,6 +34,7 @@ import { TeacherDashboardTab } from './teacherNavigation';
 import { launchFeatures } from '../../config/launchFeatures';
 import type { TeacherComposerDraft } from '../../types/teacherComposer';
 import { useTeacherDraftContent } from './useTeacherDraftContent';
+import { TeacherNotesWorkspace, teacherNotesKey } from './TeacherNotesWorkspace';
 
 type TeacherGeminiService = typeof import('../../services/geminiService');
 
@@ -1214,7 +1215,22 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 </div>
             )}
 
-            {homepageDraftContent ? (
+            {initialDraft?.generatedContent && initialDraft.intent === 'CREATE' && !/\blesson\s+plans?\b|\bschemes?\s+of\s+work\b/i.test(initialDraft.prompt) ? (
+                <TeacherNotesWorkspace
+                    key={teacherNotesKey(teacherProfile.id, initialDraft)}
+                    owner={teacherProfile.id}
+                    draft={initialDraft}
+                    grade={selectedClass}
+                    subject={selectedSubject}
+                    onSave={(notes) => handleSaveToHistory('NOTE', initialDraft.prompt, {
+                        id: teacherNotesKey(teacherProfile.id, initialDraft),
+                        topic: initialDraft.prompt,
+                        structuredNotes: notes,
+                        simplifiedNotes: '',
+                        date: new Date().toLocaleDateString(),
+                    })}
+                />
+            ) : homepageDraftContent ? (
                 <section aria-labelledby="homepage-teacher-draft-heading" className="mb-6 overflow-hidden rounded-[2rem] border-2 border-indigo-200 bg-white shadow-sm">
                     <div className="flex flex-col gap-3 border-b border-indigo-100 bg-indigo-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
