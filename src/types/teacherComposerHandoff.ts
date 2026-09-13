@@ -82,6 +82,7 @@ export const saveTeacherComposerDraft = async (draft: TeacherComposerDraft): Pro
       prompt: draft.prompt,
       intent: draft.intent,
       source: draft.source,
+      generatedContent: draft.generatedContent || null,
       fileName: draft.file?.name || null,
       fileType: draft.file?.type || null,
       fileSize: draft.file?.size || null,

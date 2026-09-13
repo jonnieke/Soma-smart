@@ -16,6 +16,7 @@ describe('teacher composer draft handoff', () => {
       prompt: 'Create a Grade 8 lesson plan',
       intent: 'CREATE',
       source: 'TEXT',
+      generatedContent: 'A complete generated lesson draft',
       savedAt: new Date().toISOString(),
     }));
 
@@ -23,6 +24,7 @@ describe('teacher composer draft handoff', () => {
       prompt: 'Create a Grade 8 lesson plan',
       intent: 'CREATE',
       source: 'TEXT',
+      generatedContent: 'A complete generated lesson draft',
     });
   });
 

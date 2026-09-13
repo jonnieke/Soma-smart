@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import ReactGA from 'react-ga4';
 import {
     Upload, Mic, FileText, Share2, StopCircle, Download, BookOpen, Crown, Brain, Sparkles, X, Lightbulb, CheckCircle, Play, Pause, Trash2, ArrowRight, Library, Filter, Calendar, Home, LogOut, MonitorPlay, CreditCard, ScanLine, Plus,
-    SquarePlus, ChevronRight, Type, Layers, ClipboardList, ClipboardCheck, Archive, History as HistoryIcon, MoreVertical, Check, Wallet, ToggleRight, ToggleLeft, Users, TrendingUp, DollarSign, ShoppingBag, Store, Clock, AlertCircle, CheckCircle2, MoreHorizontal, Bell, Star, Loader2, ArrowLeft
+    SquarePlus, ChevronRight, Type, Layers, ClipboardList, ClipboardCheck, Archive, History as HistoryIcon, MoreVertical, Check, Copy, Wallet, ToggleRight, ToggleLeft, Users, TrendingUp, DollarSign, ShoppingBag, Store, Clock, AlertCircle, CheckCircle2, MoreHorizontal, Bell, Star, Loader2, ArrowLeft
 }
     from 'lucide-react';
 import { Button, Card, Header, MarkdownText } from '../../components/Shared';
@@ -147,7 +147,16 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         };
         return { type: 'info', text: messages[initialDraft.intent] };
     });
+    const [homepageDraftContent, setHomepageDraftContent] = useState(initialDraft?.generatedContent || '');
+    const [homepageDraftCopied, setHomepageDraftCopied] = useState(false);
     const [activeTab, setActiveTab] = useState<TeacherActiveTab>(initialTab || 'DASHBOARD');
+
+    const copyHomepageDraft = async () => {
+        if (!homepageDraftContent.trim()) return;
+        await navigator.clipboard.writeText(homepageDraftContent);
+        setHomepageDraftCopied(true);
+        window.setTimeout(() => setHomepageDraftCopied(false), 2500);
+    };
 
     useEffect(() => {
         if (activeTab === 'MARKETPLACE') navigate('/teacher/creator-studio');
@@ -1074,10 +1083,16 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
             {/* --- MODERN HEADER --- */}
             <div className="bg-white sticky top-0 z-50 shadow-sm border-b border-slate-100">
                 <div className="max-w-[1440px] mx-auto px-4 md:px-8 h-[72px] flex items-center justify-between">
-                    {/* Left: Logo - clickable to go home */}
-                    <div className="flex items-center gap-3 cursor-pointer group" onClick={() => { setActiveTab('DASHBOARD'); navigate('/teacher'); }}>
+                    {/* The public homepage is separate from the dashboard Home tab. */}
+                    <button
+                        type="button"
+                        onClick={() => navigate('/', { state: { fromDashboard: true } })}
+                        aria-label="Back to Soma AI homepage"
+                        className="group flex items-center gap-2 rounded-xl px-1 py-1 text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                    >
                         <img src={logoImg} alt="Soma AI Logo" className="h-10 w-auto object-contain group-hover:scale-105 transition-transform" />
-                    </div>
+                        <span className="hidden text-xs font-black sm:inline">Soma homepage</span>
+                    </button>
 
                     {/* Center: Core Navigation */}
                     <div className="hidden md:flex items-center gap-5">
@@ -1176,6 +1191,34 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         <p className="text-sm font-semibold">{teacherNotice.text}</p>
                 </div>
             )}
+
+            {homepageDraftContent ? (
+                <section aria-labelledby="homepage-teacher-draft-heading" className="mb-6 overflow-hidden rounded-[2rem] border-2 border-indigo-200 bg-white shadow-sm">
+                    <div className="flex flex-col gap-3 border-b border-indigo-100 bg-indigo-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600">Created on the Soma homepage</p>
+                            <h2 id="homepage-teacher-draft-heading" className="mt-1 text-xl font-black text-slate-900">Your generated teaching draft</h2>
+                            <p className="mt-1 text-xs font-medium text-slate-600">Your complete draft came with you. Edit it here, then copy it when it is ready.</p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => { void copyHomepageDraft(); }}
+                            className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-white px-4 text-sm font-black text-indigo-700 hover:bg-indigo-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600"
+                        >
+                            {homepageDraftCopied ? <CheckCircle2 className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                            {homepageDraftCopied ? 'Copied' : 'Copy draft'}
+                        </button>
+                    </div>
+                    <label htmlFor="homepage-teacher-draft" className="sr-only">Edit your generated teaching draft</label>
+                    <textarea
+                        id="homepage-teacher-draft"
+                        value={homepageDraftContent}
+                        onChange={(event) => setHomepageDraftContent(event.target.value)}
+                        rows={12}
+                        className="w-full resize-y border-0 bg-white px-5 py-5 text-sm font-medium leading-7 text-slate-700 outline-none focus:ring-2 focus:ring-inset focus:ring-indigo-500"
+                    />
+                </section>
+            ) : null}
 
             <div className="mb-6 rounded-[2rem] border border-emerald-100 bg-gradient-to-br from-emerald-50 via-white to-sky-50 p-5 shadow-sm relative" style={{ display: setupComplete || setupNudgeDismissed ? 'none' : 'block' }}><button onClick={() => dismissSetupNudge()} className="absolute top-3 right-3 text-xs font-bold text-slate-400 hover:text-slate-600 px-2 py-1 bg-white/80 rounded-lg border border-slate-200">Dismiss</button>
                 <div className="flex flex-col lg:flex-row lg:items-center gap-4">

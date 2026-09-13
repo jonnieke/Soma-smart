@@ -5,6 +5,7 @@ export type TeacherComposerDraft = {
   intent: TeacherComposerIntent;
   file?: File;
   source: 'TEXT' | 'VOICE' | 'SCAN' | 'UPLOAD';
+  generatedContent?: string;
 };
 
 export type TeacherComposerRouteState = {

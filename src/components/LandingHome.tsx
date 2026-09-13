@@ -413,8 +413,8 @@ export const LandingHome: React.FC<Props> = (props) => {
               </button>
               <button
                 onClick={() => {
-                  props.onTrack('teacher_cta_clicked', { source: 'landing_hero', destination: 'teacher_composer' });
-                  document.getElementById('teacher-composer-heading')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  props.onTrack('teacher_cta_clicked', { source: 'landing_hero', destination: 'teacher_dashboard' });
+                  props.onTeacher();
                 }}
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-blue-600 bg-white px-6 font-bold text-blue-600 hover:bg-blue-50"
               >
@@ -1560,6 +1560,7 @@ const TeacherComposer: React.FC<{
     intent,
     file,
     source,
+    generatedContent: preview || undefined,
   });
 
   const submit = async () => {

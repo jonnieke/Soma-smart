@@ -48,6 +48,19 @@ describe('LandingHome', () => {
     expect(baseProps.onLearnerShortcut).toHaveBeenCalledWith('TALKBACK', 'listen_and_learn');
   });
 
+  it('opens the teacher dashboard directly from the hero teacher button', () => {
+    render(
+      <MemoryRouter>
+        <LandingHome {...baseProps} />
+      </MemoryRouter>
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /create for your class/i }));
+
+    expect(baseProps.onTeacher).toHaveBeenCalledTimes(1);
+    expect(baseProps.onTeacherPreview).not.toHaveBeenCalled();
+  });
+
   it('opens the library from the learner tools section', () => {
     render(
       <MemoryRouter>
@@ -135,6 +148,7 @@ describe('LandingHome', () => {
       intent: 'MARK',
       file: undefined,
       source: 'TEXT',
+      generatedContent: expect.stringContaining('Photosynthesis notes begin here'),
     });
   }, 15000);
   it('explains the fallback when voice input is unsupported', () => {
@@ -172,6 +186,7 @@ describe('LandingHome', () => {
       intent: 'CREATE',
       file: undefined,
       source: 'TEXT',
+      generatedContent: expect.stringContaining('Photosynthesis notes begin here'),
     });
   }, 15000);
 

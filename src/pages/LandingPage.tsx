@@ -523,7 +523,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         }
         else if (selectedRole === UserRole.TEACHER) {
             setRole(selectedRole);
-            navigate('/teacher');
+            if (isRegistered && (role === UserRole.TEACHER || Boolean(teacherProfile?.id))) {
+                navigate('/teacher', { state: { openWorkspace: true } });
+                return;
+            }
+            setPendingRoute('/teacher');
+            setPendingRouteState({ openWorkspace: true });
+            setLoginTab('TEACHER');
+            setShowLogin(true);
         }
         else if (selectedRole === UserRole.PARENT) {
             setRole(selectedRole);

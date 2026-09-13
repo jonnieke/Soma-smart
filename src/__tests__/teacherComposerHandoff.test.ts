@@ -11,6 +11,7 @@ const draft = (intent: TeacherComposerIntent, file?: File): TeacherComposerDraft
   intent,
   source: file ? 'UPLOAD' : 'TEXT',
   file,
+  generatedContent: 'Complete generated teaching notes',
 });
 
 describe('teacher composer route contract', () => {
@@ -50,6 +51,7 @@ describe('teacher composer route contract', () => {
       prompt: 'Homepage teacher request',
       intent: 'MARK',
       source: 'UPLOAD',
+      generatedContent: 'Complete generated teaching notes',
       fileName: 'answers.pdf',
       fileType: 'application/pdf',
       fileSize: file.size,

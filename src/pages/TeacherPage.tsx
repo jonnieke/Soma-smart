@@ -28,7 +28,7 @@ export const TeacherPage: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
     const { isRegistered, role, teacherProfile } = useApp();
-    const state = location.state as { initialTab?: TeacherInitialTab } | null;
+    const state = location.state as { initialTab?: TeacherInitialTab; openWorkspace?: boolean } | null;
     const [composerDraft, setComposerDraft] = useState(() =>
         location.state && typeof location.state === 'object' && 'teacherComposerDraft' in location.state
             ? getTeacherComposerDraft(location.state)
@@ -98,7 +98,7 @@ export const TeacherPage: React.FC = () => {
 
     // An unauthenticated visitor on /teacher gets the high-converting Teacher Studio Showcase
     const isTeacherUser = role === UserRole.TEACHER || Boolean(teacherProfile?.id);
-    const showLandingShowcase = !isTeacherUser && !isRegistered && !isSubRoute && !previewTabOverride;
+    const showLandingShowcase = !state?.openWorkspace && !isTeacherUser && !isRegistered && !isSubRoute && !previewTabOverride;
 
     return (
         <>
