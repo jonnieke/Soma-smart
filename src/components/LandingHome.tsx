@@ -47,6 +47,7 @@ type Props = {
     targetIntent?: string
   ) => void;
   onTeacher: () => void;
+  onTeacherPreview: (draft: TeacherComposerDraft) => Promise<string>;
   onTeacherCompose: (draft: TeacherComposerDraft) => void;
   onParent: () => void;
   onLibrary: () => void;
@@ -448,7 +449,11 @@ export const LandingHome: React.FC<Props> = (props) => {
         </div>
       </section>
 
-      <TeacherComposer onSubmit={props.onTeacherCompose} onTrack={props.onTrack} />
+      <TeacherComposer
+        onPreview={props.onTeacherPreview}
+        onSubmit={props.onTeacherCompose}
+        onTrack={props.onTrack}
+      />
 
       <section
         aria-labelledby="latest-papers-heading"
@@ -1400,14 +1405,17 @@ const teacherIntents: Array<{ id: TeacherComposerIntent; label: string; hint: st
 ];
 
 const TeacherComposer: React.FC<{
+  onPreview: (draft: TeacherComposerDraft) => Promise<string>;
   onSubmit: (draft: TeacherComposerDraft) => void;
   onTrack: (eventName: string, params?: Record<string, unknown>) => void;
-}> = ({ onSubmit, onTrack }) => {
+}> = ({ onPreview, onSubmit, onTrack }) => {
   const [prompt, setPrompt] = React.useState('');
   const [intent, setIntent] = React.useState<TeacherComposerIntent>('CREATE');
   const [file, setFile] = React.useState<File | undefined>();
   const [source, setSource] = React.useState<TeacherComposerDraft['source']>('TEXT');
   const [isListening, setIsListening] = React.useState(false);
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [preview, setPreview] = React.useState('');
   const [message, setMessage] = React.useState('');
   const uploadRef = React.useRef<HTMLInputElement | null>(null);
   const scanRef = React.useRef<HTMLInputElement | null>(null);
@@ -1452,6 +1460,7 @@ const TeacherComposer: React.FC<{
     }
     setFile(selected);
     setSource(nextSource);
+    setPreview('');
     setMessage('');
     onTrack('teacher_composer_attachment_added', {
       source: nextSource.toLowerCase(),
@@ -1482,6 +1491,7 @@ const TeacherComposer: React.FC<{
       const transcript = event.results[0]?.[0]?.transcript?.trim();
       if (transcript) setPrompt((current) => [current, transcript].filter(Boolean).join(' '));
       setSource('VOICE');
+      setPreview('');
       setMessage('');
     };
     recognition.onend = () => setIsListening(false);
@@ -1514,7 +1524,14 @@ const TeacherComposer: React.FC<{
 
   React.useEffect(() => () => recognitionRef.current?.stop(), []);
 
-  const submit = () => {
+  const draft = (): TeacherComposerDraft => ({
+    prompt: prompt.trim(),
+    intent,
+    file,
+    source,
+  });
+
+  const submit = async () => {
     if (!isOnline) {
       setMessage('You are offline. Reconnect before continuing; your request is still here.');
       onTrack('teacher_composer_error', { stage: 'continue', reason: 'offline' });
@@ -1527,12 +1544,40 @@ const TeacherComposer: React.FC<{
       onTrack('teacher_composer_error', { stage: 'continue', reason: 'empty_request' });
       return;
     }
-    onTrack('teacher_composer_continue_clicked', {
+    const request = draft();
+    setIsGenerating(true);
+    setPreview('');
+    setMessage('Creating a short sample for you…');
+    onTrack('teacher_composer_preview_requested', {
       intent: intent.toLowerCase(),
       source: source.toLowerCase(),
       has_attachment: Boolean(file),
     });
-    onSubmit({ prompt: cleanPrompt, intent, file, source });
+    try {
+      const result = await onPreview(request);
+      setPreview(result);
+      setMessage('Your sample is ready. It is view-only until you continue to the Teacher Dashboard.');
+      onTrack('teacher_composer_preview_created', {
+        intent: intent.toLowerCase(),
+        source: source.toLowerCase(),
+      });
+    } catch {
+      setMessage('We could not create the sample just now. Please try again.');
+      onTrack('teacher_composer_error', { stage: 'preview', reason: 'generation_failed' });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const continueToDashboard = () => {
+    const request = draft();
+    onTrack('teacher_composer_continue_clicked', {
+      intent: intent.toLowerCase(),
+      source: source.toLowerCase(),
+      has_attachment: Boolean(file),
+      preview_created: Boolean(preview),
+    });
+    onSubmit(request);
   };
 
   return (
@@ -1558,6 +1603,7 @@ const TeacherComposer: React.FC<{
             onChange={(event) => {
               setPrompt(event.target.value);
               if (source !== 'VOICE') setSource('TEXT');
+              setPreview('');
               setMessage('');
             }}
             onKeyDown={(event) => {
@@ -1575,7 +1621,7 @@ const TeacherComposer: React.FC<{
                 <span className="truncate">{file.name}</span>
                 <span className="shrink-0 text-xs font-medium text-emerald-600">{(file.size / 1024 / 1024).toFixed(1)} MB</span>
               </div>
-              <button type="button" onClick={() => setFile(undefined)} className="rounded-lg p-1 text-emerald-700 hover:bg-emerald-100" aria-label="Remove attachment">
+              <button type="button" onClick={() => { setFile(undefined); setPreview(''); }} className="rounded-lg p-1 text-emerald-700 hover:bg-emerald-100" aria-label="Remove attachment">
                 <X className="h-4 w-4" />
               </button>
             </div>
@@ -1588,6 +1634,7 @@ const TeacherComposer: React.FC<{
                 key={item.id}
                 onClick={() => {
                   setIntent(item.id);
+                  setPreview('');
                   onTrack('teacher_composer_intent_selected', { intent: item.id.toLowerCase() });
                 }}
                 aria-pressed={intent === item.id}
@@ -1626,8 +1673,8 @@ const TeacherComposer: React.FC<{
               <input ref={scanRef} type="file" accept="image/*" capture="environment" className="hidden" onChange={(event) => chooseFile(event.target.files?.[0], 'SCAN')} />
               <input ref={uploadRef} type="file" aria-label="Attach notes or work" accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.txt" className="hidden" onChange={(event) => chooseFile(event.target.files?.[0], 'UPLOAD')} />
             </div>
-            <button type="button" onClick={submit} aria-describedby="teacher-composer-status" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 text-sm font-black text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2">
-              Continue <Send className="h-4 w-4" />
+            <button type="button" onClick={() => { void submit(); }} disabled={isGenerating} aria-describedby="teacher-composer-status" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 text-sm font-black text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2">
+              {isGenerating ? 'Creating sample…' : 'Create sample'} <Sparkles className="h-4 w-4" />
             </button>
           </div>
 
@@ -1635,6 +1682,25 @@ const TeacherComposer: React.FC<{
             <p id="teacher-composer-status" role="status" aria-live="polite" aria-atomic="true" className={message ? 'text-amber-700' : ''}>{message || 'Tip: press Ctrl + Enter to continue.'}</p>
             <p id="teacher-composer-privacy" className="inline-flex items-center gap-1.5"><Store className="h-3.5 w-3.5" /> Marketplace publishing always requires your approval.</p>
           </div>
+
+          {preview && (
+            <section aria-labelledby="teacher-sample-heading" className="mt-5 overflow-hidden rounded-2xl border border-indigo-200 bg-indigo-50/60">
+              <div className="flex flex-col gap-2 border-b border-indigo-100 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-600">View only</p>
+                  <h3 id="teacher-sample-heading" className="mt-1 text-lg font-black text-[#07133f]">Sample notes preview</h3>
+                </div>
+                <span className="text-xs font-semibold text-slate-500">Sign in to edit, save or share</span>
+              </div>
+              <div className="whitespace-pre-wrap px-4 py-5 text-sm font-medium leading-7 text-slate-700 sm:px-6">{preview}</div>
+              <div className="flex flex-col gap-2 border-t border-indigo-100 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
+                <p className="text-xs font-medium text-slate-500">Your request stays private. Nothing is published automatically.</p>
+                <button type="button" onClick={continueToDashboard} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#07133f] px-5 text-sm font-black text-white hover:bg-indigo-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2">
+                  Continue in Teacher Dashboard <ArrowRight className="h-4 w-4" />
+                </button>
+              </div>
+            </section>
+          )}
         </div>
       </div>
     </section>

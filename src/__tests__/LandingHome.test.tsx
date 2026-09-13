@@ -9,6 +9,7 @@ const baseProps = {
   onAskQuestion: vi.fn(),
   onLearnerShortcut: vi.fn(),
   onTeacher: vi.fn(),
+  onTeacherPreview: vi.fn().mockResolvedValue('Photosynthesis\n• Green plants make food using light.'),
   onTeacherCompose: vi.fn(),
   onParent: vi.fn(),
   onLibrary: vi.fn(),
@@ -106,7 +107,7 @@ describe('LandingHome', () => {
     );
   });
 
-  it('hands a teacher request to the selected workflow', () => {
+  it('shows a view-only sample before handing a teacher request to the dashboard', async () => {
     render(
       <MemoryRouter>
         <LandingHome {...baseProps} />
@@ -117,7 +118,13 @@ describe('LandingHome', () => {
       target: { value: 'Mark these Grade 8 mathematics answers.' },
     });
     fireEvent.click(screen.getByRole('button', { name: /mark learner work/i }));
-    fireEvent.click(screen.getByRole('button', { name: /^continue$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /create sample/i }));
+
+    const previewHeading = await screen.findByRole('heading', { name: /sample notes preview/i });
+    expect(previewHeading.closest('section')).toHaveTextContent(/green plants make food/i);
+    expect(baseProps.onTeacherCompose).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole('button', { name: /continue in teacher dashboard/i }));
 
     expect(baseProps.onTeacherCompose).toHaveBeenCalledWith({
       prompt: 'Mark these Grade 8 mathematics answers.',
@@ -153,7 +160,7 @@ describe('LandingHome', () => {
     fireEvent.change(screen.getByLabelText(/describe what you want soma to do/i), {
       target: { value: 'Create a Grade 7 science quiz.' },
     });
-    fireEvent.click(screen.getByRole('button', { name: /^continue$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /create sample/i }));
 
     expect(baseProps.onTeacherCompose).not.toHaveBeenCalled();
     expect(screen.getByRole('status')).toHaveTextContent(/offline/i);

@@ -788,6 +788,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         setLoginTab('TEACHER');
         setShowLogin(true);
     };
+
+    const handleTeacherPreview = async (draft: TeacherComposerDraft): Promise<string> => {
+        const intentInstruction: Record<TeacherComposerDraft['intent'], string> = {
+            CREATE: 'Create concise sample teaching notes.',
+            MARK: 'Create a short sample feedback note showing how the learner work would be corrected.',
+            ASSESS: 'Create concise revision notes followed by three sample assessment questions.',
+            MARKETPLACE: 'Create concise sample notes suitable for a private teacher draft before marketplace review.',
+        };
+        const attachmentContext = draft.file
+            ? `The teacher attached a file named "${draft.file.name}". Do not claim to have read it; use only the written request and label the result as a sample.`
+            : '';
+        try {
+            const generated = await callGeminiProxy(
+                `${intentInstruction[draft.intent]} Align it to the Kenyan CBC/KCSE curriculum where relevant. Use a clear title, learning objective, key points, one familiar Kenyan example, and a short learner check. Keep it under 250 words, use plain text with short headings and bullets, and do not use markdown symbols. ${attachmentContext} Teacher request: ${draft.prompt || 'Create a useful classroom notes sample.'}`
+            );
+            return (generated || '')
+                .replace(/\*\*(.*?)\*\*/g, '$1')
+                .replace(/^#{1,6}\s*/gm, '')
+                .replace(/^[*-]\s/gm, '• ')
+                .replace(/\*/g, '')
+                .trim() || 'The sample could not be generated. Please try a more specific topic.';
+        } catch (error) {
+            trackFunnelEvent('teacher_composer_preview_fallback', {
+                intent: draft.intent.toLowerCase(),
+                reason: error instanceof Error ? error.message : 'unknown',
+            });
+            const topic = draft.prompt.trim() || draft.file?.name || 'Your lesson topic';
+            return `${topic}\n\nLearning objective\nLearners should be able to identify and explain the main ideas in this topic.\n\nKey points\n• Begin with a clear meaning of the topic.\n• Explain each idea using short, learner-friendly steps.\n• Connect the lesson to a familiar example from home, school or the local community.\n• Check understanding before moving to the next idea.\n\nLearner check\nExplain one key idea from the lesson in your own words.\n\nThis is a sample. Sign in to generate the complete, curriculum-aligned version.`;
+        }
+    };
     const handleCardClick = (card: { route: string; role?: UserRole, cta?: string }) => {
         if (card.cta === "Get Started" && card.route === "/learner") {
             // Frictionless Entry: Guest Mode
@@ -980,6 +1010,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 onAskQuestion={(question, file) => { void handleOpenDetailedView(question, file); }}
                 onLearnerShortcut={handleLearnerQuickStart}
                 onTeacher={() => handleRoleSelect(UserRole.TEACHER)}
+                onTeacherPreview={handleTeacherPreview}
                 onTeacherCompose={handleTeacherCompose}
                 onParent={() => handleRoleSelect(UserRole.PARENT)}
                 onLibrary={handleLibraryAccess}
