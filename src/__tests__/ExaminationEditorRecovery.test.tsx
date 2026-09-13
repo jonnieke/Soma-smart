@@ -6,7 +6,20 @@ vi.mock('../services/paperStudioService', () => ({ paperStudioService: { getPape
 vi.mock('../services/assessmentEngine/assessmentAIProvider', () => ({ assessmentAIProvider: {} }));
 vi.mock('../features/teacher/paperStudio/PrintablePaperView', () => ({ PrintablePaperView: () => null }));
 import { ExaminationEditor } from '../features/teacher/paperStudio/ExaminationEditor';
+import { exportPaper } from './fixtures/exportPaper';
 beforeEach(() => { vi.resetAllMocks(); mocks.notice.mockReturnValue(''); });
+it('opens the question editor from the mobile question list and retains edits between views', async () => {
+    mocks.load.mockResolvedValue(structuredClone(exportPaper));
+    mocks.save.mockResolvedValue(undefined);
+    render(<ExaminationEditor paperId="export-fixture" onBackToWorkspace={vi.fn()} />);
+    fireEvent.click(await screen.findByRole('button', { name: 'Questions' }));
+    fireEvent.click(screen.getByRole('button', { name: /Q1\. What is soil erosion/ }));
+    expect(screen.getByRole('button', { name: 'Edit question' })).toHaveAttribute('aria-pressed', 'true');
+    fireEvent.change(screen.getByRole('textbox', { name: 'Question text' }), { target: { value: 'Revised question' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Paper' }));
+    expect(screen.getByRole('textbox', { name: 'Question text' })).toHaveValue('Revised question');
+    expect(mocks.save).toHaveBeenCalledWith(expect.objectContaining({ totalMarks: 4 }));
+});
 it('shows a useful missing-paper message instead of an endless spinner', async () => {
     mocks.load.mockResolvedValue(null);
     render(<ExaminationEditor paperId="missing" onBackToWorkspace={vi.fn()} />);

@@ -2,12 +2,45 @@
 
 ## Current verification status (supersedes historical pending notes below)
 
+Release review, 2026-09-14: the Word/mobile batch is prepared for release. Full regression passes with 53 files / 349 tests and TypeScript passes. User-supplied Word screenshots confirm native fractions, radicals and scripts, independent writing lines, and updated keep-together pagination at questions 4, 8 and 12. The original and updated downloads were compared structurally to distinguish stale screenshots. These are targeted visual checks, not a full renderer-certified review of every export or diagram layout. Local QA pages, downloads and screenshots are excluded from the commit. The historical local/pending notes below describe earlier checkpoints.
+
 - Teacher-paper migration is applied to Soma Smart with owner-only access rules.
 - Live rollback SQL checks passed, as did browser create/edit/save, same-account recovery across separate origins and different-account read denial.
 - Test paper `paper_1789325967739_haun` was cleaned up by conditional soft deletion (revision 2 to 3), matching its exact ID, title and test-school label. Its content remains administrator-recoverable; it is not permanently erased. Original-account Paper Studio was refreshed and showed zero papers.
-- The teacher-login default and wizard identity/marks fixes are local. TypeScript and whitespace checks pass. Nothing is committed, pushed or deployed from these repair batches.
+- The teacher-login default and wizard identity/marks fixes were released to main in `37da28a`; Vercel production was confirmed Ready. The Word/mobile batch below remains local and uncommitted.
 - Final full regression: 48 files / 305 tests passed with `--maxWorkers=2`. The default-parallel run had two 5-second timeouts (TeacherLoginEntry and LandingHome), with 303 passing; no assertions or timeout limits were weakened. Reduced parallelism resolved the timeouts.
 - Physical second-device testing and the remaining audit repairs are not certified by the separate-origin browser checks.
+
+## Word export and responsive editor follow-up
+
+Implemented locally after the release:
+
+- Real lazy-loaded DOCX export replaces the alert. Questions and answer keys are separate files, reflecting current editor content, section instructions, marks and candidate-field settings.
+- PNG/JPEG diagram attachments and school logos now embed in Word. Missing attachments, load failures, unsupported formats and oversized images stop export rather than silently losing assessment content. Native equation support has been added for the bounded subset described below; final Word rendering remains unverified.
+- Mobile Questions / Paper / Edit question views replace squeezed three-column panels. Preview controls wrap, and both editor and preview have named back buttons.
+- Browser checks used an isolated fixture with mocked persistence, not live teacher records. At 390px, editing flowed into preview and both DOCX downloads. At 320px, preview controls wrapped without horizontal overflow. Desktop panels were visually checked at 1280px.
+- Both downloaded files were checked as ZIP/OOXML: each has 11 well-formed XML parts and the edited question. The questions file has no expected answer; the key contains it.
+- Eight focused regression tests pass; full regression passes with 50 files / 311 tests (`--maxWorkers=2`). TypeScript and the production/PWA build pass. The browser reported no console errors for the local fixture. An initial focused run during dependency installation had a worker startup timeout; rerunning after installation passed without weakening tests.
+- Word pagination/render QA is still blocked: the bundled runtime has no Windows LibreOffice. Per the documents skill, no user-installed renderer was substituted. Do not call Word print layout certified.
+- Documents guidance informed preservation of content and explicit unsupported-format failures. React guidance informed lazy loading, disabled export controls and accessible status messages.
+
+### Diagram follow-up
+
+- Question image attachments now display in the editor and print preview, with visible missing/broken-image messages. The print button checks for missing or still-loading images.
+- Browser-only loading uses no credentials or referrer, deduplicates source URLs, bounds image count/bytes, checks PNG/JPEG signatures, limits dimensions and preserves aspect ratios. No server image-fetch proxy was introduced.
+- The isolated browser downloaded `Diagram export test-questions.docx`; its embedded PNG matches the original `public/favicon.png` byte-for-byte. This is an attachment transport test, not a pedagogical diagram or Word pagination check. No answer content was present in the learner file.
+- At 390px the loaded image fitted within the preview, with no horizontal page overflow; browser error logs were empty. Fifteen focused tests passed; final full regression passed with 51 files / 318 tests. TypeScript and production/PWA build passed.
+- Still local and uncommitted. No production records were created or updated. The same Word-rendering limitation above remains.
+
+### Native equation follow-up
+
+- One bounded parser feeds both browser MathML and Word OMML: fractions, square/indexed roots, powers, subscripts, combined scripts, grouped arguments and listed common symbols. It does not evaluate or rewrite the mathematics.
+- Accepts `$...$`, `$$...$$`, `\(...\)` and `\[...\]`; escaped dollars and ordinary currency prose are retained. Unsupported commands, malformed groups, excessive nesting and oversized equations fail visibly. This is not a complete LaTeX implementation: matrices, integrals, sums, text/style commands and scalable delimiters remain unsupported.
+- Equation previews are shown in questions, options and the print/answer-key view. The input retains its source notation, with a short syntax hint. Unsupported previews keep the source text visible and block printing.
+- Browser checks confirmed fractions, cube roots and combined scripts. An inline equation clipping/scrollbar issue was found and fixed with flex alignment and padding.
+- The downloaded `Equation export test-questions.docx` contains three native OMML equations, two fractions, a radical and a combined script; it contains no raster images and no raw fraction commands. This confirms editable structure, not Word visual fidelity.
+- Documents skill guidance informed native editable equations and explicit unsupported-notation failures. The bundled Word-renderer limitation is unchanged, so do not certify Word pagination or equation appearance in Word until visual QA can run.
+- Verification: 25 focused tests passed, followed by 53 files / 335 tests in the full regression suite. TypeScript and production/PWA build passed. The 390px browser preview showed all three test formulas without horizontal overflow and with no browser console errors. Changes remain local and uncommitted.
 
 ## Batch 1 — homework posting and navigation
 
@@ -65,6 +98,10 @@ The new repository's 12 mocked database tests pass, including isolation, full-do
 Supabase/Postgres guidance informed the separate owner-protected table and permissions; the React checklist informed visible save/loading/error states. Encoding normalization was required before editing the existing storage service.
 
 ## Outstanding release work
+
+Pagination follow-up: the user's Word screenshot confirmed the three independent writing lines, then exposed question 4 orphaned before its six-line response on the next page. Local export now links compact text-only prompts with up to eight writing lines, ending the keep-next chain on the final line. Longer responses and long prompts are not kept as oversized blocks; text-only prompts still link to the first response line. All 20 export tests pass. Fresh visual Word pagination review remains required; no push/deployment performed.
+
+Local Word writing-line repair: replaced adjoining bottom-only paragraph borders with independent native tab leaders across the A4 content width. Regression checks cover default/custom/zero/capped line counts, no writing lines in MCQ or answer-key output, and all 20 questions plus 120 lines retained in a long-paper package. All 15 export tests pass. These are structural checks, not visual pagination verification; Word page review remains outstanding because the bundled renderer is unavailable. This repair is not pushed or deployed.
 
 Different-account browser check passed: the localhost session now visibly identifies Vivina. Direct navigation to `paper_1789325967739_haun` returned `This paper was not found for your account. Return to your papers or retry loading.` Its Paper Studio list showed zero papers, while the original 127.0.0.1 session still displayed the test document. This completes the tested read-isolation path after account switching, including prior same-origin owner cache. It does not certify unrelated teacher features. The private labelled test paper remains pending cleanup; no frontend push/deployment occurred. TeacherLoginEntry TypeScript check also completed successfully after correcting test locator options.
 

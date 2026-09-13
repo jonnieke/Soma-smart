@@ -21,6 +21,8 @@ import { ExamPaper, Question, QuestionType, DifficultyLevel } from '../../../typ
 import { paperStudioService } from '../../../services/paperStudioService';
 import { assessmentAIProvider } from '../../../services/assessmentEngine/assessmentAIProvider';
 import { PrintablePaperView } from './PrintablePaperView';
+import { PaperImages } from './PaperImages';
+import { PaperText } from './PaperText';
 
 interface EditorProps {
   paperId: string;
@@ -35,6 +37,7 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
   const [isRegenerating, setIsRegenerating] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [saveNotice, setSaveNotice] = useState('');
+  const [mobilePanel, setMobilePanel] = useState<'questions' | 'paper' | 'edit'>('paper');
   const saveSequence = React.useRef(0);
 
   useEffect(() => {
@@ -163,6 +166,7 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
 
     setPaper(updatedPaper);
     setSelectedQuestionId(newQ.id);
+    setMobilePanel('edit');
     void persistPaper(updatedPaper);
   };
 
@@ -192,18 +196,19 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
   }
 
   return (
-    <div className="flex flex-col h-[calc(100vh-4rem)] bg-slate-100 overflow-hidden">
+    <div className="flex flex-col h-[calc(100dvh-4rem)] min-h-[420px] min-w-0 bg-slate-100 overflow-hidden">
       {saveNotice && <p role="status" className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-slate-800">{saveNotice}</p>}
       {/* ── TOP TOOLBAR ── */}
-      <header className="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between z-10 shrink-0">
-        <div className="flex items-center gap-3">
+      <header className="bg-white border-b border-slate-200 px-4 py-3 flex flex-wrap gap-3 items-center justify-between z-10 shrink-0">
+        <div className="flex min-w-0 items-center gap-3">
           <button
             onClick={onBackToWorkspace}
+            aria-label="Back to my papers"
             className="p-2 text-slate-500 hover:text-slate-900 rounded-xl hover:bg-slate-100"
           >
             <ArrowLeft className="w-5 h-5" />
           </button>
-          <div>
+          <div className="min-w-0">
             <h1 className="text-sm font-black text-slate-900 truncate max-w-md">{paper.title}</h1>
             <p className="text-[10px] text-slate-500 font-semibold">
               {paper.grade} · {paper.subject} · {paper.totalMarks} Marks · {paper.durationMinutes}m
@@ -226,15 +231,23 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
             className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black shadow-md transition"
           >
             <Printer className="w-3.5 h-3.5" />
-            Print / PDF Export
+            Preview & Export
           </button>
         </div>
       </header>
+      <nav aria-label="Paper editor views" className="lg:hidden grid grid-cols-3 shrink-0 border-b bg-white p-2 gap-1">
+        {(['questions', 'paper', 'edit'] as const).map(panel => (
+          <button key={panel} aria-pressed={mobilePanel === panel} onClick={() => setMobilePanel(panel)}
+            className={`min-h-11 rounded-lg text-sm font-bold ${mobilePanel === panel ? 'bg-indigo-600 text-white' : 'text-slate-700 bg-slate-50'}`}>
+            {panel === 'questions' ? 'Questions' : panel === 'paper' ? 'Paper' : 'Edit question'}
+          </button>
+        ))}
+      </nav>
 
       {/* ── EDITOR BODY 3-COLUMN WORKSPACE ── */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 min-h-0 min-w-0 flex overflow-hidden">
         {/* Left Sidebar: Section & Question Tree */}
-        <aside className="w-64 bg-white border-r border-slate-200 overflow-y-auto p-4 space-y-4 shrink-0">
+        <aside aria-label="Question list" className={`${mobilePanel === 'questions' ? 'block' : 'hidden'} lg:block w-full lg:w-56 bg-white border-r border-slate-200 overflow-y-auto p-4 pb-24 space-y-4 shrink-0`}>
           <div className="flex items-center justify-between">
             <span className="text-xs font-black uppercase tracking-wider text-slate-400">Sections</span>
             <span className="text-xs font-extrabold text-indigo-600">{paper.totalMarks} Marks</span>
@@ -252,7 +265,7 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
                   {sec.questions.map((q, qIdx) => (
                     <button
                       key={q.id}
-                      onClick={() => setSelectedQuestionId(q.id)}
+                      onClick={() => { setSelectedQuestionId(q.id); setMobilePanel('edit'); }}
                       className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs font-medium transition flex items-center justify-between ${
                         q.id === selectedQuestionId
                           ? 'bg-indigo-50 text-indigo-700 font-bold border border-indigo-200'
@@ -279,13 +292,13 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
         </aside>
 
         {/* Center Canvas: Formatted Examination View */}
-        <main className="flex-1 overflow-y-auto p-6 flex justify-center">
-          <div className="w-full max-w-3xl bg-white rounded-2xl border border-slate-200 shadow-sm p-8 space-y-6 self-start text-slate-900 font-serif">
+        <main aria-label="Paper canvas" className={`${mobilePanel === 'paper' ? 'flex' : 'hidden'} lg:flex flex-1 min-w-0 overflow-y-auto p-2 sm:p-6 pb-24 justify-center`}>
+          <div className="w-full min-w-0 break-words max-w-3xl bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-8 space-y-6 self-start text-slate-900 font-serif">
             {/* Exam Header */}
             <div className="border-b-2 border-slate-900 pb-4 text-center space-y-1">
-              <h2 className="text-xl font-bold uppercase tracking-wide">{paper.schoolBranding.schoolName || 'KENYA NATIONAL EXAMINATIONS'}</h2>
+              <h2 className="text-xl font-bold uppercase tracking-wide">{paper.schoolBranding.schoolName || 'Examination paper'}</h2>
               <h3 className="text-base font-bold text-slate-700">{paper.title}</h3>
-              <div className="flex justify-between text-xs font-sans font-bold pt-2 text-slate-600 border-t border-slate-200 mt-2">
+              <div className="flex flex-wrap gap-2 justify-between text-xs font-sans font-bold pt-2 text-slate-600 border-t border-slate-200 mt-2">
                 <span>Subject: {paper.subject} ({paper.grade})</span>
                 <span>Time: {paper.durationMinutes} Minutes</span>
                 <span>Total Marks: {paper.totalMarks}</span>
@@ -319,7 +332,7 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
                       return (
                         <div
                           key={q.id}
-                          onClick={() => setSelectedQuestionId(q.id)}
+                          onClick={() => { setSelectedQuestionId(q.id); setMobilePanel('edit'); }}
                           className={`p-4 rounded-xl transition cursor-pointer font-sans ${
                             isSelected
                               ? 'ring-2 ring-indigo-500 bg-indigo-50/20'
@@ -329,15 +342,17 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
                           <div className="flex items-start justify-between gap-4">
                             <div className="space-y-2 flex-1">
                               <p className="text-sm font-semibold leading-relaxed">
-                                <span className="font-bold mr-1">{qIdx + 1}.</span> {q.questionText}
+                                <span className="font-bold mr-1">{qIdx + 1}.</span> <PaperText text={q.questionText} />
                               </p>
+                              <PaperImages sources={q.imageUrls} required={q.hasDiagram} description={`Question ${qIdx + 1} diagram`} />
+                              <button onClick={() => { setSelectedQuestionId(q.id); setMobilePanel('edit'); }} className="min-h-11 text-xs font-bold text-indigo-700 underline">Edit question {qIdx + 1}</button>
 
                               {/* MCQ Options */}
                               {q.questionType === 'MULTIPLE_CHOICE' && q.options && (
                                 <div className="grid grid-cols-2 gap-2 pl-4 pt-1">
                                   {q.options.map((opt) => (
                                     <div key={opt.id} className="text-xs font-medium text-slate-700">
-                                      <span className="font-bold mr-1">{opt.id}.</span> {opt.text}
+                                      <span className="font-bold mr-1">{opt.id}.</span> <PaperText text={opt.text} />
                                     </div>
                                   ))}
                                 </div>
@@ -367,7 +382,7 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
         </main>
 
         {/* Right Sidebar: Selected Question Inspector */}
-        <aside className="w-80 bg-white border-l border-slate-200 overflow-y-auto p-4 space-y-6 shrink-0">
+        <aside aria-label="Question editor" className={`${mobilePanel === 'edit' ? 'block' : 'hidden'} lg:block w-full lg:w-72 bg-white border-l border-slate-200 overflow-y-auto p-4 pb-24 space-y-6 shrink-0`}>
           {selectedQuestion ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -387,7 +402,9 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
               <div className="space-y-3">
                 <div>
                   <label className="block text-xs font-bold text-slate-700">Question Text</label>
+                  <p className="text-xs text-slate-500">Equations: wrap formulas in $...$. Fractions, roots, powers, subscripts and common Greek symbols are supported.</p>
                   <textarea
+                    aria-label="Question text"
                     rows={4}
                     value={selectedQuestion.questionText}
                     onChange={(e) =>
@@ -401,6 +418,7 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase">Marks</label>
                     <input
+                      aria-label="Marks"
                       type="number"
                       value={selectedQuestion.marks}
                       onChange={(e) =>
@@ -416,6 +434,7 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 uppercase">Difficulty</label>
                     <select
+                      aria-label="Difficulty"
                       value={selectedQuestion.difficulty}
                       onChange={(e) =>
                         handleUpdateQuestion({
@@ -435,6 +454,7 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
                 <div>
                   <label className="block text-xs font-bold text-slate-700">Expected Answer / Solution</label>
                   <textarea
+                    aria-label="Expected answer or solution"
                     rows={2}
                     value={selectedQuestion.correctAnswer}
                     onChange={(e) =>
