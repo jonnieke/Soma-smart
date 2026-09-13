@@ -48,6 +48,7 @@ type Props = {
   ) => void;
   onTeacher: () => void;
   onTeacherPreview: (draft: TeacherComposerDraft) => Promise<string>;
+  onTeacherSignUp: (draft: TeacherComposerDraft) => void;
   onTeacherCompose: (draft: TeacherComposerDraft) => void;
   onParent: () => void;
   onLibrary: () => void;
@@ -450,7 +451,9 @@ export const LandingHome: React.FC<Props> = (props) => {
       </section>
 
       <TeacherComposer
+        isRegistered={props.isRegistered}
         onPreview={props.onTeacherPreview}
+        onSignUp={props.onTeacherSignUp}
         onSubmit={props.onTeacherCompose}
         onTrack={props.onTrack}
       />
@@ -1405,10 +1408,12 @@ const teacherIntents: Array<{ id: TeacherComposerIntent; label: string; hint: st
 ];
 
 const TeacherComposer: React.FC<{
+  isRegistered: boolean;
   onPreview: (draft: TeacherComposerDraft) => Promise<string>;
+  onSignUp: (draft: TeacherComposerDraft) => void;
   onSubmit: (draft: TeacherComposerDraft) => void;
   onTrack: (eventName: string, params?: Record<string, unknown>) => void;
-}> = ({ onPreview, onSubmit, onTrack }) => {
+}> = ({ isRegistered, onPreview, onSignUp, onSubmit, onTrack }) => {
   const [prompt, setPrompt] = React.useState('');
   const [intent, setIntent] = React.useState<TeacherComposerIntent>('CREATE');
   const [file, setFile] = React.useState<File | undefined>();
@@ -1416,7 +1421,9 @@ const TeacherComposer: React.FC<{
   const [isListening, setIsListening] = React.useState(false);
   const [isGenerating, setIsGenerating] = React.useState(false);
   const [preview, setPreview] = React.useState('');
+  const [previewOpen, setPreviewOpen] = React.useState(false);
   const [message, setMessage] = React.useState('');
+  const previewDialogRef = React.useRef<HTMLDivElement | null>(null);
   const uploadRef = React.useRef<HTMLInputElement | null>(null);
   const scanRef = React.useRef<HTMLInputElement | null>(null);
   const recognitionRef = React.useRef<SpeechRecognitionLike | null>(null);
@@ -1524,6 +1531,30 @@ const TeacherComposer: React.FC<{
 
   React.useEffect(() => () => recognitionRef.current?.stop(), []);
 
+  React.useEffect(() => {
+    if (!previewOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setPreviewOpen(false);
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', closeOnEscape);
+    previewDialogRef.current?.focus();
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [previewOpen]);
+
+  const previewExcerpt = React.useMemo(() => {
+    if (!preview) return '';
+    const quarterLength = Math.max(1, Math.ceil(preview.length / 4));
+    const roughExcerpt = preview.slice(0, quarterLength);
+    const finalSpace = roughExcerpt.lastIndexOf(' ');
+    const cleanEnd = finalSpace > quarterLength * 0.7 ? finalSpace : quarterLength;
+    return `${preview.slice(0, cleanEnd).trimEnd()}…`;
+  }, [preview]);
+
   const draft = (): TeacherComposerDraft => ({
     prompt: prompt.trim(),
     intent,
@@ -1532,6 +1563,10 @@ const TeacherComposer: React.FC<{
   });
 
   const submit = async () => {
+    if (preview) {
+      setPreviewOpen(true);
+      return;
+    }
     if (!isOnline) {
       setMessage('You are offline. Reconnect before continuing; your request is still here.');
       onTrack('teacher_composer_error', { stage: 'continue', reason: 'offline' });
@@ -1556,7 +1591,8 @@ const TeacherComposer: React.FC<{
     try {
       const result = await onPreview(request);
       setPreview(result);
-      setMessage('Your sample is ready. It is view-only until you continue to the Teacher Dashboard.');
+      setPreviewOpen(true);
+      setMessage('');
       onTrack('teacher_composer_preview_created', {
         intent: intent.toLowerCase(),
         source: source.toLowerCase(),
@@ -1571,6 +1607,7 @@ const TeacherComposer: React.FC<{
 
   const continueToDashboard = () => {
     const request = draft();
+    setPreviewOpen(false);
     onTrack('teacher_composer_continue_clicked', {
       intent: intent.toLowerCase(),
       source: source.toLowerCase(),
@@ -1578,6 +1615,16 @@ const TeacherComposer: React.FC<{
       preview_created: Boolean(preview),
     });
     onSubmit(request);
+  };
+
+  const createTeacherAccount = () => {
+    const request = draft();
+    setPreviewOpen(false);
+    onTrack('teacher_composer_signup_clicked', {
+      intent: intent.toLowerCase(),
+      source: source.toLowerCase(),
+    });
+    onSignUp(request);
   };
 
   return (
@@ -1674,7 +1721,7 @@ const TeacherComposer: React.FC<{
               <input ref={uploadRef} type="file" aria-label="Attach notes or work" accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.txt" className="hidden" onChange={(event) => chooseFile(event.target.files?.[0], 'UPLOAD')} />
             </div>
             <button type="button" onClick={() => { void submit(); }} disabled={isGenerating} aria-describedby="teacher-composer-status" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 text-sm font-black text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2">
-              {isGenerating ? 'Creating sample…' : 'Create sample'} <Sparkles className="h-4 w-4" />
+              {isGenerating ? 'Creating sample…' : preview ? 'View sample' : 'Create sample'} <Sparkles className="h-4 w-4" />
             </button>
           </div>
 
@@ -1683,26 +1730,56 @@ const TeacherComposer: React.FC<{
             <p id="teacher-composer-privacy" className="inline-flex items-center gap-1.5"><Store className="h-3.5 w-3.5" /> Marketplace publishing always requires your approval.</p>
           </div>
 
-          {preview && (
-            <section aria-labelledby="teacher-sample-heading" className="mt-5 overflow-hidden rounded-2xl border border-indigo-200 bg-indigo-50/60">
-              <div className="flex flex-col gap-2 border-b border-indigo-100 bg-white px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-600">View only</p>
-                  <h3 id="teacher-sample-heading" className="mt-1 text-lg font-black text-[#07133f]">Sample notes preview</h3>
-                </div>
-                <span className="text-xs font-semibold text-slate-500">Sign in to edit, save or share</span>
-              </div>
-              <div className="whitespace-pre-wrap px-4 py-5 text-sm font-medium leading-7 text-slate-700 sm:px-6">{preview}</div>
-              <div className="flex flex-col gap-2 border-t border-indigo-100 bg-white px-4 py-4 sm:flex-row sm:items-center sm:justify-between">
-                <p className="text-xs font-medium text-slate-500">Your request stays private. Nothing is published automatically.</p>
-                <button type="button" onClick={continueToDashboard} className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-[#07133f] px-5 text-sm font-black text-white hover:bg-indigo-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2">
-                  Continue in Teacher Dashboard <ArrowRight className="h-4 w-4" />
-                </button>
-              </div>
-            </section>
-          )}
         </div>
       </div>
+
+      {previewOpen && preview ? (
+        <div className="fixed inset-0 z-[90] flex items-center justify-center bg-slate-950/65 p-4 backdrop-blur-sm" role="presentation">
+          <div
+            ref={previewDialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="teacher-sample-heading"
+            tabIndex={-1}
+            className="w-full max-w-xl overflow-hidden rounded-3xl bg-white shadow-2xl outline-none"
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 sm:px-6">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-indigo-600">Sample preview</p>
+                <h3 id="teacher-sample-heading" className="mt-1 text-xl font-black text-[#07133f]">Your notes have started</h3>
+                <p className="mt-1 text-sm text-slate-500">Here is the first part. Continue to unlock the complete editable notes.</p>
+              </div>
+              <button type="button" onClick={() => setPreviewOpen(false)} aria-label="Close sample preview" className="shrink-0 rounded-full p-2 text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="relative max-h-[42vh] overflow-hidden bg-indigo-50/40 px-5 py-5 sm:px-6">
+              <div className="whitespace-pre-wrap text-sm font-medium leading-7 text-slate-700">{previewExcerpt}</div>
+              <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-28 bg-gradient-to-b from-transparent via-white/80 to-white" />
+            </div>
+
+            <div className="border-t border-slate-100 bg-white px-5 py-5 sm:px-6">
+              <p className="mb-4 text-center text-sm font-bold text-[#07133f]">Continue to see the full notes and make them your own.</p>
+              {isRegistered ? (
+                <button type="button" onClick={continueToDashboard} className="inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-5 text-sm font-black text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2">
+                  Continue to Teacher Dashboard <ArrowRight className="h-4 w-4" />
+                </button>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  <button type="button" onClick={createTeacherAccount} className="inline-flex min-h-12 items-center justify-center rounded-xl bg-indigo-600 px-5 text-sm font-black text-white hover:bg-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2">
+                    Create teacher account
+                  </button>
+                  <button type="button" onClick={continueToDashboard} className="inline-flex min-h-12 items-center justify-center rounded-xl border border-indigo-200 bg-white px-5 text-sm font-black text-indigo-700 hover:bg-indigo-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2">
+                    Teacher login
+                  </button>
+                </div>
+              )}
+              <p className="mt-3 text-center text-xs font-medium text-slate-500">Private by default. Nothing is published automatically.</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 };

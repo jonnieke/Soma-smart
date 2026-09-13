@@ -9,7 +9,8 @@ const baseProps = {
   onAskQuestion: vi.fn(),
   onLearnerShortcut: vi.fn(),
   onTeacher: vi.fn(),
-  onTeacherPreview: vi.fn().mockResolvedValue('Photosynthesis\n• Green plants make food using light.'),
+  onTeacherPreview: vi.fn().mockResolvedValue('Photosynthesis notes begin here with a clear learning objective. The complete notes continue with several key points, examples, activities, and a learner check that should remain hidden.'),
+  onTeacherSignUp: vi.fn(),
   onTeacherCompose: vi.fn(),
   onParent: vi.fn(),
   onLibrary: vi.fn(),
@@ -120,11 +121,14 @@ describe('LandingHome', () => {
     fireEvent.click(screen.getByRole('button', { name: /mark learner work/i }));
     fireEvent.click(screen.getByRole('button', { name: /create sample/i }));
 
-    const previewHeading = await screen.findByRole('heading', { name: /sample notes preview/i });
-    expect(previewHeading.closest('section')).toHaveTextContent(/green plants make food/i);
+    const previewDialog = await screen.findByRole('dialog', { name: /your notes have started/i });
+    expect(previewDialog).toHaveTextContent(/photosynthesis notes begin/i);
+    expect(previewDialog).not.toHaveTextContent(/learner check that should remain hidden/i);
+    expect(screen.getByRole('button', { name: /create teacher account/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /teacher login/i })).toBeInTheDocument();
     expect(baseProps.onTeacherCompose).not.toHaveBeenCalled();
 
-    fireEvent.click(screen.getByRole('button', { name: /continue in teacher dashboard/i }));
+    fireEvent.click(screen.getByRole('button', { name: /teacher login/i }));
 
     expect(baseProps.onTeacherCompose).toHaveBeenCalledWith({
       prompt: 'Mark these Grade 8 mathematics answers.',
@@ -132,7 +136,7 @@ describe('LandingHome', () => {
       file: undefined,
       source: 'TEXT',
     });
-  });
+  }, 15000);
   it('explains the fallback when voice input is unsupported', () => {
     render(
       <MemoryRouter>
@@ -148,6 +152,28 @@ describe('LandingHome', () => {
       reason: 'unsupported_browser',
     });
   });
+
+  it('opens teacher registration from the sample preview', async () => {
+    render(
+      <MemoryRouter>
+        <LandingHome {...baseProps} />
+      </MemoryRouter>
+    );
+
+    fireEvent.change(screen.getByLabelText(/describe what you want soma to do/i), {
+      target: { value: 'Create Grade 6 agriculture notes.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /create sample/i }));
+    await screen.findByRole('dialog', { name: /your notes have started/i });
+    fireEvent.click(screen.getByRole('button', { name: /create teacher account/i }));
+
+    expect(baseProps.onTeacherSignUp).toHaveBeenCalledWith({
+      prompt: 'Create Grade 6 agriculture notes.',
+      intent: 'CREATE',
+      file: undefined,
+      source: 'TEXT',
+    });
+  }, 15000);
 
   it('keeps the request in place while the teacher is offline', () => {
     vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false);

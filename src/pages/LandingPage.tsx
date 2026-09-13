@@ -789,6 +789,24 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         setShowLogin(true);
     };
 
+    const handleTeacherSignUp = async (draft: TeacherComposerDraft) => {
+        const destination = getTeacherComposerDestination(draft);
+        const routeState = buildTeacherComposerRouteState(draft);
+
+        await saveTeacherComposerDraft(draft);
+        setPendingRoute(destination.route);
+        setPendingRouteState(routeState);
+        setRole(UserRole.TEACHER);
+        setRegistrationRole('TEACHER');
+        setShowRegistration(true);
+        trackFunnelEvent('teacher_composer_auth_required', {
+            intent: draft.intent.toLowerCase(),
+            destination: destination.route,
+            has_attachment: Boolean(draft.file),
+            method: 'registration',
+        });
+    };
+
     const handleTeacherPreview = async (draft: TeacherComposerDraft): Promise<string> => {
         const intentInstruction: Record<TeacherComposerDraft['intent'], string> = {
             CREATE: 'Create concise sample teaching notes.',
@@ -1011,6 +1029,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 onLearnerShortcut={handleLearnerQuickStart}
                 onTeacher={() => handleRoleSelect(UserRole.TEACHER)}
                 onTeacherPreview={handleTeacherPreview}
+                onTeacherSignUp={handleTeacherSignUp}
                 onTeacherCompose={handleTeacherCompose}
                 onParent={() => handleRoleSelect(UserRole.PARENT)}
                 onLibrary={handleLibraryAccess}
