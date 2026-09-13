@@ -185,12 +185,16 @@ const updateTransactionStatus = async (supabase: ReturnType<typeof serviceClient
 };
 
 serve(async (req) => {
+  const startedAt = Date.now();
+  const requestId = req.headers.get('x-request-id') || req.headers.get('x-vercel-id') || crypto.randomUUID();
   const corsHeaders = corsHeadersFor(req);
   if (!isAllowedOrigin(req.headers.get('Origin'))) return json({ error: 'Origin not allowed' }, 403, corsHeaders);
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
   try {
     const supabase = serviceClient();
     const path = new URL(req.url).pathname.toLowerCase();
+    const action = path.split('/').filter(Boolean).pop() || 'unknown';
+    console.log(JSON.stringify({ level: 'info', event: 'payment_request_started', action, requestId }));
     const user = await getAuthenticatedUser(req, supabase);
 
     if (path.endsWith('/ipn-handler')) {
@@ -203,6 +207,7 @@ serve(async (req) => {
         merchantReference ||= body.OrderMerchantReference || null;
       }
       const result = await updateTransactionStatus(supabase, trackingId, merchantReference);
+      console.log(JSON.stringify({ level: 'info', event: 'payment_ipn_processed', requestId, status: 200, ms: Date.now() - startedAt }));
       return json({ orderNotificationType: 'IPN', orderTrackingId: result.order_tracking_id, orderMerchantReference: result.merchant_reference, status: 200 }, 200, corsHeaders);
     }
     if (path.endsWith('/test-keys')) {
@@ -306,6 +311,7 @@ serve(async (req) => {
           },
         });
         await supabase.from('transactions').update({ order_tracking_id: order.order_tracking_id }).eq('reference_code', reference);
+        console.log(JSON.stringify({ level: 'info', event: 'payment_order_created', requestId, type, amount, ms: Date.now() - startedAt }));
         return json({ order_tracking_id: order.order_tracking_id, redirect_url: order.redirect_url, client_reference: reference }, 200, corsHeaders);
       } catch (error) {
         await supabase.from('transactions').update({ status: 'FAILED' }).eq('reference_code', reference);
@@ -357,7 +363,13 @@ serve(async (req) => {
     }
     return json({ error: 'Not found' }, 404, corsHeaders);
   } catch (error) {
-    console.error('Pesapal request failed:', error instanceof Error ? error.message : String(error));
+    console.error(JSON.stringify({
+      level: 'error',
+      event: 'payment_request_failed',
+      requestId,
+      error: error instanceof Error ? error.message : String(error),
+      ms: Date.now() - startedAt,
+    }));
     return json({ error: 'Payment request could not be completed' }, 500, corsHeaders);
   }
 });
