@@ -96,8 +96,8 @@ const statusFromPesapal = async (trackingId: string) => {
   if (!response.ok) throw new Error(`Payment status lookup failed (${response.status})`);
   return data;
 };
-const addDuration = (duration: string) => {
-  const now = new Date();
+const addDuration = (duration: string, start = new Date()) => {
+  const now = new Date(start);
   const expiry = new Date(now);
   if (duration === 'DAILY') expiry.setDate(now.getDate() + 1);
   else if (duration === 'WEEKLY') expiry.setDate(now.getDate() + 7);
@@ -277,6 +277,18 @@ serve(async (req) => {
       });
       if (insertError) throw new Error(`Could not create payment transaction: ${insertError.message}`);
 
+      // Receipt contacts belong in a private table, never in the public transaction description.
+      const receiptPhone = cleanText(billing.phone_number, 24).replace(/[^+0-9]/g, '');
+      const receiptEmail = cleanText(billing.email_address, 200);
+      const { error: contactError } = await supabase.from('payment_receipt_contacts').insert({
+        reference_code: reference, payer_phone: receiptPhone || null,
+        payer_email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(receiptEmail) && !receiptEmail.endsWith('@somaai.co.ke') ? receiptEmail : null,
+      });
+      if (contactError) {
+        await supabase.from('transactions').update({ status: 'FAILED' }).eq('reference_code', reference);
+        throw new Error('Could not save checkout contact details. Please try again.');
+      }
+
       try {
         const order = await submitOrder({
           id: reference,
@@ -299,6 +311,41 @@ serve(async (req) => {
         await supabase.from('transactions').update({ status: 'FAILED' }).eq('reference_code', reference);
         throw error;
       }
+    }
+
+    if (path.endsWith('/receipt-status')) {
+      const body = await req.json();
+      const reference = cleanText(body.merchantReference, 100);
+      // Only modern random checkout references may act as receipt capabilities.
+      if (!/^(SUB|CREDIT|MKT)_[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(reference)) return json({ receipt: null }, 200, corsHeaders);
+      const { data: tx, error: receiptError } = await supabase.from('transactions')
+        .select('reference_code,user_id,amount,status,type,description,created_at,order_tracking_id')
+        .eq('reference_code', reference).maybeSingle();
+      if (receiptError) throw receiptError;
+      if (!tx || (body.profileId && tx.user_id !== String(body.profileId))) return json({ receipt: null }, 200, corsHeaders);
+      let status = tx.status === 'FAILED' && !tx.order_tracking_id ? 'FAILED' : 'PENDING';
+      if (tx.order_tracking_id) {
+        const verified = await updateTransactionStatus(supabase, null, reference);
+        const providerState = String(verified.payment_status_description || '').toLowerCase();
+        status = providerState === 'completed' ? 'SUCCESS' : ['failed','invalid','cancelled','canceled'].includes(providerState) ? 'FAILED' : 'PENDING';
+      }
+      if (status === 'SUCCESS' && tx.type === 'SUBSCRIPTION') {
+        const catalogId = String(tx.description || '').match(/(?:^|\|)CATALOG:([^|]+)/)?.[1] || '';
+        const plan = PLAN_CATALOG[catalogId];
+        // Repair only a verified catalog purchase, from its original date; retries never extend it.
+        if (plan && !plan.credits && plan.amount === Number(tx.amount)) {
+          const expiry = addDuration(plan.duration, new Date(tx.created_at));
+          if (Number.isFinite(expiry.getTime()) && expiry > new Date()) {
+            const { error: repairError } = await supabase.from('profiles')
+              .update({ subscription_tier: plan.duration, subscription_expiry: expiry.toISOString() })
+              .eq('id', tx.user_id).or(`subscription_expiry.is.null,subscription_expiry.lt.${expiry.toISOString()}`);
+            if (repairError) throw repairError;
+          }
+        }
+      }
+      // Never return buyer contacts, account IDs, or the raw transaction description.
+      const description = String(tx.description || '').split('|').filter(part => /^(PLAN|CATALOG|CREDITS|DAYS):[a-z0-9_]+$/i.test(part)).join('|');
+      return json({ receipt: { reference_code: reference, amount: tx.amount, type: tx.type, status, description, created_at: tx.created_at, order_tracking_id: tx.order_tracking_id } }, 200, corsHeaders);
     }
 
     if (path.endsWith('/check-status')) {

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { getOwnPaymentHistory, getPaymentReceipt } from '../../services/transactionAccessService';
 import { useNavigate, useLocation } from 'react-router-dom';
 import logoImg from '../../assets/images/main_logo.png';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -1433,18 +1434,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     if (!profileId) return false;
 
     try {
-      const lastReference = localStorage.getItem('soma_last_payment_reference') || '';
-      const query = supabase
-        .from('transactions')
-        .select('reference_code, user_id, amount, status, description, created_at, order_tracking_id')
-        .order('created_at', { ascending: false })
-        .limit(20);
-
-      const { data: txs, error } = lastReference
-        ? await query.or(`user_id.eq.${profileId},reference_code.eq.${lastReference}`)
-        : await query.eq('user_id', profileId);
-
-      if (error || !txs?.length) return false;
+      const txs = await getOwnPaymentHistory(profileId);
+      if (!txs.length) return false;
 
       for (const tx of txs as Array<any>) {
         const reference = String(tx.reference_code || '');
@@ -1478,11 +1469,10 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
         const isCreditReference = reference.startsWith('CREDIT_');
         const isCreditDescription = /credit/i.test(String(tx.description || ''));
         const amount = Number(tx.amount || 0);
-        const isCreditAmount = amount === 20 || amount === 50 || amount === 100;
-        if (!isCreditReference && !isCreditDescription && !isCreditAmount) continue;
+        if (tx.type !== 'CREDIT_PACK') continue;
 
         const creditsFromReference = isCreditReference ? Number(reference.split('_')[1] || 0) : 0;
-        const creditsFromDescription = Number(String(tx.description || '').match(/(\d+)\s+learning credits/i)?.[1] || 0);
+        const creditsFromDescription = Number(String(tx.description || '').match(/CREDITS:(\d+)/i)?.[1] || 0);
         const creditsFromStatus = Number(remoteStatus?.learning_credits || remoteStatus?.credits_granted || 0);
         const credits =
           creditsFromStatus ||
@@ -1527,11 +1517,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
     const recoverCreditPayment = async () => {
       try {
-        const { data: tx } = await supabase
-          .from('transactions')
-          .select('status, amount, order_tracking_id')
-          .eq('reference_code', reference)
-          .maybeSingle();
+        const tx = await getPaymentReceipt(reference, studentProfile?.id || userId || undefined);
 
         if (!tx?.order_tracking_id) return;
 

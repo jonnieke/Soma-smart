@@ -1,4 +1,5 @@
 import { supabase } from '../lib/supabase';
+import { getAdminPaymentRows } from './transactionAccessService';
 import { UserRole } from '../types';
 
 export interface DashboardStats {
@@ -78,7 +79,7 @@ export const fetchFinanceSummary = async (): Promise<FinanceSummary> => {
         since.setDate(since.getDate() - 30);
 
         const [{ data: transactions }, { data: usageEvents, error: usageError }] = await Promise.all([
-            supabase.from('transactions').select('amount, status, created_at').gte('created_at', since.toISOString()),
+            getAdminPaymentRows(30).then(data => ({ data })),
             supabase.from('usage_cost_events').select('feature, input_tokens, output_tokens, estimated_cost_kes, created_at').gte('created_at', since.toISOString())
         ]);
 
@@ -168,7 +169,7 @@ export const fetchTodayPilotStats = async (): Promise<TodayPilotStats> => {
         ] = await Promise.all([
             supabase.from('analytics_events').select('user_id').gte('created_at', iso),
             supabase.from('profiles').select('id').gte('created_at', iso),
-            supabase.from('transactions').select('id').eq('status', 'SUCCESS').gte('created_at', iso),
+            getAdminPaymentRows(7).then(rows => ({ data: rows.filter((row: any) => row.status === 'SUCCESS' && row.created_at >= iso) })),
             supabase.from('usage_cost_events').select('feature, created_at, estimated_cost_kes').gte('created_at', iso).order('created_at', { ascending: false }).limit(20)
         ]);
 
@@ -450,7 +451,7 @@ export const fetchDashboardStats = async (): Promise<DashboardStats> => {
         const teacherWorkflow7dResets = teacherWorkflowRowsSafe.reduce((sum: number, row: any) => sum + (Number(row.reset_count) || 0), 0);
 
         // 3. Financials (Real from transactions)
-        const { data: transactions } = await supabase.from('transactions').select('amount, status, type');
+        const transactions = await getAdminPaymentRows();
         const realRevenue = transactions
             ?.filter((t: any) => t.status === 'SUCCESS')
             .reduce((sum: number, t: any) => sum + (Number(t.amount) || 0), 0) || 0;

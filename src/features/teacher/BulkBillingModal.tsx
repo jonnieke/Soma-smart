@@ -15,6 +15,7 @@ import {
 import { Button } from '../../components/Shared';
 import { useApp } from '../../context/AppContext';
 import { pesapalService } from '../../services/pesapalService';
+import { getPaymentReceipt } from '../../services/transactionAccessService';
 import { supabase } from '../../lib/supabase';
 
 
@@ -244,16 +245,7 @@ export const BulkBillingModal: React.FC<BulkBillingModalProps> = ({ isOpen, onCl
 
         const interval = setInterval(async () => {
             try {
-                const { data, error } = await supabase
-                    .from('transactions')
-                    .select('status')
-                    .eq('reference_code', paymentReference)
-                    .maybeSingle();
-
-                if (error) {
-                    console.error("Error polling transaction status:", error);
-                    return;
-                }
+                const data = await getPaymentReceipt(paymentReference);
 
                 if (data) {
                     if (data.status === 'SUCCESS') {

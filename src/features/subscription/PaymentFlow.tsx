@@ -4,6 +4,7 @@ import ReactGA from 'react-ga4';
 import { Smartphone, Loader2, CheckCircle2, XCircle, ArrowLeft, ShieldCheck, CreditCard, ExternalLink, ArrowRight, Sparkles } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { pesapalService } from '../../services/pesapalService';
+import { getPaymentReceipt } from '../../services/transactionAccessService';
 import { getCreditPackExpiry } from '../../services/planLimitService';
 import { UserRole } from '../../types';
 import { supabase } from '../../lib/supabase';
@@ -172,29 +173,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
             if (!uid) return;
 
             try {
-                let data: { status?: string } | null = null;
-                if (paymentReference) {
-                    const { data: refData } = await supabase
-                        .from('transactions')
-                        .select('status')
-                        .eq('reference_code', paymentReference)
-                        .maybeSingle();
-                    data = refData;
-                }
-
-                if (!data && paymentInitiatedAtRef.current > 0) {
-                    // Only match transactions created strictly during this active checkout session
-                    const isoSince = new Date(paymentInitiatedAtRef.current - 15000).toISOString();
-                    const { data: latestData } = await supabase
-                        .from('transactions')
-                        .select('status, created_at')
-                        .eq('user_id', uid)
-                        .gte('created_at', isoSince)
-                        .order('created_at', { ascending: false })
-                        .limit(1)
-                        .maybeSingle();
-                    data = latestData;
-                }
+                const data = await getPaymentReceipt(paymentReference, uid);
 
                 if (data && data.status === 'SUCCESS') {
                     // Stop polling while we process success

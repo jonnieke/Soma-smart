@@ -26,6 +26,7 @@ import {
   examPaperBankService,
 } from '../services/examPaperBankService';
 import { FALLBACK_LATEST_PAPERS } from '../components/ExamPaperTickerBelt';
+import { ExamPaperFinder } from '../components/ExamPaperFinder';
 
 
 const normalise = (value?: string | null) => String(value || '').trim();
@@ -222,6 +223,7 @@ export const ExamPaperBankPage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-[#f7f8fc] text-slate-950">
+      {!checkoutOpen && <ExamPaperFinder papers={papers} loading={loading} isUnlocked={isPaperUnlocked} onChoose={paper => { void openPaper(paper); }} />}
       <Helmet>
         <html lang="en" />
         <title>KCSE, KPSEA &amp; CBC Exam Paper Bank Kenya | Soma AI Past Papers</title>
