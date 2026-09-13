@@ -36,6 +36,7 @@ import learnerImg from '../assets/images/hero_learner_emotional.png';
 import parentImg from '../assets/images/parent.png';
 import mascotImg from '../assets/images/somo_buddy_avatar.png';
 import type { TeacherComposerDraft, TeacherComposerIntent } from '../types/teacherComposer';
+import { saveTeacherComposerDraft } from '../types/teacherComposerHandoff';
 
 type Props = {
   isRegistered: boolean;
@@ -1591,6 +1592,7 @@ const TeacherComposer: React.FC<{
     });
     try {
       const result = await onPreview(request);
+      await saveTeacherComposerDraft({ ...request, generatedContent: result });
       setPreview(result);
       setPreviewOpen(true);
       setMessage('');

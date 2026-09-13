@@ -129,7 +129,7 @@ export const loadTeacherComposerDraft = async (state: unknown): Promise<TeacherC
       (store) => store.get(DRAFT_KEY),
     );
     const savedAt = Date.parse(String(stored?.savedAt || ''));
-    if (stored && savedAt && Date.now() - savedAt <= MAX_AGE_MS && (!stored.consumedAt || isReload)) {
+    if (stored && savedAt && Date.now() - savedAt <= MAX_AGE_MS && (stored.generatedContent || !stored.consumedAt || isReload)) {
       return getTeacherComposerDraft({ teacherComposerDraft: stored });
     }
   } catch {
@@ -139,6 +139,9 @@ export const loadTeacherComposerDraft = async (state: unknown): Promise<TeacherC
 };
 
 export const markTeacherComposerDraftConsumed = async (): Promise<void> => {
+  // Generated work is still an active draft after navigation, not a disposable brief.
+  const draft = await loadTeacherComposerDraft(null);
+  if (draft?.generatedContent) return;
   try {
     sessionStorage.removeItem(SESSION_KEY);
   } catch {

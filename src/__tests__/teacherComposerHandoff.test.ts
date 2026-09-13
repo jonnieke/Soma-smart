@@ -3,6 +3,8 @@ import {
   buildTeacherComposerRouteState,
   getTeacherComposerDestination,
   saveTeacherComposerDraft,
+  loadTeacherComposerDraft,
+  markTeacherComposerDraftConsumed,
 } from '../types/teacherComposerHandoff';
 import type { TeacherComposerDraft, TeacherComposerIntent } from '../types/teacherComposer';
 
@@ -16,6 +18,19 @@ const draft = (intent: TeacherComposerIntent, file?: File): TeacherComposerDraft
 
 describe('teacher composer route contract', () => {
   afterEach(() => sessionStorage.clear());
+
+  it('keeps the full generated notes across repeated dashboard loads without route state', async () => {
+    const request = draft('CREATE');
+    await saveTeacherComposerDraft(request);
+    expect(await loadTeacherComposerDraft(null)).toMatchObject({
+      prompt: request.prompt, generatedContent: request.generatedContent,
+    });
+    await markTeacherComposerDraftConsumed();
+    await markTeacherComposerDraftConsumed();
+    expect(await loadTeacherComposerDraft({ openWorkspace: true })).toMatchObject({
+      prompt: request.prompt, generatedContent: request.generatedContent,
+    });
+  });
 
   it.each([
     ['CREATE', '/teacher', 'DASHBOARD'],

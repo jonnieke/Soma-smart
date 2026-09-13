@@ -40,7 +40,7 @@ export const TeacherPage: React.FC = () => {
         let active = true;
         void loadTeacherComposerDraft(location.state).then((draft) => {
             if (!active) return;
-            setComposerDraft(draft);
+            setComposerDraft((current) => draft || current);
             setComposerDraftReady(true);
             if (draft) {
                 void trackAnalyticsEvent({

@@ -33,6 +33,7 @@ import { shareToWhatsApp, shareToTelegram } from '../../utils/shareUtils';
 import { TeacherDashboardTab } from './teacherNavigation';
 import { launchFeatures } from '../../config/launchFeatures';
 import type { TeacherComposerDraft } from '../../types/teacherComposer';
+import { useTeacherDraftContent } from './useTeacherDraftContent';
 
 type TeacherGeminiService = typeof import('../../services/geminiService');
 
@@ -147,7 +148,11 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
         };
         return { type: 'info', text: messages[initialDraft.intent] };
     });
-    const [homepageDraftContent, setHomepageDraftContent] = useState(initialDraft?.generatedContent || '');
+    const [homepageDraftContent, setHomepageDraftContent] = useTeacherDraftContent(initialDraft?.generatedContent);
+    useEffect(() => {
+        if (!teacherProfile?.id || !initialDraft?.generatedContent) return;
+        document.getElementById('homepage-teacher-draft-heading')?.scrollIntoView({ block: 'start' });
+    }, [teacherProfile?.id, Boolean(homepageDraftContent)]);
     const [homepageDraftCopied, setHomepageDraftCopied] = useState(false);
     const [activeTab, setActiveTab] = useState<TeacherActiveTab>(initialTab || 'DASHBOARD');
     const homepageDraftLabels = initialDraft?.intent === 'CREATE'
@@ -1216,6 +1221,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                             <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600">{homepageDraftLabels.eyebrow}</p>
                             <h2 id="homepage-teacher-draft-heading" className="mt-1 text-xl font-black text-slate-900">{homepageDraftLabels.title}</h2>
                             <p className="mt-1 text-xs font-medium text-slate-600">{homepageDraftLabels.help}</p>
+                            <p className="mt-3 text-sm text-slate-700"><strong>Your request:</strong> {initialDraft?.prompt}</p>
                         </div>
                         <button
                             type="button"
