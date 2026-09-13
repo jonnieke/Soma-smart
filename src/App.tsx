@@ -7,6 +7,7 @@ import { SessionConflictModal } from './components/SessionConflictModal';
 import { SubscriptionExpiredModal } from './components/SubscriptionExpiredModal';
 import { UpgradeModal } from './components/UpgradeModal';
 import { WhatsAppFloatingWidget } from './components/WhatsAppFloatingWidget';
+import { TeacherWorkspaceNavigation } from './components/TeacherWorkspaceNavigation';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { supabase } from './lib/supabase';
 import { AdminGuard } from './components/AdminGuard';
@@ -282,6 +283,7 @@ const App: React.FC = () => {
                 <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-[100] focus:top-2 focus:left-2 focus:bg-indigo-600 focus:text-white focus:px-4 focus:py-2 focus:rounded-lg focus:font-bold">Skip to content</a>
                 <ConnectivityBanner />
                 <GlobalNavigation />
+                <TeacherWorkspaceNavigation />
                 {!hideGlobalAssistant && (
                     <Suspense fallback={null}>
                         <AskSomo />
