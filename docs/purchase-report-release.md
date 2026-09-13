@@ -1,6 +1,8 @@
 # Purchase reporting and guided paper discovery
 
-Implemented in the isolated `.release-akili` worktree. Not deployed.
+Deployed to production on 2026-09-13 from the isolated `.release-akili` worktree. Website release: `34e5220` on main; Vercel deployment `dpl_E56gXVUiXmi4ercqiXUTZceorMM5` reached Ready and was assigned www.somaai.co.ke. Both named migrations were applied and recorded, and both Edge Functions were deployed. Existing live payment diagnostics were preserved.
+
+Signed-in admin Financials verification remains for an authorized administrator; no authenticated browser session was available during deployment. No payment or customer message was initiated.
 
 ## Included
 
@@ -22,13 +24,14 @@ Implemented in the isolated `.release-akili` worktree. Not deployed.
 
 - Typecheck and production build passed.
 - 23 targeted tests passed: purchase joins/totals/CSV, report errors and message drafts, guide progression, checkout identity, and transaction access.
-- Actual database schema checked; private-table permissions tested in a rolled-back transaction: anon=false, authenticated=false, service_role=true for SELECT. No permanent schema change was made.
+- Actual database schema checked; deployed private-table SELECT permissions verified: anon=false, authenticated=false, service_role=true.
 - Browser checked on desktop and 390px mobile: grade, subject, paper and review, then existing checkout for the selected paper. No payment initiated.
-- `scripts/verify-transaction-access.sql` passed against the real database inside a rolled-back transaction: owner reads allowed, other-account reads hidden, anonymous reads denied, browser insert/update/delete denied, service-role fulfillment allowed. No permanent access-policy changes were applied.
+- `scripts/verify-transaction-access.sql` passed again after deployment inside a rolled-back transaction: owner reads allowed, other-account reads hidden, anonymous reads denied, browser insert/update/delete denied, service-role fulfillment allowed. Test records were rolled back. Persisted policies independently checked: only authenticated owner SELECT remains on transactions; private contacts have no browser policies.
+- Production smoke checks: admin-purchases rejects unauthenticated requests with 401; nonexistent receipt lookup returns null; live paper guide progresses through Grade 6, English, paper selection and review.
 
 ## Observed existing issues / next work
 
-- Production transaction policies contain SELECT true and ALL true policies for public roles. The new migration fixes direct table access but remains unapplied until the release sequence above is completed. Historical stored SUCCESS records are not an independent provider reconciliation. Other tables/RPCs require their own security review.
+- Removed the production transaction SELECT true and ALL true policies for public roles. Historical stored SUCCESS records are not an independent provider reconciliation. Other tables/RPCs require their own security review.
 - The 30-day read-only check found 9 successful subscriptions (KES 460), 8 failed subscription attempts, 3 successful papers (KES 60), and 2 pending paper attempts. All nine successful subscription rows had linked profiles but no phone or email in those profiles.
 - Discount redemption, automatic receipts, opted-in campaigns, delivery history and unsubscribe storage require a separate implementation.
 - Admin Overview payment metrics now use the protected purchase-report endpoint too, including paper orders. All-time reporting is capped at 10,000 records per source and fails explicitly if exceeded.
