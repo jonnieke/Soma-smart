@@ -503,12 +503,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         // Only redirect if they navigate directly to '/' without any specific state intents like selectedPlan
         // AND if they haven't already been auto-redirected in this session. This allows them to manually click "Home" to see the landing page.
         const hasAutoRedirected = sessionStorage.getItem('hasAutoRedirected');
-        if (!location.state && isRegistered && role !== UserRole.NONE && !hasAutoRedirected) {
+        if (!location.state && !pendingRoute && !showLogin && !showRegistration && isRegistered && role !== UserRole.NONE && !hasAutoRedirected) {
             sessionStorage.setItem('hasAutoRedirected', 'true');
             const target = role === UserRole.TEACHER ? '/teacher' : (role === UserRole.SCHOOL ? '/school' : (role === UserRole.PARENT ? '/parent' : '/learner'));
             navigate(target, { replace: true });
         }
-    }, [isRegistered, role, location.state, navigate]);
+    }, [isRegistered, role, location.state, navigate, pendingRoute, showLogin, showRegistration]);
 
     const handleRoleSelect = (selectedRole: UserRole) => {
         if (selectedRole === UserRole.LEARNER) {
@@ -773,19 +773,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
         setPendingRoute(targetRoute);
         setPendingRouteState(routeState);
-        setRole(UserRole.TEACHER);
-
-        if (isRegistered && (role === UserRole.TEACHER || Boolean(teacherProfile?.id))) {
-            trackFunnelEvent('teacher_composer_auth_bypassed', {
-                intent: draft.intent.toLowerCase(),
-                destination: targetRoute,
-                has_attachment: Boolean(draft.file),
-            });
-            navigate(targetRoute, { state: routeState });
-            setPendingRoute(null);
-            setPendingRouteState(null);
-            return;
-        }
 
         trackFunnelEvent('teacher_composer_auth_required', {
             intent: draft.intent.toLowerCase(),
@@ -803,7 +790,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         await saveTeacherComposerDraft(draft);
         setPendingRoute(destination.route);
         setPendingRouteState(routeState);
-        setRole(UserRole.TEACHER);
         setRegistrationRole('TEACHER');
         setShowRegistration(true);
         trackFunnelEvent('teacher_composer_auth_required', {
