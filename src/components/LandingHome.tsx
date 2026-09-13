@@ -418,7 +418,7 @@ export const LandingHome: React.FC<Props> = (props) => {
                 }}
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-blue-600 bg-white px-6 font-bold text-blue-600 hover:bg-blue-50"
               >
-                <Sparkles className="h-5 w-5" /> Create with Soma
+                <Sparkles className="h-5 w-5" /> Create for your class
               </button>
             </div>
             <div className="mt-4 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs font-semibold text-slate-600">
@@ -1634,14 +1634,14 @@ const TeacherComposer: React.FC<{
           <p className="inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-white px-3 py-1 text-xs font-black uppercase tracking-[0.16em] text-indigo-700">
             <Sparkles className="h-3.5 w-3.5" /> For teachers
           </p>
-          <h2 id="teacher-composer-heading" className="mt-3 text-3xl font-black text-[#07133f] sm:text-4xl">Create with Soma</h2>
+          <h2 id="teacher-composer-heading" className="mt-3 text-3xl font-black text-[#07133f] sm:text-4xl">Prepare your next lesson with Soma</h2>
           <p className="mx-auto mt-2 max-w-2xl text-sm font-medium leading-6 text-slate-600 sm:text-base">
-            Type, speak, scan or upload. Your work starts privately, and you choose where it goes.
+            Create notes, mark learner work, build assessments, or prepare teaching materials.
           </p>
         </div>
 
         <div className="rounded-3xl border border-indigo-100 bg-white p-4 shadow-xl shadow-indigo-100/60 sm:p-6">
-          <label htmlFor="teacher-composer-input" className="sr-only">Describe what you want Soma to do</label>
+          <label htmlFor="teacher-composer-input" className="sr-only">What would you like to prepare for your learners?</label>
           <textarea
             id="teacher-composer-input"
             aria-describedby="teacher-composer-status teacher-composer-privacy"
@@ -1657,7 +1657,7 @@ const TeacherComposer: React.FC<{
               if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') submit();
             }}
             rows={4}
-            placeholder="Ask Soma to create, mark, improve, or prepare your teaching material..."
+            placeholder="For example: Create Grade 6 notes on photosynthesis..."
             className="w-full resize-none rounded-2xl border-0 bg-slate-50 px-4 py-4 text-base font-medium text-slate-900 outline-none ring-1 ring-slate-200 placeholder:text-slate-400 focus:bg-white focus:ring-2 focus:ring-indigo-500"
           />
 

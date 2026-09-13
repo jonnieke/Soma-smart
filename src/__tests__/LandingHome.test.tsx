@@ -115,7 +115,7 @@ describe('LandingHome', () => {
       </MemoryRouter>
     );
 
-    fireEvent.change(screen.getByLabelText(/describe what you want soma to do/i), {
+    fireEvent.change(screen.getByLabelText(/what would you like to prepare for your learners/i), {
       target: { value: 'Mark these Grade 8 mathematics answers.' },
     });
     fireEvent.click(screen.getByRole('button', { name: /mark learner work/i }));
@@ -160,7 +160,7 @@ describe('LandingHome', () => {
       </MemoryRouter>
     );
 
-    fireEvent.change(screen.getByLabelText(/describe what you want soma to do/i), {
+    fireEvent.change(screen.getByLabelText(/what would you like to prepare for your learners/i), {
       target: { value: 'Create Grade 6 agriculture notes.' },
     });
     fireEvent.click(screen.getByRole('button', { name: /create sample/i }));
@@ -183,7 +183,7 @@ describe('LandingHome', () => {
       </MemoryRouter>
     );
 
-    fireEvent.change(screen.getByLabelText(/describe what you want soma to do/i), {
+    fireEvent.change(screen.getByLabelText(/what would you like to prepare for your learners/i), {
       target: { value: 'Create a Grade 7 science quiz.' },
     });
     fireEvent.click(screen.getByRole('button', { name: /create sample/i }));
