@@ -519,7 +519,7 @@ View full dashboard: https://somaai.co.ke/parent/${student.id}`;
                                                 <span className="font-bold text-slate-800">{teacherProfile?.name || 'Teacher'}</span>
                                                 <span className="text-xs font-bold text-slate-400">• {new Date(post.created_at).toLocaleDateString()}</span>
                                             </div>
-                                            <p className="text-slate-600 font-medium mb-3">{post.content}</p>
+                                            <p className="text-slate-600 font-medium mb-3 whitespace-pre-wrap break-words">{post.content}</p>
                                             <button
                                                 onClick={() => openWhatsAppShare(`New announcement for ${selectedClass}: ${post.content} - View on Soma AI: ${classroomShareUrl}`)}
                                                 className="inline-flex items-center gap-1.5 bg-[#25D366]/10 text-[#128C7E] px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-[#25D366]/20 transition-colors"

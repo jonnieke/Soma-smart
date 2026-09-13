@@ -56,7 +56,7 @@ export const UploadPaperModal: React.FC<UploadModalProps> = ({ isOpen, onClose, 
       // Construct Exam Paper from extracted blueprint
       const newPaper: ExamPaper = {
         id: `paper_upload_${Date.now()}`,
-        ownerId: 'teacher_user',
+        ownerId: await paperStudioService.getOwnerId(),
         title: result.blueprint.title,
         status: 'DRAFT',
         visibility: 'PRIVATE',

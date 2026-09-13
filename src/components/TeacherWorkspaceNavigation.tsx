@@ -25,13 +25,13 @@ export const TeacherWorkspaceNavigation: React.FC = () => {
   if (!shouldShowTeacherWorkspaceNavigation(pathname)) return null;
 
   return (
-    <nav aria-label="Teacher workspace" className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
+    <nav aria-label="Teacher workspace" className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur print:hidden">
       <div className="mx-auto flex max-w-7xl flex-col gap-3 px-4 py-3 sm:px-6 md:flex-row md:items-center md:justify-between">
         <div className="flex items-center justify-between gap-4">
           <Link to="/teacher" className="text-sm font-black text-slate-900 hover:text-indigo-700">
             Soma AI <span className="font-semibold text-slate-500">· Teacher workspace</span>
           </Link>
-          <Link to="/" className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-indigo-700 md:hidden">
+          <Link to="/" state={{ fromDashboard: true }} className="inline-flex shrink-0 items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-indigo-700 md:hidden">
             Soma homepage <ExternalLink className="h-3.5 w-3.5" />
           </Link>
         </div>
@@ -53,7 +53,7 @@ export const TeacherWorkspaceNavigation: React.FC = () => {
               </Link>
             );
           })}
-          <Link to="/" className="hidden min-h-11 shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 hover:text-indigo-700 md:inline-flex">
+          <Link to="/" state={{ fromDashboard: true }} className="hidden min-h-11 shrink-0 items-center gap-2 rounded-xl px-3.5 py-2 text-sm font-bold text-slate-500 hover:bg-slate-100 hover:text-indigo-700 md:inline-flex">
             Soma homepage <ExternalLink className="h-4 w-4" />
           </Link>
         </div>

@@ -51,6 +51,7 @@ export const PaperStudioWorkspace: React.FC<WorkspaceProps> = ({
   const [activeTab, setActiveTab] = useState<'MY_PAPERS' | 'DRAFTS' | 'COMPLETED'>('MY_PAPERS');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [storageNotice, setStorageNotice] = useState('');
 
   useEffect(() => {
     loadWorkspaceData();
@@ -60,9 +61,12 @@ export const PaperStudioWorkspace: React.FC<WorkspaceProps> = ({
     setLoading(true);
     try {
       const data = await paperStudioService.getAllPapers();
-      const m = await paperStudioService.getMetrics();
+      const m = await paperStudioService.getMetrics(data);
       setPapers(data);
       setMetrics(m);
+      setStorageNotice(paperStudioService.getPaperStorageNotice());
+    } catch (error) {
+      setStorageNotice(error instanceof Error ? error.message : 'Could not load papers. Please retry.');
     } finally {
       setLoading(false);
     }
@@ -70,17 +74,25 @@ export const PaperStudioWorkspace: React.FC<WorkspaceProps> = ({
 
   const handleDuplicate = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    try {
     const copy = await paperStudioService.duplicatePaper(id);
     if (copy) {
       loadWorkspaceData();
+    }
+    } catch (error) {
+      setStorageNotice(error instanceof Error ? error.message : 'Copy was not confirmed. Please retry.');
     }
   };
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm('Are you sure you want to delete this exam paper?')) {
+      try {
       await paperStudioService.deletePaper(id);
       loadWorkspaceData();
+      } catch (error) {
+        setStorageNotice(error instanceof Error ? error.message : 'Deletion was not confirmed. Your paper is kept.');
+      }
     }
   };
 
@@ -97,6 +109,7 @@ export const PaperStudioWorkspace: React.FC<WorkspaceProps> = ({
 
   return (
     <div className="space-y-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+      {storageNotice && <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900">{storageNotice} <button onClick={loadWorkspaceData} disabled={loading} className="underline font-bold">Retry loading</button></div>}
       {/* ── HERO BANNER ── */}
       <section className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 p-6 sm:p-10 text-white shadow-xl border border-indigo-800/40">
         <div className="absolute top-0 right-0 -mr-16 -mt-16 w-80 h-80 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />

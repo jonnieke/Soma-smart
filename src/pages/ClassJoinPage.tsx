@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import { AlertCircle, ArrowRight, CheckCircle2, Loader2, Users } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { classroomService, ClassroomDetails } from '../services/classroomService';
+import { ClassroomReadingStream } from '../components/ClassroomReadingStream';
 
 export const ClassJoinPage: React.FC = () => {
     const { classId } = useParams<{ classId: string }>();
@@ -68,6 +69,7 @@ export const ClassJoinPage: React.FC = () => {
         }
 
         setStatus('joining');
+        try {
         const result = studentCode
             ? await classroomService.joinClassWithStudentCode(targetClassId, studentCode)
             : await classroomService.joinClass(targetClassId, studentProfile.id);
@@ -78,6 +80,10 @@ export const ClassJoinPage: React.FC = () => {
 
         setStatus('error');
         setMessage(result.message || 'Could not join this class. Please try again.');
+        } catch {
+            setStatus('error');
+            setMessage('Could not confirm your class membership. Please try again.');
+        }
     };
 
     const handleCodeSearch = async () => {
@@ -127,8 +133,9 @@ export const ClassJoinPage: React.FC = () => {
                             <CheckCircle2 className="w-16 h-16 text-[#25D366] mx-auto" />
                             <div>
                                 <h2 className="text-2xl font-black text-slate-900">You joined {title}</h2>
-                                <p className="text-sm font-bold text-slate-500 mt-2">You can now continue learning in your learner dashboard.</p>
+                                <p className="text-sm font-bold text-slate-500 mt-2">Read your teacher’s class work below.</p>
                             </div>
+                            {studentProfile?.id && isRegistered && (resolvedClassId || classroom?.id) && <ClassroomReadingStream key={`${studentProfile.id}:${resolvedClassId || classroom?.id}`} classId={(resolvedClassId || classroom?.id)!} />}
                             <button
                                 onClick={() => navigate('/learner')}
                                 className="w-full bg-slate-900 text-white py-4 rounded-xl font-black flex items-center justify-center gap-2"
@@ -137,6 +144,8 @@ export const ClassJoinPage: React.FC = () => {
                             </button>
                         </div>
                     )}
+
+                    {status === 'joining' && <p role="status" className="py-6 text-center">Joining your class…</p>}
 
                     {/* Code entry when no URL classId */}
                     {status === 'ready' && !resolvedClassId && !classroom && (

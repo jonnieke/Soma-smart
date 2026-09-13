@@ -2,13 +2,9 @@ import {
   ExamPaper,
   Question,
   PaperStudioMetrics,
-  ExamBlueprint,
-  ExamType,
-  CurriculumFramework,
 } from '../types/paperStudio';
-import { supabase } from '../lib/supabase';
+import { teacherPaperRepository } from './teacherPaperRepository';
 
-const PAPERS_STORAGE_KEY = 'soma_paper_studio_papers';
 const QUESTION_BANK_STORAGE_KEY = 'soma_paper_studio_question_bank';
 const CREDITS_STORAGE_KEY = 'soma_paper_studio_ai_credits';
 
@@ -136,8 +132,8 @@ export const paperStudioService = {
   /**
    * Retrieves dashboard summary metrics
    */
-  async getMetrics(): Promise<PaperStudioMetrics> {
-    const papers = await this.getAllPapers();
+  async getMetrics(papers = undefined as ExamPaper[] | undefined): Promise<PaperStudioMetrics> {
+    papers = papers ?? await this.getAllPapers();
     const draftCount = papers.filter((p) => p.status === 'DRAFT').length;
     const completedCount = papers.filter((p) => p.status === 'APPROVED' || p.status === 'PUBLISHED').length;
 
@@ -149,7 +145,7 @@ export const paperStudioService = {
       if (storedCredits !== null) {
         credits = parseInt(storedCredits, 10);
       }
-    } catch (_) { /* intentional – storage unavailable */ }
+    } catch (_) { /* intentional ï¿½ storage unavailable */ }
 
     return {
       draftCount,
@@ -160,152 +156,7 @@ export const paperStudioService = {
     };
   },
 
-  /**
-   * Fetches all papers owned by the teacher
-   */
-  async getAllPapers(): Promise<ExamPaper[]> {
-    try {
-      const raw = localStorage.getItem(PAPERS_STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      }
-    } catch (_) { /* intentional – storage unavailable */ }
-
-    // Fallback default sample draft paper
-    const samplePaper: ExamPaper = {
-      id: 'paper_sample_01',
-      ownerId: 'teacher_default',
-      title: 'Grade 9 Mathematics Continuous Assessment Test (CAT 1)',
-      status: 'DRAFT',
-      visibility: 'PRIVATE',
-      grade: 'Grade 9',
-      subject: 'Mathematics',
-      examType: 'CAT',
-      term: 'Term 1',
-      year: 2026,
-      durationMinutes: 60,
-      totalMarks: 30,
-      schoolBranding: {
-        schoolName: 'Nairobi Academy',
-        teacherName: 'Mwalimu Peterson',
-        examDate: '2026-03-15',
-        candidateNameField: true,
-        admissionNoField: true,
-      },
-      instructions: [
-        'Answer all questions in the spaces provided.',
-        'Show all your working clearly.',
-        'Calculators are allowed.',
-      ],
-      sections: [
-        {
-          id: 'sec_a',
-          title: 'Section A: Multiple Choice Questions (10 Marks)',
-          instructions: 'Choose the correct answer from the choices given.',
-          totalMarks: 10,
-          questions: [SEED_QUESTIONS[0]],
-        },
-        {
-          id: 'sec_b',
-          title: 'Section B: Structured Problem Solving (20 Marks)',
-          instructions: 'Show full working for all calculations.',
-          totalMarks: 20,
-          questions: [SEED_QUESTIONS[1]],
-        },
-      ],
-      version: 1,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    const initialList = [samplePaper];
-    try {
-      localStorage.setItem(PAPERS_STORAGE_KEY, JSON.stringify(initialList));
-    } catch (_) { /* intentional – storage unavailable */ }
-
-    return initialList;
-  },
-
-  /**
-   * Gets a specific paper by ID
-   */
-  async getPaperById(id: string): Promise<ExamPaper | null> {
-    const papers = await this.getAllPapers();
-    return papers.find((p) => p.id === id) || null;
-  },
-
-  /**
-   * Saves or updates a paper (Autosave support)
-   */
-  async savePaper(paper: ExamPaper): Promise<ExamPaper> {
-    const papers = await this.getAllPapers();
-    const updatedPaper = {
-      ...paper,
-      updatedAt: new Date().toISOString(),
-    };
-
-    const index = papers.findIndex((p) => p.id === paper.id);
-    if (index >= 0) {
-      papers[index] = updatedPaper;
-    } else {
-      papers.unshift(updatedPaper);
-    }
-
-    try {
-      localStorage.setItem(PAPERS_STORAGE_KEY, JSON.stringify(papers));
-    } catch (_) { /* intentional – storage unavailable */ }
-
-    // Async background sync to Supabase if table exists
-    try {
-      void supabase.from('exams').upsert({
-        id: updatedPaper.id,
-        title: updatedPaper.title,
-        grade: updatedPaper.grade,
-        subject: updatedPaper.subject,
-        exam_type: updatedPaper.examType,
-        total_marks: updatedPaper.totalMarks,
-        duration_minutes: updatedPaper.durationMinutes,
-        sections: updatedPaper.sections,
-        branding: updatedPaper.schoolBranding,
-        updated_at: updatedPaper.updatedAt,
-      });
-    } catch (_) { /* intentional – storage unavailable */ }
-
-    return updatedPaper;
-  },
-
-  /**
-   * Duplicates an existing paper
-   */
-  async duplicatePaper(id: string): Promise<ExamPaper | null> {
-    const paper = await this.getPaperById(id);
-    if (!paper) return null;
-
-    const copy: ExamPaper = {
-      ...paper,
-      id: `paper_copy_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
-      title: `${paper.title} (Copy)`,
-      status: 'DRAFT',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-
-    await this.savePaper(copy);
-    return copy;
-  },
-
-  /**
-   * Deletes a paper by ID
-   */
-  async deletePaper(id: string): Promise<boolean> {
-    const papers = await this.getAllPapers();
-    const filtered = papers.filter((p) => p.id !== id);
-    try {
-      localStorage.setItem(PAPERS_STORAGE_KEY, JSON.stringify(filtered));
-    } catch (_) { /* intentional – storage unavailable */ }
-    return true;
-  },
+  ...teacherPaperRepository,
 
   /**
    * Retrieves the question bank items
@@ -315,7 +166,7 @@ export const paperStudioService = {
     try {
       const raw = localStorage.getItem(QUESTION_BANK_STORAGE_KEY);
       if (raw) customQuestions = JSON.parse(raw);
-    } catch (_) { /* intentional – storage unavailable */ }
+    } catch (_) { /* intentional ï¿½ storage unavailable */ }
 
     const combined = [...customQuestions, ...SEED_QUESTIONS];
 
@@ -334,7 +185,7 @@ export const paperStudioService = {
     try {
       const raw = localStorage.getItem(QUESTION_BANK_STORAGE_KEY);
       if (raw) customQuestions = JSON.parse(raw);
-    } catch (_) { /* intentional – storage unavailable */ }
+    } catch (_) { /* intentional ï¿½ storage unavailable */ }
 
     const index = customQuestions.findIndex((q) => q.id === question.id);
     if (index >= 0) {
@@ -345,7 +196,7 @@ export const paperStudioService = {
 
     try {
       localStorage.setItem(QUESTION_BANK_STORAGE_KEY, JSON.stringify(customQuestions));
-    } catch (_) { /* intentional – storage unavailable */ }
+    } catch (_) { /* intentional ï¿½ storage unavailable */ }
 
     return question;
   },

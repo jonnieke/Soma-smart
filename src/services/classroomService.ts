@@ -254,8 +254,9 @@ class ClassroomService {
         return data;
     }
 
-    async getClassStream(classId: string): Promise<ClassroomPost[]> {
+    async getClassStream(classId: string, requireRemote = false): Promise<ClassroomPost[]> {
         if (this.isLocalClassId(classId)) {
+            if (requireRemote) throw new Error('This classroom is available only on the teacher’s device.');
             return this.readLocalPosts(classId);
         }
 
@@ -266,6 +267,7 @@ class ClassroomService {
             .order('created_at', { ascending: false });
 
         if (error) {
+            if (requireRemote) throw error;
             warnIfDev('Class stream fetch failed; showing local stream fallback:', error);
             return this.readLocalPosts(classId);
         }

@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, BookOpen, Send, Users, Sparkles, CheckCircle } from 'lucide-react';
+import { ArrowLeft, BookOpen, Send, Sparkles, CheckCircle } from 'lucide-react';
 import { generatePracticeQuestions, PracticeQuestion } from '../../services/geminiService';
 import { trackAnalyticsEvent } from '../../services/analyticsEventService';
-import { clearTeacherWorkflowDraft, loadTeacherWorkflowDraft, saveTeacherWorkflowDraft } from '../../services/teacherWorkflowService';
+import { loadTeacherWorkflowDraft, saveTeacherWorkflowDraft } from '../../services/teacherWorkflowService';
+import { HomeworkAssignment, publishTeacherHomework } from '../../services/teacherHomeworkService';
 
 export const HomeworkCreator: React.FC<{
     onBack: () => void;
@@ -20,7 +21,12 @@ export const HomeworkCreator: React.FC<{
     const [subject, setSubject] = useState(initialSubject || subjects[0] || 'Mathematics');
     const [grade, setGrade] = useState(initialGrade || classes[0] || 'Grade 6');
     const [generating, setGenerating] = useState(false);
-    const [homework, setHomework] = useState<any>(null);
+    const [homework, setHomework] = useState<HomeworkAssignment | null>(null);
+    const [dueDate, setDueDate] = useState('');
+    const [posting, setPosting] = useState(false);
+    const [posted, setPosted] = useState(false);
+    const [postingError, setPostingError] = useState('');
+    const postingRef = React.useRef(false);
     const draftLoadedRef = React.useRef(false);
 
     React.useEffect(() => {
@@ -43,8 +49,11 @@ export const HomeworkCreator: React.FC<{
                     setDiff(payload.difficulty);
                 }
                 if (payload.homework && typeof payload.homework === 'object') {
-                    setHomework(payload.homework);
+                    const saved = payload.homework as HomeworkAssignment;
+                    setHomework({ ...saved, id: saved.id || crypto.randomUUID() });
                 }
+                if (typeof payload.dueDate === 'string') setDueDate(payload.dueDate);
+                setPosted(payload.posted === true);
             }
 
             if (!cancelled) {
@@ -64,13 +73,13 @@ export const HomeworkCreator: React.FC<{
             void saveTeacherWorkflowDraft(
                 teacherId,
                 'HOMEWORK',
-                { topic, grade, subject, difficulty: diff, homework },
+                { topic, grade, subject, difficulty: diff, homework, dueDate, posted },
                 { className: grade, subject },
             );
         }, 250);
 
         return () => window.clearTimeout(timer);
-    }, [diff, grade, homework, subject, teacherId, topic]);
+    }, [diff, grade, homework, subject, teacherId, topic, dueDate, posted]);
 
     const handleGenerate = async () => {
         setGenerating(true);
@@ -82,6 +91,7 @@ export const HomeworkCreator: React.FC<{
             
             if (generated && generated.length > 0) {
                 const nextHomework = {
+                    id: crypto.randomUUID(),
                     title: `${topic} Assignment`,
                     questions: generated
                 };
@@ -112,11 +122,26 @@ export const HomeworkCreator: React.FC<{
     };
 
     const handleAssign = async () => {
-        if (teacherId) {
-            await clearTeacherWorkflowDraft(teacherId, 'HOMEWORK');
+        if (postingRef.current || posted || !homework) return;
+        postingRef.current = true;
+        setPosting(true);
+        setPostingError('');
+        try {
+            // Keep the same ID before sending so a retry cannot create another assignment.
+            await saveTeacherWorkflowDraft(teacherId, 'HOMEWORK',
+                { topic, grade, subject, difficulty: diff, homework, dueDate, posted: false },
+                { className: grade, subject });
+            await publishTeacherHomework(teacherId || '', grade, subject, homework, dueDate);
+            setPosted(true);
+            await saveTeacherWorkflowDraft(teacherId, 'HOMEWORK',
+                { topic, grade, subject, difficulty: diff, homework, dueDate, posted: true },
+                { className: grade, subject });
+        } catch (error) {
+            setPostingError(error instanceof Error ? error.message : 'Could not post homework. Your draft is still here.');
+        } finally {
+            postingRef.current = false;
+            setPosting(false);
         }
-        alert(`Homework assigned to all students in ${grade}! Check the Assignments tab to track submissions.`);
-        onBack();
     };
 
     return (
@@ -213,12 +238,19 @@ export const HomeworkCreator: React.FC<{
                             </div>
                         </div>
 
-                        <div className="flex gap-4">
-                            <button onClick={() => setHomework(null)} className="flex-1 py-4 bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold rounded-xl transition-colors">
-                                Regenerate
+                        <label className="block text-sm font-bold text-slate-700">
+                            Due date (optional)
+                            <input type="date" value={dueDate} disabled={posting || posted} onChange={event => setDueDate(event.target.value)} className="block mt-2 rounded-xl border p-3" />
+                        </label>
+                        <p className="text-sm text-slate-600">Post the questions to your classroom stream. Learners who have joined can read them there. Model answers stay in your teacher draft.</p>
+                        {postingError && <p role="alert" className="text-sm text-red-700">{postingError}</p>}
+                        {posted && <p role="status" className="text-sm font-semibold text-green-700">Posted to the {grade} classroom stream. Your teacher copy is kept here. This does not confirm that learners have read it.</p>}
+                        <div className="flex flex-col sm:flex-row gap-4">
+                            <button disabled={posting} onClick={() => { setHomework(null); setPosted(false); setPostingError(''); setDueDate(''); }} className="flex-1 py-4 bg-slate-100 text-slate-700 hover:bg-slate-200 font-bold rounded-xl transition-colors disabled:opacity-50">
+                                {posted ? 'Create new homework' : 'Regenerate'}
                             </button>
-                            <button onClick={handleAssign} className="flex-[2] flex items-center justify-center gap-2 py-4 bg-indigo-600 text-white hover:bg-indigo-700 font-bold rounded-xl transition-all shadow-md shadow-indigo-200">
-                                <Send className="w-5 h-5" /> Assign to {grade}
+                            <button onClick={handleAssign} disabled={posting || posted} className="flex-[2] flex items-center justify-center gap-2 py-4 bg-indigo-600 text-white hover:bg-indigo-700 font-bold rounded-xl transition-all shadow-md shadow-indigo-200 disabled:opacity-50">
+                                <Send className="w-5 h-5" /> {posting ? 'Posting…' : posted ? 'Posted to classroom' : `Post to ${grade}`}
                             </button>
                         </div>
                     </motion.div>

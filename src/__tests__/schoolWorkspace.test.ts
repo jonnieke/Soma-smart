@@ -1,4 +1,11 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+// Workflow rule tests only. School sharing/RLS needs separate integration coverage;
+// private teacher storage must not grant reviewers anonymous access for these tests.
+const paperFixtures = vi.hoisted(() => new Map<string, any>());
+vi.mock('../services/paperStudioService', () => ({ paperStudioService: {
+  savePaper: vi.fn(async (paper: any) => { paperFixtures.set(paper.id, structuredClone(paper)); return paper; }),
+  getPaperById: vi.fn(async (id: string) => structuredClone(paperFixtures.get(id) || null)),
+} }));
 import { schoolWorkspaceService } from '../services/schoolWorkspaceService';
 import { schoolReviewService } from '../services/schoolReviewService';
 import { schoolCreditService } from '../services/schoolCreditService';
@@ -10,6 +17,7 @@ import { SchoolRole } from '../types/schoolWorkspace';
 describe('Phase 3: School Assessment Workspace Test Suite', () => {
   beforeEach(() => {
     localStorage.clear();
+    paperFixtures.clear();
   });
 
   describe('1. Role Evaluation & Permissions', () => {

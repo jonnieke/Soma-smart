@@ -33,25 +33,46 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
   const [showPrintPreview, setShowPrintPreview] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isRegenerating, setIsRegenerating] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [saveNotice, setSaveNotice] = useState('');
+  const saveSequence = React.useRef(0);
 
   useEffect(() => {
     loadPaper();
   }, [paperId]);
 
   const loadPaper = async () => {
+    setLoadError('');
+    try {
     const loaded = await paperStudioService.getPaperById(paperId);
     if (loaded) {
       setPaper(loaded);
+      setSaveNotice(paperStudioService.getPaperStorageNotice());
       if (loaded.sections[0]?.questions[0]) {
         setSelectedQuestionId(loaded.sections[0].questions[0].id);
       }
+    } else setLoadError('This paper was not found for your account. Return to your papers or retry loading.');
+    } catch (error) { setLoadError(error instanceof Error ? error.message : 'Could not load this paper. Please retry.'); }
+  };
+
+  const persistPaper = async (draft: ExamPaper) => {
+    const sequence = ++saveSequence.current;
+    setIsSaving(true);
+    setSaveNotice('Saving recovery copy and syncing…');
+    try {
+      await paperStudioService.savePaper(draft);
+      if (sequence === saveSequence.current) setSaveNotice('Saved to your account.');
+    } catch (error) {
+      if (sequence === saveSequence.current) setSaveNotice(error instanceof Error ? error.message : 'Sync failed. Keep this draft open and retry Save Draft.');
+    } finally {
+      if (sequence === saveSequence.current) setIsSaving(false);
     }
   };
 
   if (!paper) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
-        <p className="text-slate-400 font-medium">Loading examination paper...</p>
+        {loadError ? <div role="alert" className="space-y-4 p-6"><p>{loadError}</p><button onClick={loadPaper} className="underline mr-4">Retry</button><button onClick={onBackToWorkspace} className="underline">Back to my papers</button></div> : <p className="text-slate-400 font-medium">Loading examination paper...</p>}
       </div>
     );
   }
@@ -73,12 +94,7 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
 
   const handleSave = async () => {
     if (!paper) return;
-    setIsSaving(true);
-    try {
-      await paperStudioService.savePaper(paper);
-    } finally {
-      setIsSaving(false);
-    }
+    await persistPaper(paper);
   };
 
   const handleUpdateQuestion = (updatedQ: Question) => {
@@ -101,7 +117,7 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
     };
 
     setPaper(updatedPaper);
-    void paperStudioService.savePaper(updatedPaper);
+    void persistPaper(updatedPaper);
   };
 
   const handleRegenerateQuestionVariation = async () => {
@@ -147,7 +163,7 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
 
     setPaper(updatedPaper);
     setSelectedQuestionId(newQ.id);
-    void paperStudioService.savePaper(updatedPaper);
+    void persistPaper(updatedPaper);
   };
 
   const handleDeleteQuestion = (sectionIdx: number, questionIdx: number) => {
@@ -163,7 +179,7 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
     const updatedPaper = { ...paper, sections: updatedSections, totalMarks: newTotalMarks };
 
     setPaper(updatedPaper);
-    void paperStudioService.savePaper(updatedPaper);
+    void persistPaper(updatedPaper);
   };
 
   if (showPrintPreview) {
@@ -177,6 +193,7 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
 
   return (
     <div className="flex flex-col h-[calc(100vh-4rem)] bg-slate-100 overflow-hidden">
+      {saveNotice && <p role="status" className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-slate-800">{saveNotice}</p>}
       {/* ── TOP TOOLBAR ── */}
       <header className="h-14 bg-white border-b border-slate-200 px-4 flex items-center justify-between z-10 shrink-0">
         <div className="flex items-center gap-3">

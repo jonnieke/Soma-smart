@@ -1,9 +1,17 @@
 /**
- * Phase 5 — Soma Assessment Intelligence Integration Tests
+ * Phase 5 — Soma Assessment Intelligence workflow unit tests (explicit paper fixture).
+ * These do not certify private-paper sharing, authentication or learner access.
  * Tests: Auto-marking, math tolerance, assignment flow, attempt autosave, mastery computation, QR script tokens, analytics
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+vi.mock('../services/paperStudioService', () => ({ paperStudioService: {
+  getPaperById: vi.fn(async (id: string) => ({
+    id, title: 'Fixture assessment', ownerId: 't1', subject: 'Maths', grade: 'Form 1',
+    term: 'Term 1', year: 2026, durationMinutes: 30, totalMarks: 2, instructions: [],
+    sections: [{ id: 'section-1', questions: [{ id: 'question-1', questionType: 'SHORT_ANSWER', questionText: 'Half of eight?', marks: 2 }] }],
+  })),
+} }));
 import { assessmentMarkingEngineService } from '../services/assessmentMarkingEngineService';
 
 import { assessmentAssignmentService } from '../services/assessmentAssignmentService';

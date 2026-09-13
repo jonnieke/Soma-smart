@@ -39,17 +39,13 @@ export const questionSelectionEngine = {
 
     // Filter candidate bank by grade and subject
     const subjectBank = availableQuestions.filter((q) => {
-      const matchSubject =
-        q.subject.toLowerCase() === blueprint.subject.toLowerCase() ||
-        q.subject.toLowerCase().includes(blueprint.subject.toLowerCase()) ||
-        blueprint.subject.toLowerCase().includes(q.subject.toLowerCase());
+      const matchSubject = q.subject.trim().toLowerCase() === blueprint.subject.trim().toLowerCase();
 
       const matchGrade =
         !blueprint.grade ||
-        q.grade.toLowerCase() === blueprint.grade.toLowerCase() ||
-        q.grade.toLowerCase().includes(blueprint.grade.toLowerCase());
+        q.grade.trim().toLowerCase() === blueprint.grade.trim().toLowerCase();
 
-      return matchSubject && matchGrade;
+      return matchSubject && matchGrade && q.curriculum === blueprint.curriculum;
     });
 
     // Process each section rule defined in the blueprint
@@ -61,6 +57,10 @@ export const questionSelectionEngine = {
       const candidates = subjectBank.filter((q) => {
         if (usedIds.has(q.id)) return false;
         if (sectionRuleType && q.questionType !== sectionRuleType) return false;
+        if (!Number.isFinite(q.marks) || q.marks <= 0 || q.marks !== rule.marksPerQuestion) return false;
+        const topics = rule.topics?.length ? rule.topics : blueprint.topics;
+        if (topics.length && !topics.some(topic => topic.trim().toLowerCase() === q.topic?.trim().toLowerCase())) return false;
+        if (!q.markingScheme?.length || q.markingScheme.some(criterion => !Number.isFinite(criterion.marks) || criterion.marks < 0) || Math.abs(q.markingScheme.reduce((sum, criterion) => sum + criterion.marks, 0) - q.marks) > 0.001) return false;
         return true;
       });
 
@@ -103,15 +103,11 @@ export const questionSelectionEngine = {
       // Select top candidates up to requested count
       for (const item of scoredCandidates) {
         if (sectionQuestions.length >= rule.questionCount) break;
+        if (usedIds.has(item.question.id)) continue;
 
-        // Ensure question marks align with rule if possible, or adapt
-        const adaptedQuestion = { ...item.question };
-        if (rule.marksPerQuestion > 0 && adaptedQuestion.marks !== rule.marksPerQuestion) {
-          adaptedQuestion.marks = rule.marksPerQuestion;
-        }
-
-        sectionQuestions.push(adaptedQuestion);
-        usedIds.add(adaptedQuestion.id);
+        // Keep the question and its marking guide unchanged.
+        sectionQuestions.push(item.question);
+        usedIds.add(item.question.id);
       }
 
       // Check if we didn't have enough questions in the bank
@@ -138,17 +134,17 @@ export const questionSelectionEngine = {
     }
 
     // Calculate Coverage Metrics
-    const targetTopicsCount = blueprint.topics?.length || 1;
+    const targetTopics = new Set(blueprint.topics.map(topic => topic.trim().toLowerCase()));
     const coveredTopics = new Set<string>();
     assembledSections.forEach((sec) => {
       sec.questions.forEach((q) => {
-        if (q.topic) coveredTopics.add(q.topic.toLowerCase());
+        if (q.topic) coveredTopics.add(q.topic.trim().toLowerCase());
       });
     });
 
     const topicCoveragePercent = Math.min(
       100,
-      Math.round((coveredTopics.size / targetTopicsCount) * 100)
+      targetTopics.size ? Math.round(([...targetTopics].filter(topic => coveredTopics.has(topic)).length / targetTopics.size) * 100) : 100
     );
 
     // Difficulty breakdown
@@ -163,8 +159,13 @@ export const questionSelectionEngine = {
       });
     });
 
-    const difficultyMatchPercent = totalSelectedQuestions > 0 ? 85 : 0;
-    const cognitiveMatchPercent = totalSelectedQuestions > 0 ? 80 : 0;
+    const questions = assembledSections.flatMap(section => section.questions);
+    const distributionMatch = (target: Record<string, number>, count: (key: string) => number) =>
+      totalSelectedQuestions ? Math.max(0, Math.round(100 - Object.entries(target).reduce((sum, [key, percent]) =>
+        sum + Math.abs(percent - 100 * count(key) / totalSelectedQuestions), 0) / 2)) : 0;
+    const difficultyMatchPercent = distributionMatch(blueprint.difficultyDistribution, key =>
+      key === 'easy' ? easyCount : key === 'medium' ? mediumCount : challengingCount);
+    const cognitiveMatchPercent = distributionMatch(blueprint.cognitiveDistribution, key => questions.filter(q => q.cognitiveLevel === key).length);
 
     return {
       sections: assembledSections,

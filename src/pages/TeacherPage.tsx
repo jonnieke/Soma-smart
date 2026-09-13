@@ -82,8 +82,8 @@ export const TeacherPage: React.FC = () => {
     let initialTab: TeacherInitialTab = 'DASHBOARD';
     const isSubRoute = location.pathname !== '/teacher';
 
-    if (location.pathname === '/teacher/notes') initialTab = 'HOME';
-    if (location.pathname === '/teacher/homework') initialTab = 'HOME';
+    if (location.pathname === '/teacher/notes') initialTab = 'CONVERT';
+    if (location.pathname === '/teacher/homework') initialTab = 'HOMEWORK';
     if (location.pathname === '/teacher/marking') initialTab = 'MARKING';
     if (location.pathname === '/teacher/darasa') initialTab = 'DARASA_MODE';
     if (location.pathname === '/teacher/syllabus') initialTab = 'SYLLABUS_TRACKER';
@@ -156,6 +156,7 @@ export const TeacherPage: React.FC = () => {
                     />
                     <LoginModal
                         isOpen={showLoginModal}
+                        initialTab="TEACHER"
                         onClose={() => setShowLoginModal(false)}
                         onSuccess={() => setShowLoginModal(false)}
                         onSwitchToRegister={() => {
@@ -176,6 +177,7 @@ export const TeacherPage: React.FC = () => {
                 </>
             ) : isPaperStudioCreate ? (
                 <CreatePaperWizard
+                    teacherId={teacherProfile?.id}
                     onCancel={() => navigate('/teacher/paper-studio')}
                     onPaperCreated={(id) => navigate(`/teacher/paper-studio/editor/${id}`)}
                 />
@@ -185,6 +187,7 @@ export const TeacherPage: React.FC = () => {
                 />
             ) : isPaperStudioEditor && paperIdFromUrl ? (
                 <ExaminationEditor
+                    key={`${teacherProfile?.id || 'guest'}:${paperIdFromUrl}`}
                     paperId={paperIdFromUrl}
                     onBackToWorkspace={() => navigate('/teacher/paper-studio')}
                 />
@@ -203,6 +206,7 @@ export const TeacherPage: React.FC = () => {
                 />
             ) : isPaperStudioBase ? (
                 <PaperStudioWorkspace
+                    key={teacherProfile?.id || 'guest'}
                     onNavigateToWizard={() => navigate('/teacher/paper-studio/create')}
                     onOpenPaperEditor={(id) => navigate(`/teacher/paper-studio/editor/${id}`)}
                     onOpenQuestionBank={() => navigate('/teacher/paper-studio/questions')}

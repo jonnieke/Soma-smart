@@ -24,16 +24,19 @@ import {
   CognitiveLevel,
 } from '../../../types/paperStudio';
 import { paperStudioService } from '../../../services/paperStudioService';
-import { questionSelectionEngine } from '../../../services/assessmentEngine/questionSelectionEngine';
+import { assembleCheckedPaper } from '../../../services/assessmentEngine/checkedPaperAssembly';
 
 interface WizardProps {
+  teacherId?: string;
   onCancel: () => void;
   onPaperCreated: (paperId: string) => void;
 }
 
-export const CreatePaperWizard: React.FC<WizardProps> = ({ onCancel, onPaperCreated }) => {
+export const CreatePaperWizard: React.FC<WizardProps> = ({ onCancel, onPaperCreated, teacherId }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [assemblyError, setAssemblyError] = useState('');
+  const assemblingRef = React.useRef(false);
 
   // Step 1: Exam Details State
   const [title, setTitle] = useState('Grade 9 Mathematics Continuous Assessment Test 1');
@@ -46,7 +49,6 @@ export const CreatePaperWizard: React.FC<WizardProps> = ({ onCancel, onPaperCrea
   const [term, setTerm] = useState('Term 1');
   const [year, setYear] = useState<string | number>('2026');
   const [durationMinutes, setDurationMinutes] = useState<number>(60);
-  const [totalMarks, setTotalMarks] = useState<number>(30);
   const [instructionsText, setInstructionsText] = useState(
     'Answer all questions in the spaces provided.\nShow all your working clearly.\nCalculators are allowed where appropriate.'
   );
@@ -86,12 +88,11 @@ export const CreatePaperWizard: React.FC<WizardProps> = ({ onCancel, onPaperCrea
   const [challengingPercent, setChallengingPercent] = useState(20);
 
   // Step 5: Question Source
-  const [questionSource, setQuestionSource] = useState<'SOMA_BANK' | 'AI_HYBRID' | 'MY_BANK'>('AI_HYBRID');
+  const [questionSource, setQuestionSource] = useState<'SOMA_BANK' | 'AI_HYBRID' | 'MY_BANK'>('SOMA_BANK');
 
   // Calculation totals
   const sectionsTotalMarks = sections.reduce((sum, s) => sum + s.questionCount * s.marksPerQuestion, 0);
   const totalQuestionsCount = sections.reduce((sum, s) => sum + s.questionCount, 0);
-  const isMarksMismatch = sectionsTotalMarks !== totalMarks;
 
   const handleAddSection = () => {
     setSections([
@@ -122,12 +123,21 @@ export const CreatePaperWizard: React.FC<WizardProps> = ({ onCancel, onPaperCrea
   };
 
   const handleAssemblePaper = async () => {
+    if (assemblingRef.current) return;
+    assemblingRef.current = true;
     setIsGenerating(true);
+    setAssemblyError('');
     try {
+      // The authenticated session owns the draft, even when the optional
+      // teacher profile has not been populated (for example an admin preview).
+      const ownerId = await paperStudioService.getOwnerId();
+      if (teacherId && teacherId !== ownerId) {
+        throw new Error('Your account changed. Return to Paper Studio before creating this paper.');
+      }
       // 1. Create Blueprint Model
       const blueprint: ExamBlueprint = {
         id: `bp_${Date.now()}`,
-        ownerId: 'teacher_user',
+        ownerId,
         title,
         grade,
         subject,
@@ -158,15 +168,16 @@ export const CreatePaperWizard: React.FC<WizardProps> = ({ onCancel, onPaperCrea
       const availableQuestions = await paperStudioService.getQuestionBank(subject, grade);
 
       // 3. Assemble sections using Question Selection Engine
-      const { sections: assembledSections } = questionSelectionEngine.assemblePaperFromBlueprint(
+      const { sections: assembledSections, report } = assembleCheckedPaper(
         blueprint,
-        availableQuestions
+        availableQuestions,
+        questionSource
       );
 
       // 4. Construct Final Exam Paper Model
       const newPaper: ExamPaper = {
         id: `paper_${Date.now()}_${Math.random().toString(36).substr(2, 4)}`,
-        ownerId: 'teacher_user',
+        ownerId,
         blueprintId: blueprint.id,
         title,
         status: 'DRAFT',
@@ -177,7 +188,7 @@ export const CreatePaperWizard: React.FC<WizardProps> = ({ onCancel, onPaperCrea
         term,
         year,
         durationMinutes,
-        totalMarks: sectionsTotalMarks,
+        totalMarks: report.totalMarksSelected,
         schoolBranding: {
           schoolName,
           teacherName,
@@ -192,13 +203,15 @@ export const CreatePaperWizard: React.FC<WizardProps> = ({ onCancel, onPaperCrea
         updatedAt: new Date().toISOString(),
       };
 
-      // Deduct 1 credit for blueprint generation
-      paperStudioService.deductCredits(1);
+      // Bank selection does not call AI, so it must not consume AI credits.
 
       // Save paper to studio repository
       await paperStudioService.savePaper(newPaper);
       onPaperCreated(newPaper.id);
+    } catch (error) {
+      setAssemblyError(error instanceof Error ? error.message : 'Could not assemble the paper. Your settings are still here; please retry.');
     } finally {
+      assemblingRef.current = false;
       setIsGenerating(false);
     }
   };
@@ -542,14 +555,14 @@ export const CreatePaperWizard: React.FC<WizardProps> = ({ onCancel, onPaperCrea
           <h3 className="text-sm font-bold text-slate-900">Select Primary Question Source</h3>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button
-              onClick={() => setQuestionSource('AI_HYBRID')}
+              disabled
               className={`p-4 rounded-2xl border text-left transition ${
                 questionSource === 'AI_HYBRID' ? 'border-indigo-600 bg-indigo-50/50' : 'border-slate-200'
               }`}
             >
               <Sparkles className="w-5 h-5 text-indigo-600 mb-2" />
               <h4 className="text-xs font-bold text-slate-900">Soma AI Hybrid Engine</h4>
-              <p className="text-[11px] text-slate-500 mt-1">Combine Soma Question Bank with fresh AI question variations.</p>
+              <p className="text-[11px] text-slate-500 mt-1">Not available yet. Use a question bank below; bank selection uses no AI credits.</p>
             </button>
 
             <button
@@ -607,10 +620,12 @@ export const CreatePaperWizard: React.FC<WizardProps> = ({ onCancel, onPaperCrea
       )}
 
       {/* Footer Navigation Buttons */}
+      {assemblyError && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">{assemblyError}</p>}
       <div className="flex items-center justify-between pt-4">
         {currentStep > 1 ? (
           <button
             onClick={() => setCurrentStep(currentStep - 1)}
+            disabled={isGenerating}
             className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50"
           >
             <ArrowLeft className="w-4 h-4" /> Back
