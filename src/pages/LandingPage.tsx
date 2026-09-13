@@ -815,18 +815,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     };
 
     const handleTeacherPreview = async (draft: TeacherComposerDraft): Promise<string> => {
+        const wantsLessonPlan = /\blesson\s+plans?\b/i.test(draft.prompt);
+        const wantsScheme = /\bschemes?\s+of\s+work\b|\btermly\s+scheme\b/i.test(draft.prompt);
         const intentInstruction: Record<TeacherComposerDraft['intent'], string> = {
-            CREATE: 'Create concise sample teaching notes.',
+            CREATE: wantsLessonPlan
+                ? 'Create a concise sample lesson plan for the teacher.'
+                : wantsScheme
+                    ? 'Create a concise sample scheme of work for the teacher.'
+                    : 'Create concise, learner-facing study notes that a teacher can give directly to learners.',
             MARK: 'Create a short sample feedback note showing how the learner work would be corrected.',
             ASSESS: 'Create concise revision notes followed by three sample assessment questions.',
             MARKETPLACE: 'Create concise sample notes suitable for a private teacher draft before marketplace review.',
         };
+        const createFormatInstruction = draft.intent === 'CREATE' && !wantsLessonPlan && !wantsScheme
+            ? 'Write to the learner in simple language. Use a clear title, a short meaning, key facts explained in logical sections, one familiar Kenyan example, a brief recap, and three check questions. Do not include teacher activities, lesson timings, teaching resources, pedagogy, assessment strategy, differentiation, or instructions for how to teach the lesson.'
+            : 'Use clear headings, practical detail, and one familiar Kenyan example.';
         const attachmentContext = draft.file
             ? `The teacher attached a file named "${draft.file.name}". Do not claim to have read it; use only the written request and label the result as a sample.`
             : '';
         try {
             const generated = await callGeminiProxy(
-                `${intentInstruction[draft.intent]} Align it to the Kenyan CBC/KCSE curriculum where relevant. Use a clear title, learning objective, key points, one familiar Kenyan example, and a short learner check. Keep it under 250 words, use plain text with short headings and bullets, and do not use markdown symbols. ${attachmentContext} Teacher request: ${draft.prompt || 'Create a useful classroom notes sample.'}`
+                `${intentInstruction[draft.intent]} Align it to the Kenyan CBC/KCSE curriculum where relevant. ${createFormatInstruction} Keep it under 250 words, use plain text with short headings and bullets, and do not use markdown symbols. ${attachmentContext} Teacher request: ${draft.prompt || 'Create a useful classroom notes sample.'}`
             );
             return (generated || '')
                 .replace(/\*\*(.*?)\*\*/g, '$1')
@@ -840,7 +849,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 reason: error instanceof Error ? error.message : 'unknown',
             });
             const topic = draft.prompt.trim() || draft.file?.name || 'Your lesson topic';
-            return `${topic}\n\nLearning objective\nLearners should be able to identify and explain the main ideas in this topic.\n\nKey points\n• Begin with a clear meaning of the topic.\n• Explain each idea using short, learner-friendly steps.\n• Connect the lesson to a familiar example from home, school or the local community.\n• Check understanding before moving to the next idea.\n\nLearner check\nExplain one key idea from the lesson in your own words.\n\nThis is a sample. Sign in to generate the complete, curriculum-aligned version.`;
+            return `${topic}\n\nWhat it means\nThis topic explains an important idea you need to understand and remember.\n\nKey notes\n• Start with the meaning of the topic.\n• Learn each key idea in short, clear steps.\n• Connect the idea to something familiar at home, school or in your community.\n• Use the recap to check the facts you can remember.\n\nQuick check\n1. What does this topic mean?\n2. Name two important facts about it.\n3. Give one example from your community.\n\nThis is a sample. Sign in to see and edit the complete learner notes.`;
         }
     };
     const handleCardClick = (card: { route: string; role?: UserRole, cta?: string }) => {

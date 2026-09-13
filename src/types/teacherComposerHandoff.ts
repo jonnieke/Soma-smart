@@ -18,12 +18,22 @@ type StoredTeacherComposerDraft = TeacherComposerDraft & {
 
 export type TeacherComposerDestination = {
   route: '/teacher' | '/marketplace/sell';
-  initialTab?: 'CONVERT' | 'LESSON_PLAN_GENERATOR' | 'MARKING' | 'QUIZ';
+  initialTab?: 'DASHBOARD' | 'CONVERT' | 'LESSON_PLAN_GENERATOR' | 'SCHEMES' | 'MARKING' | 'QUIZ';
 };
 
 export const getTeacherComposerDestination = (draft: TeacherComposerDraft): TeacherComposerDestination => {
+  const createDestination = (): TeacherComposerDestination => {
+    if (draft.file) return { route: '/teacher', initialTab: 'CONVERT' };
+    if (/\bschemes?\s+of\s+work\b|\btermly\s+scheme\b/i.test(draft.prompt)) {
+      return { route: '/teacher', initialTab: 'SCHEMES' };
+    }
+    if (/\blesson\s+plans?\b/i.test(draft.prompt)) {
+      return { route: '/teacher', initialTab: 'LESSON_PLAN_GENERATOR' };
+    }
+    return { route: '/teacher', initialTab: 'DASHBOARD' };
+  };
   const destinations: Record<TeacherComposerDraft['intent'], TeacherComposerDestination> = {
-    CREATE: { route: '/teacher', initialTab: draft.file ? 'CONVERT' : 'LESSON_PLAN_GENERATOR' },
+    CREATE: createDestination(),
     MARK: { route: '/teacher', initialTab: 'MARKING' },
     ASSESS: { route: '/teacher', initialTab: 'QUIZ' },
     MARKETPLACE: { route: '/marketplace/sell' },

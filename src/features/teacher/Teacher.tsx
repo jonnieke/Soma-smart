@@ -150,6 +150,23 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
     const [homepageDraftContent, setHomepageDraftContent] = useState(initialDraft?.generatedContent || '');
     const [homepageDraftCopied, setHomepageDraftCopied] = useState(false);
     const [activeTab, setActiveTab] = useState<TeacherActiveTab>(initialTab || 'DASHBOARD');
+    const homepageDraftLabels = initialDraft?.intent === 'CREATE'
+        ? {
+            eyebrow: 'Learner-ready material',
+            title: 'Your generated learner notes',
+            help: 'Review and edit the notes here, then copy or share them with your learners.',
+        }
+        : initialDraft?.intent === 'MARK'
+            ? {
+                eyebrow: 'Marking support',
+                title: 'Your generated feedback draft',
+                help: 'Review the feedback carefully and edit it before sharing it with the learner.',
+            }
+            : {
+                eyebrow: 'Created on the Soma homepage',
+                title: 'Your generated teaching draft',
+                help: 'Review and edit your complete draft here, then copy it when it is ready.',
+            };
 
     const copyHomepageDraft = async () => {
         if (!homepageDraftContent.trim()) return;
@@ -1196,9 +1213,9 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                 <section aria-labelledby="homepage-teacher-draft-heading" className="mb-6 overflow-hidden rounded-[2rem] border-2 border-indigo-200 bg-white shadow-sm">
                     <div className="flex flex-col gap-3 border-b border-indigo-100 bg-indigo-50 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
                         <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600">Created on the Soma homepage</p>
-                            <h2 id="homepage-teacher-draft-heading" className="mt-1 text-xl font-black text-slate-900">Your generated teaching draft</h2>
-                            <p className="mt-1 text-xs font-medium text-slate-600">Your complete draft came with you. Edit it here, then copy it when it is ready.</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-600">{homepageDraftLabels.eyebrow}</p>
+                            <h2 id="homepage-teacher-draft-heading" className="mt-1 text-xl font-black text-slate-900">{homepageDraftLabels.title}</h2>
+                            <p className="mt-1 text-xs font-medium text-slate-600">{homepageDraftLabels.help}</p>
                         </div>
                         <button
                             type="button"

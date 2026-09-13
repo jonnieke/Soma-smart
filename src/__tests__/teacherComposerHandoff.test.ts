@@ -18,12 +18,23 @@ describe('teacher composer route contract', () => {
   afterEach(() => sessionStorage.clear());
 
   it.each([
-    ['CREATE', '/teacher', 'LESSON_PLAN_GENERATOR'],
+    ['CREATE', '/teacher', 'DASHBOARD'],
     ['MARK', '/teacher', 'MARKING'],
     ['ASSESS', '/teacher', 'QUIZ'],
     ['MARKETPLACE', '/marketplace/sell', undefined],
   ] as const)('routes %s requests to the correct destination', (intent, route, initialTab) => {
     expect(getTeacherComposerDestination(draft(intent))).toEqual({ route, initialTab });
+  });
+
+  it('opens teacher-planning tools only when the create request names them', () => {
+    expect(getTeacherComposerDestination({
+      ...draft('CREATE'),
+      prompt: 'Create a Grade 6 lesson plan on soil erosion',
+    })).toEqual({ route: '/teacher', initialTab: 'LESSON_PLAN_GENERATOR' });
+    expect(getTeacherComposerDestination({
+      ...draft('CREATE'),
+      prompt: 'Prepare a termly scheme of work for Grade 6 Agriculture',
+    })).toEqual({ route: '/teacher', initialTab: 'SCHEMES' });
   });
 
   it('routes create requests with an attachment to the converter', () => {
