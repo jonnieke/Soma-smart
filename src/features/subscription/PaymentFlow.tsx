@@ -4,7 +4,8 @@ import ReactGA from 'react-ga4';
 import { Smartphone, Loader2, CheckCircle2, XCircle, ArrowLeft, ShieldCheck, CreditCard, ExternalLink, ArrowRight, Sparkles } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { pesapalService } from '../../services/pesapalService';
-import { getPaymentReceipt } from '../../services/transactionAccessService';
+import { getPaymentReceipt, type PaymentRecord } from '../../services/transactionAccessService';
+import { PurchaseThankYou } from '../../components/PurchaseThankYou';
 import { UserRole } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { trackAnalyticsEvent } from '../../services/analyticsEventService';
@@ -37,6 +38,8 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
     const [iframeLoaded, setIframeLoaded] = useState(false);
     const [autoOpenedCheckout, setAutoOpenedCheckout] = useState(false);
     const [error, setError] = useState('');
+    const [receipt, setReceipt] = useState<PaymentRecord | null>(null);
+    const [handoffReady, setHandoffReady] = useState(false);
     const isCreditPackCheckout = Boolean(plan?.isCreditPack || String(plan?.id || '').startsWith('credit_'));
     const isSubscriptionCheckout = Boolean(plan?.segment === 'STUDENT' || plan?.segment === 'TEACHER') && plan?.id !== 'download_pack_5' && !materialId && !isCreditPackCheckout;
     
@@ -178,8 +181,10 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                     // Stop polling while we process success
                     clearInterval(interval);
                     
+                    setReceipt(data);
                     setStep('SUCCESS');
                     setTimeout(async () => {
+                        try {
                         // Polling for profile update to resolve IPN race condition
                         const checkProfileUpdate = async (profileId: string) => {
                             for (let i = 0; i < 5; i++) {
@@ -200,7 +205,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                             } else {
                                 await refreshProfile();
                             }
-                            onSuccess();
+                            setHandoffReady(true);
                             return;
                         }
 
@@ -229,7 +234,11 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                             }
                             await refreshProfile();
                         }
-                        onSuccess();
+                        setHandoffReady(true);
+                        } catch {
+                            setError('Your payment is confirmed, but account refresh did not finish. Continue or contact support; please do not pay again.');
+                            setHandoffReady(true);
+                        }
                     }, 2000); // 2 second buffer to allow IPN to save profile
                 } else if (data && data.status === 'FAILED') {
                     setStep('ERROR');
@@ -592,12 +601,11 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                             <div className="w-24 h-24 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6 text-green-600">
                                 <CheckCircle2 className="w-12 h-12" />
                             </div>
-                            <h2 className="text-3xl font-black text-slate-900 mb-2">
-                                Access added
-                            </h2>
-                            <p className="text-slate-500 font-medium mb-6">
-                                Payment received. Your learning access is being updated right now.
-                            </p>
+                            {receipt ? <PurchaseThankYou receipt={receipt} role={role} ready={handoffReady} onContinue={onSuccess} /> : <>
+                                <h2 className="text-3xl font-black text-slate-900 mb-2">You already have access</h2>
+                                <p className="text-slate-500">Your existing plan is active. No new payment was started.</p>
+                            </>}
+                            {error && <p role="status" className="mt-3 text-sm text-amber-800">{error}</p>}
                             
                             {!isRegistered && existingStudentCode && payerMode === 'NEW' && (
                                 <div className="bg-indigo-50 p-4 rounded-xl border border-indigo-100 text-left">

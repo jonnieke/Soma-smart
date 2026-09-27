@@ -1,6 +1,6 @@
 import React from 'react';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
-import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import { ExamPaperBankPage } from '../pages/ExamPaperBankPage';
@@ -48,11 +48,28 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 describe('returning paper buyers', () => {
+  it('does not show a thank-you for pending access', async () => {
+    service.listPurchasedPaperIds.mockResolvedValue([]);
+    service.getAccess.mockResolvedValue({ paid: false });
+    setup('/exam-papers?paper=7&status=verifying&ref=test-reference');
+    await waitFor(() => expect(service.getAccess).toHaveBeenCalled());
+    expect(screen.queryByText('Thank you for choosing Soma!')).toBeNull();
+    expect(screen.queryByText('Reader screen')).toBeNull();
+  });
+  it('does not let restored access bypass the confirmation after checkout', async () => {
+    service.getAccess.mockResolvedValue({ paid: true, title: 'Verified paper title' });
+    setup('/exam-papers?paper=7&status=verifying&ref=test-reference');
+    expect(await screen.findByText('Verified paper title')).toBeTruthy();
+    expect(screen.queryByText('Reader screen')).toBeNull();
+    expect(screen.queryByText(/KES 20/)).toBeNull();
+    expect(await screen.findByText(/You have not been signed up for updates/)).toBeTruthy();
+  });
   it('returns to revision after payment verification instead of the reader', async () => {
     rememberPaperMode(7, 'revision');
     service.listPurchasedPaperIds.mockResolvedValue([]);
     service.getAccess.mockResolvedValue({ paid: true });
     setup('/exam-papers?paper=7&status=verifying&ref=test-reference');
+    fireEvent.click(await screen.findByRole('button', { name: 'Continue revision' }));
     expect(await screen.findByText('Revision screen')).toBeTruthy();
     expect(service.getAccess).toHaveBeenCalledWith('7', 'test-reference');
     expect(screen.queryByText('Reader screen')).toBeNull();
@@ -61,6 +78,9 @@ describe('returning paper buyers', () => {
     service.listPurchasedPaperIds.mockResolvedValue([]);
     service.getAccess.mockResolvedValue({ paid: true });
     setup('/exam-papers?paper=7&status=verifying&ref=test-reference');
+    expect(await screen.findByText('Thank you for choosing Soma!')).toBeTruthy();
+    expect(screen.queryByText('Reader screen')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Open your paper' }));
     expect(await screen.findByText('Reader screen')).toBeTruthy();
   });
   it('restores purchases again after a fresh page mount', async () => {

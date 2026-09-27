@@ -20,6 +20,7 @@ const cleanArray = (value: unknown, fallback: string[]) => {
 
 type DeliveryJob = {
   id: string;
+  user_id: string | null;
   channel: string;
   recipient: string;
   title: string;
@@ -137,9 +138,14 @@ const sendWhatsAppCloud = async (job: DeliveryJob) => {
 };
 
 const dispatchDeliveryJobs = async (supabase: any, eventId: string) => {
+  // Rollout gate: saving preferences must not silently turn on customer outreach.
+  // Enable only after provider/template/contact-verification and delivery tests.
+  if (Deno.env.get('CUSTOMER_OUTREACH_ENABLED') !== 'true') {
+    return { sent: 0, pending: 0, failed: 0, disabled: true };
+  }
   const { data: jobs, error } = await supabase
     .from('notification_delivery_jobs')
-    .select('id, channel, recipient, title, body, action_url, attempts')
+    .select('id, user_id, channel, recipient, title, body, action_url, attempts')
     .eq('event_id', eventId)
     .eq('status', 'PENDING')
     .limit(50);
@@ -149,6 +155,20 @@ const dispatchDeliveryJobs = async (supabase: any, eventId: string) => {
   const summary = { sent: 0, pending: 0, failed: 0 };
   for (const job of (jobs || []) as DeliveryJob[]) {
     try {
+      const { data: preferences, error: preferenceError } = await supabase
+        .from('notification_preferences')
+        .select('consent_version,content_updates_enabled,email_enabled,whatsapp_enabled,sms_enabled')
+        .eq('user_id', job.user_id).maybeSingle();
+      if (preferenceError) throw preferenceError;
+      const optedIn = preferences?.consent_version === 'customer-updates-v1'
+        && preferences.content_updates_enabled
+        && (job.channel === 'EMAIL' ? preferences.email_enabled : job.channel === 'WHATSAPP' ? preferences.whatsapp_enabled : false);
+      if (!optedIn) {
+        await supabase.from('notification_delivery_jobs').update({ status: 'SKIPPED', error: 'No current explicit channel consent' }).eq('id', job.id);
+        continue;
+      }
+      // Outbound WhatsApp needs approved templates; never use a free-text fallback.
+      if (job.channel === 'WHATSAPP') { summary.pending += 1; continue; }
       const result = job.channel === 'EMAIL'
         ? await sendResendEmail(job)
         : job.channel === 'SMS'
@@ -203,6 +223,15 @@ serve(async (req) => {
   );
 
   try {
+    const authorization = req.headers.get('Authorization') || '';
+    if (!authorization.startsWith('Bearer ')) return json({ error: 'Sign in required.' }, 401);
+    const caller = createClient(Deno.env.get('SUPABASE_URL') || '', Deno.env.get('SUPABASE_ANON_KEY') || '', {
+      global: { headers: { Authorization: authorization } },
+    });
+    const { data: identity, error: identityError } = await caller.auth.getUser();
+    if (identityError || !identity.user) return json({ error: 'Sign in required.' }, 401);
+    const { data: admin, error: adminError } = await caller.rpc('is_soma_admin');
+    if (adminError) return json({ error: 'Publisher verification unavailable.' }, 503);
     const payload = await req.json();
     const itemType = cleanText(payload.itemType || payload.item_type, 'UPDATE').toUpperCase();
     const title = cleanText(payload.title);
@@ -213,9 +242,20 @@ serve(async (req) => {
     const grade = cleanText(payload.grade, '');
     const subject = cleanText(payload.subject, '');
     const targetClassId = cleanText(payload.targetClassId || payload.target_class_id, '');
-    const createdBy = cleanText(payload.createdBy || payload.created_by, '');
+    const createdBy = identity.user.id;
     const channels = cleanArray(payload.channels, ['IN_APP']);
     const targetRoles = cleanArray(payload.targetRoles || payload.target_roles, ['LEARNER', 'TEACHER']);
+
+    if (admin !== true) {
+      if (!targetClassId || sourceTable !== 'class_posts' || !['CLASS_NOTE', 'CLASS_QUIZ'].includes(itemType)
+        || targetRoles.some(role => role !== 'LEARNER')) return json({ error: 'Publisher access required.' }, 403);
+      const { data: ownedClass, error: classError } = await supabase.from('classes')
+        .select('id').eq('id', targetClassId).eq('teacher_id', identity.user.id).maybeSingle();
+      if (classError || !ownedClass) return json({ error: 'Class owner access required.' }, 403);
+      const { data: post, error: postError } = await supabase.from('class_posts')
+        .select('id').eq('id', sourceId).eq('class_id', targetClassId).maybeSingle();
+      if (postError || !post) return json({ error: 'Class post not found.' }, 403);
+    }
 
     if (!title || !body) return json({ error: 'Notification title and body are required.' }, 400);
     if (!sourceTable || !sourceId) return json({ error: 'Notification source is required.' }, 400);

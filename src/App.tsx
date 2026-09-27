@@ -37,6 +37,7 @@ const ExamPaperReaderPage = React.lazy(() => safeImport(() => import('./pages/Ex
 const SomaGuidePage = React.lazy(() => safeImport(() => import('./pages/SomaGuidePage').then(module => ({ default: module.SomaGuidePage }))));
 const ResetPassword = React.lazy(() => safeImport(() => import('./pages/ResetPassword').then(module => ({ default: module.ResetPassword }))));
 const PricingPage = React.lazy(() => safeImport(() => import('./pages/PricingPage').then(module => ({ default: module.PricingPage }))));
+const CommunicationPreferencesPage = React.lazy(() => safeImport(() => import('./pages/CommunicationPreferencesPage')));
 const SchoolDashboard = React.lazy(() => safeImport(() => import('./features/school/SchoolDashboard').then(module => ({ default: module.SchoolDashboard }))));
 const SchoolWorkspaceLayout = React.lazy(() => safeImport(() => import('./features/school/workspace/SchoolWorkspaceLayout').then(module => ({ default: module.SchoolWorkspaceLayout }))));
 const OfflinePage = React.lazy(() => safeImport(() => import('./pages/OfflinePage').then(module => ({ default: module.OfflinePage }))));
@@ -333,6 +334,7 @@ const App: React.FC = () => {
                             <Route path="/teacher/darasa" element={<TeacherPage />} />
                             <Route path="/reset-password" element={<ResetPassword />} />
                             <Route path="/pricing" element={<PricingPage />} />
+                            <Route path="/communication-preferences" element={<CommunicationPreferencesPage />} />
                             <Route path="/school/assessment" element={launchFeatures.schoolWorkspaceEnabled ? <SchoolWorkspaceLayout /> : <Navigate to="/" replace />} />
                             <Route path="/school/assessment/*" element={launchFeatures.schoolWorkspaceEnabled ? <SchoolWorkspaceLayout /> : <Navigate to="/" replace />} />
                             <Route path="/marketplace" element={launchFeatures.marketplace ? <MarketplacePage /> : <Navigate to="/" replace />} />

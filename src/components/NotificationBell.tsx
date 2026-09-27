@@ -125,6 +125,7 @@ export const NotificationBell: React.FC<NotificationBellProps> = ({ className = 
           </div>
 
           <div className="max-h-[22rem] overflow-y-auto p-2">
+            <button type="button" className="p-3 text-sm font-semibold text-indigo-700 underline" onClick={() => { setOpen(false); navigate('/communication-preferences'); }}>Communication preferences</button>
             {loading && items.length === 0 ? (
               <div className="flex items-center justify-center gap-2 py-10 text-sm font-bold text-slate-400">
                 <Loader2 className="h-4 w-4 animate-spin" /> Loading updates

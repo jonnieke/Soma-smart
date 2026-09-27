@@ -6,7 +6,8 @@ import { Button } from '../components/Shared';
 import { ArrowLeft, Loader2, CheckCircle2, MessageCircle } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { pesapalService } from '../services/pesapalService';
-import { supabase } from '../lib/supabase';
+import { getPaymentReceipt, type PaymentRecord } from '../services/transactionAccessService';
+import { PurchaseThankYou, purchaseNextStep } from '../components/PurchaseThankYou';
 
 type PaymentStatusResponse = {
     payment_status_description?: string;
@@ -32,6 +33,7 @@ export const PricingPage: React.FC = () => {
     const [verifying, setVerifying] = React.useState(false);
     const [verifyError, setVerifyError] = React.useState('');
     const [verifySuccess, setVerifySuccess] = React.useState(false);
+    const [receipt, setReceipt] = React.useState<PaymentRecord | null>(null);
 
     const status = searchParams.get('status');
     const ref = searchParams.get('ref');
@@ -57,6 +59,12 @@ export const PricingPage: React.FC = () => {
                 return;
             }
 
+            const verifiedReceipt = await getPaymentReceipt(reference);
+            if (!verifiedReceipt || verifiedReceipt.status !== 'SUCCESS') {
+                setVerifyError('Payment confirmation is still being prepared. Please retry; do not pay again.');
+                return;
+            }
+            setReceipt(verifiedReceipt);
             localStorage.removeItem('soma_pending_payment_ref');
 
             // Marketplace entitlements and the 60/40 ledger are granted only by the
@@ -65,10 +73,6 @@ export const PricingPage: React.FC = () => {
             await refreshProfile();
             setVerifySuccess(true);
 
-            setTimeout(() => {
-                const dashboard = role === 'TEACHER' ? '/teacher' : (role === 'SCHOOL' ? '/school' : '/learner');
-                window.top!.location.href = window.location.origin + dashboard;
-            }, 1500);
         } catch (err) {
             console.error("Verification sync failed:", err);
             setVerifyError('Payment verification failed. Please try again or contact support if your account was charged.');
@@ -124,10 +128,9 @@ export const PricingPage: React.FC = () => {
                         {verifySuccess && (
                             <>
                                 <CheckCircle2 className="w-16 h-16 text-green-500 mx-auto mb-6" />
-                                <h2 className="text-2xl font-black text-slate-900 mb-2">Payment Confirmed!</h2>
-                                <p className="text-slate-500 font-medium">
-                                    {pendingRef?.startsWith('MKT_') ? 'Material unlocked! Redirecting to marketplace...' : 'Welcome to Soma AI Pro. Redirecting you to your dashboard...'}
-                                </p>
+                                {receipt && <PurchaseThankYou receipt={receipt} role={role} onContinue={() => {
+                                    window.top!.location.href = window.location.origin + purchaseNextStep(receipt, role).path;
+                                }} />}
                             </>
                         )}
                         {verifyError && (

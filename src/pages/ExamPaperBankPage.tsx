@@ -18,6 +18,7 @@ import { FALLBACK_LATEST_PAPERS } from '../components/ExamPaperTickerBelt';
 import { PaperBankCatalog } from '../components/PaperBankCatalog';
 import { paperDestination, rememberPaperMode } from '../services/paperCheckoutIntent';
 import { canStudyExamPaper } from '../services/examPaperEntitlement';
+import { PurchaseThankYou } from '../components/PurchaseThankYou';
 
 
 export const ExamPaperBankPage: React.FC = () => {
@@ -35,6 +36,7 @@ export const ExamPaperBankPage: React.FC = () => {
   const [checkoutReference, setCheckoutReference] = React.useState('');
   const [buying, setBuying] = React.useState(false);
   const [buyer, setBuyer] = React.useState({ name: '', phone: '', email: '' });
+  const [confirmedPaper, setConfirmedPaper] = React.useState<{ id: string; title: string } | null>(null);
 
   const [unlockedPaperIds, setUnlockedPaperIds] = React.useState<Set<string>>(new Set());
   const [purchasedPaperIds, setPurchasedPaperIds] = React.useState<Set<string>>(new Set());
@@ -86,6 +88,8 @@ export const ExamPaperBankPage: React.FC = () => {
   React.useEffect(() => {
     const paperId = searchParams.get('paper');
     if (!paperId) return;
+    // Let the verification flow finish and retain its thank-you until Continue.
+    if (searchParams.get('status') === 'verifying' || confirmedPaper) return;
     const paper = papers.find((item) => String(item.id) === paperId) ||
       (FALLBACK_LATEST_PAPERS.find((item) => String(item.id) === paperId) as unknown as ExamPaperBankItem);
     if (paper) {
@@ -99,14 +103,14 @@ export const ExamPaperBankPage: React.FC = () => {
         setCheckoutOpen(true);
       }
     }
-  }, [isPaperUnlocked, navigate, papers, searchParams]);
+  }, [isPaperUnlocked, navigate, papers, searchParams, confirmedPaper]);
 
 
   React.useEffect(() => {
     if (searchParams.get('status') !== 'verifying') return;
     const examId = searchParams.get('paper');
     const reference = searchParams.get('ref');
-    if (!examId) return;
+    if (!examId || !reference || confirmedPaper) return;
 
     let cancelled = false;
     let attempts = 0;
@@ -116,7 +120,8 @@ export const ExamPaperBankPage: React.FC = () => {
         const access = await examPaperBankService.getAccess(examId, reference);
         if (!cancelled && access.paid) {
           markPaperUnlocked(examId);
-          navigate(paperDestination(examId), { replace: true });
+          setCheckoutOpen(false);
+          setConfirmedPaper({ id: examId, title: access.title || 'Your exam paper' });
           return;
         }
       } catch {
@@ -127,10 +132,10 @@ export const ExamPaperBankPage: React.FC = () => {
     };
     void check();
     return () => { cancelled = true; };
-  }, [markPaperUnlocked, navigate, searchParams]);
+  }, [markPaperUnlocked, searchParams, confirmedPaper]);
 
   React.useEffect(() => {
-    if (!checkoutReference || !selected) return;
+    if (!checkoutReference || !selected || confirmedPaper) return;
     let cancelled = false;
     const interval = window.setInterval(async () => {
       try {
@@ -138,14 +143,15 @@ export const ExamPaperBankPage: React.FC = () => {
         if (!cancelled && access.paid) {
           markPaperUnlocked(selected.id);
           window.clearInterval(interval);
-          navigate(paperDestination(selected.id));
+          setCheckoutOpen(false);
+          setConfirmedPaper({ id: String(selected.id), title: access.title || selected.title });
         }
       } catch {
         // PesaPal confirmation is asynchronous; keep polling while checkout is open.
       }
     }, 3000);
     return () => { cancelled = true; window.clearInterval(interval); };
-  }, [checkoutReference, markPaperUnlocked, navigate, selected]);
+  }, [checkoutReference, markPaperUnlocked, selected, confirmedPaper]);
 
 
   const beginPurchase = async (event: React.FormEvent) => {
@@ -312,6 +318,14 @@ export const ExamPaperBankPage: React.FC = () => {
           })}
         </script>
       </Helmet>
+
+      {confirmedPaper && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/45 p-4" role="dialog" aria-modal="true" aria-label="Paper purchase confirmed">
+        <div className="max-h-[90vh] w-full max-w-lg overflow-auto rounded-3xl bg-white p-6 shadow-xl">
+          <PurchaseThankYou receipt={{ status: 'SUCCESS', type: 'PAST_PAPER' }} title={confirmedPaper.title} guest
+            continueLabel={paperDestination(confirmedPaper.id).startsWith('/revision') ? 'Continue revision' : 'Open your paper'}
+            onContinue={() => navigate(paperDestination(confirmedPaper.id), { replace: true })} />
+        </div>
+      </div>}
 
       <PaperBankCatalog papers={papers} loading={loading} loadError={loadError}
         restoringPurchases={restoringPurchases} purchaseRestoreError={purchaseRestoreError}
