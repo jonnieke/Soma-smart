@@ -12,6 +12,43 @@ async function xml(mode: 'QUESTION_PAPER' | 'MARKING_SCHEME') {
   return zip.file('word/document.xml')!.async('string');
 }
 describe('Word examination exports', () => {
+  it.each(['QUESTION_PAPER', 'MARKING_SCHEME'] as const)('keeps a compact MCQ together and cleans legacy labels in %s', async mode => {
+    const paper = structuredClone(exportPaper);
+    const q = paper.sections[0].questions[0];
+    q.questionType = 'MULTIPLE_CHOICE';
+    q.options = [
+      { id: 'A', text: 'A) Choice one' }, { id: 'B', text: 'B. B) Choice two' },
+      { id: 'C', text: 'Choice three' }, { id: 'D', text: String.raw`D) $\frac{6}{12}$` },
+    ];
+    const original = structuredClone(paper);
+    const zip = await JSZip.loadAsync(await Packer.toBuffer(createPaperDocx(paper, mode)));
+    const document = await zip.file('word/document.xml')!.async('string');
+    const paragraphs = document.match(/<w:p[ >][\s\S]*?<\/w:p>/g)!;
+    const start = paragraphs.findIndex(p => p.includes('What is soil erosion?'));
+    const group = paragraphs.slice(start, start + 5);
+    expect(group).toHaveLength(5);
+    expect(group.every(p => p.includes('<w:keepLines/>'))).toBe(true);
+    expect(group.slice(0, 4).every(p => p.includes('<w:keepNext/>'))).toBe(true);
+    expect(group[4]).not.toContain('<w:keepNext/>');
+    expect(document).toContain('A. Choice one');
+    expect(document).toContain('B. Choice two');
+    expect(document).not.toContain('A. A)');
+    expect(document).not.toContain('D. D)');
+    expect(group[4]).toContain('<m:f>');
+    expect(paper).toEqual(original);
+  });
+  it('allows oversized multiple-choice blocks to paginate and preserves nonmatching labels', async () => {
+    const paper = structuredClone(exportPaper);
+    const q = paper.sections[0].questions[0];
+    q.questionType = 'MULTIPLE_CHOICE';
+    q.options = [{ id: 'A', text: 'Long choice '.repeat(100) }, { id: 'B', text: 'A) meaningful text' }];
+    const zip = await JSZip.loadAsync(await Packer.toBuffer(createPaperDocx(paper, 'QUESTION_PAPER')));
+    const document = await zip.file('word/document.xml')!.async('string');
+    const paragraphs = document.match(/<w:p[ >][\s\S]*?<\/w:p>/g)!;
+    const start = paragraphs.findIndex(p => p.includes('What is soil erosion?'));
+    expect(paragraphs.slice(start, start + 3).every(p => !p.includes('<w:keepNext/>'))).toBe(true);
+    expect(document).toContain('B. A) meaningful text');
+  });
   it.each([[6, 5], [8, 7], [12, 0], [40, 0]])(
     'keeps a %s-line response together only when it is short', async (lines, linkedLines) => {
       const paper = structuredClone(exportPaper);

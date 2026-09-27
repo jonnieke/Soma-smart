@@ -5,7 +5,6 @@ import { Smartphone, Loader2, CheckCircle2, XCircle, ArrowLeft, ShieldCheck, Cre
 import { useApp } from '../../context/AppContext';
 import { pesapalService } from '../../services/pesapalService';
 import { getPaymentReceipt } from '../../services/transactionAccessService';
-import { getCreditPackExpiry } from '../../services/planLimitService';
 import { UserRole } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { trackAnalyticsEvent } from '../../services/analyticsEventService';
@@ -20,7 +19,7 @@ interface Props {
 }
 
 export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCancel }) => {
-    const { userId, studentProfile, teacherProfile, role, login, refreshProfile, grantLearningCredits } = useApp();
+    const { userId, studentProfile, teacherProfile, role, login, refreshProfile } = useApp();
     const [step, setStep] = useState<'INPUT' | 'IFRAME' | 'PROCESSING' | 'SUCCESS' | 'ERROR'>('INPUT');
     const [phone, setPhone] = useState('');
     const [firstName, setFirstName] = useState('');
@@ -191,27 +190,8 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                             return false;
                         };
 
-                        const creditProfileId = studentProfile?.id || teacherProfile?.id || paymentUserId || existingStudentProfileId || userId;
-                        const creditExpiry = getCreditPackExpiry(plan?.duration);
-                        if (isCreditPackCheckout && plan?.credits) {
-                            try {
-                                if (creditProfileId) {
-                                    const { error: creditErr } = await supabase.rpc('grant_learning_credits', {
-                                        p_profile_id: creditProfileId,
-                                        p_credits: plan.credits,
-                                        p_expires_at: creditExpiry
-                                    });
-                                    if (creditErr) throw creditErr;
-                                    grantLearningCredits(plan.credits, creditExpiry);
-                                } else {
-                                    grantLearningCredits(plan.credits, creditExpiry);
-                                }
-                            } catch (creditErr) {
-                                console.warn('Could not persist learning credits, falling back to local wallet:', creditErr);
-                                grantLearningCredits(plan.credits, creditExpiry);
-                            }
-                        }
-
+                        // The payment service alone grants credits after provider verification.
+                        // Never grant again on receipt polling or invent a local balance on failure.
                         // Credit packs do not change subscription tier, so avoid waiting for a
                         // subscription profile update that will never happen.
                         if (isCreditPackCheckout) {
@@ -260,7 +240,7 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
         }, 3000); // Check every 3 seconds
 
         return () => clearInterval(interval);
-    }, [step, paymentUserId, userId, studentProfile, teacherProfile, existingStudentProfileId, paymentReference, onSuccess, isRegistered, existingStudentCode, login, isCreditPackCheckout, plan?.credits, grantLearningCredits, refreshProfile]);
+    }, [step, paymentUserId, userId, studentProfile, teacherProfile, existingStudentProfileId, paymentReference, onSuccess, isRegistered, existingStudentCode, login, isCreditPackCheckout, refreshProfile]);
 
     const resolveExistingStudent = async (): Promise<boolean> => {
         const code = existingStudentCode.trim().toUpperCase();

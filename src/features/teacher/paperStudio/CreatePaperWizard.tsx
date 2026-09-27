@@ -25,6 +25,7 @@ import {
 } from '../../../types/paperStudio';
 import { paperStudioService } from '../../../services/paperStudioService';
 import { assembleCheckedPaper } from '../../../services/assessmentEngine/checkedPaperAssembly';
+import { GeneratePaperForm } from './GeneratePaperForm';
 
 interface WizardProps {
   teacherId?: string;
@@ -32,7 +33,12 @@ interface WizardProps {
   onPaperCreated: (paperId: string) => void;
 }
 
-export const CreatePaperWizard: React.FC<WizardProps> = ({ onCancel, onPaperCreated, teacherId }) => {
+export const CreatePaperWizard: React.FC<WizardProps> = (props) => {
+  const [useBank, setUseBank] = useState(false);
+  return useBank ? <BankPaperWizard {...props} /> : <GeneratePaperForm {...props} onUseBank={() => setUseBank(true)} />;
+};
+
+export const BankPaperWizard: React.FC<WizardProps> = ({ onCancel, onPaperCreated, teacherId }) => {
   const [currentStep, setCurrentStep] = useState<number>(1);
   const [isGenerating, setIsGenerating] = useState(false);
   const [assemblyError, setAssemblyError] = useState('');
@@ -40,8 +46,8 @@ export const CreatePaperWizard: React.FC<WizardProps> = ({ onCancel, onPaperCrea
 
   // Step 1: Exam Details State
   const [title, setTitle] = useState('Grade 9 Mathematics Continuous Assessment Test 1');
-  const [schoolName, setSchoolName] = useState('Nairobi Academy');
-  const [teacherName, setTeacherName] = useState('Mwalimu Peterson');
+  const [schoolName, setSchoolName] = useState('');
+  const [teacherName, setTeacherName] = useState('');
   const [grade, setGrade] = useState('Grade 9');
   const [subject, setSubject] = useState('Mathematics');
   const [curriculum, setCurriculum] = useState<CurriculumFramework>('CBC_CBE');

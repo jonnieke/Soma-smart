@@ -1,0 +1,30 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+const paper = JSON.parse(await readFile(new URL('../content/exams/soma-grade9-mathematics-original-01.json', import.meta.url), 'utf8'));
+assert.equal(paper.review.status, 'DRAFT');
+assert.equal(paper.exam.durationMinutes, 60);
+assert.equal(paper.exam.grade, 'Grade 9');
+assert.equal(paper.questions.length, 12);
+assert.equal(paper.questions.reduce((sum, q) => sum + q.marks, 0), paper.exam.totalMarks);
+assert.equal(new Set(paper.questions.map(q => q.id)).size, 12);
+for (const [i, q] of paper.questions.entries()) {
+  assert.equal(q.number, String(i + 1));
+  assert.equal(q.orderIndex, i + 1);
+  assert.equal(q.markingScheme.length, q.marks);
+  assert.ok(q.markingScheme.every(point => point.endsWith('[1 mark]')));
+  assert.ok(q.text && q.modelAnswer && q.topic && q.explanation);
+}
+assert.equal((-18 + 30) / -3 + 7, 3);
+assert.equal(15 ** 3, 3375); assert.equal(6 * 15 ** 2, 1350);
+assert.equal(2 ** 5 * 2 ** 3 / 2 ** 4, 16); assert.equal(Math.log10(1000), 3);
+assert.equal(6 * 5 * 8 / (10 * 6), 4);
+const a = [[2, -1], [3, 4]], b = [[1, 5], [-2, 6]];
+assert.deepEqual(a.map((row, i) => row.map((value, j) => 2 * value - b[i][j])), [[3, -7], [8, 2]]);
+assert.equal((13 - 5) / (6 - 2), 2); assert.equal(5 - 2 * 2, 1);
+assert.deepEqual([1, 2, 3, 4, 5].filter(x => 3 * (2 * x - 1) <= 21), [1, 2, 3, 4]);
+assert.equal(22 / 7 * 7 ** 2 * 10, 1540); assert.equal(1540 / 1000, 1.54);
+assert.equal(540 / 200, 2.7); assert.equal(540 / 1000 * 10, 5.4);
+assert.ok(Math.abs(84 / (1 + 24 / 60) - 60) < 1e-10); assert.equal((60 / 3.6).toFixed(1), '16.7');
+assert.equal(9 / 6, 1.5); assert.equal(24 * (9 / 6) ** 2, 54);
+assert.equal((2 * 5 + 5 * 15 + 3 * 25) / 10, 16); assert.equal(3 / 10, 0.3);
+console.log('PASS: 12 questions, 48 marks, draft metadata, marking allocations and independent arithmetic checks.');

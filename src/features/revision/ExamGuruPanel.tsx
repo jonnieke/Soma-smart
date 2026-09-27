@@ -48,6 +48,26 @@ interface SyllabusContext {
 }
 
 export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void; initialMode?: PanelMode; initialPrompt?: string; syllabusContext?: SyllabusContext }> = ({ onClose, onLogin, initialMode = 'chat', initialPrompt = '', syllabusContext }) => {
+    const panelRef = useRef<HTMLDivElement>(null);
+    const closeRef = useRef(onClose);
+    closeRef.current = onClose;
+    useEffect(() => {
+        const previous = document.activeElement as HTMLElement | null;
+        const overflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        panelRef.current?.focus();
+        const keydown = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') { event.preventDefault(); closeRef.current(); }
+            if (event.key !== 'Tab') return;
+            const focusable = Array.from(panelRef.current?.querySelectorAll<HTMLElement>('button:not(:disabled), input:not(:disabled), textarea:not(:disabled), select:not(:disabled), a[href]') || []).filter(el => el.getClientRects().length > 0);
+            const first = focusable[0], last = focusable[focusable.length - 1];
+            if (!first) { event.preventDefault(); return; }
+            if (event.shiftKey && (document.activeElement === first || document.activeElement === panelRef.current)) { event.preventDefault(); last.focus(); }
+            else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+        };
+        document.addEventListener('keydown', keydown);
+        return () => { document.body.style.overflow = overflow; document.removeEventListener('keydown', keydown); previous?.focus(); };
+    }, []);
     const focusTopic = syllabusContext?.topic || syllabusContext?.sourceTitle || '';
     const contextLabel = [syllabusContext?.grade, syllabusContext?.subject, syllabusContext?.topic || syllabusContext?.sourceTitle].filter(Boolean).join(' - ');
     const openingMessage = contextLabel
@@ -103,7 +123,7 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
             else setPracticeQuestions(questions);
             return questions.length > 0;
         } catch (err: any) {
-            if (err instanceof RateLimitError) { setRateLimited(true); }
+            if (err instanceof RateLimitError || err instanceof PlanLimitError) { setRateLimited(true); }
             else if (err instanceof SystemQuotaError) { setQuotaExceeded(true); }
             else { setGenerateError('Generation failed. Check your connection.'); }
             return false;
@@ -288,6 +308,11 @@ Do not move to a new topic, new example, or new question until the candidate ans
 
             {/* Panel */}
             <motion.div
+                ref={panelRef}
+                role="dialog"
+                aria-modal="true"
+                aria-label="Prepare with Akili"
+                tabIndex={-1}
                 initial={{ y: '100%', opacity: 0 }}
                 animate={{ y: 0, opacity: 1 }}
                 exit={{ y: '100%', opacity: 0 }}
@@ -311,7 +336,7 @@ Do not move to a new topic, new example, or new question until the candidate ans
                             </div>
                         </div>
                     </div>
-                    <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-white/60 transition-colors">
+                    <button aria-label="Close Akili" onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-white/60 transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>

@@ -29,6 +29,18 @@ const paragraph = (text: string, bold = false) => new Paragraph({
   spacing: { after: 120 },
 });
 
+// Older drafts can contain the label both in the option ID and its text.
+// Strip only a matching label, leaving the stored draft and answer content intact.
+function optionText(id: string, text: string): string {
+  let cleaned = text.trim();
+  let match = /^([A-Za-z])[.)]\s+/.exec(cleaned);
+  while (match && match[1].toUpperCase() === id.toUpperCase()) {
+    cleaned = cleaned.slice(match[0].length);
+    match = /^([A-Za-z])[.)]\s+/.exec(cleaned);
+  }
+  return cleaned || text;
+}
+
 export function createPaperDocx(paper: ExamPaper, mode: PaperExportMode, images: Map<string, PaperImageAsset> = new Map()): Document {
   validatePaperDocx(paper, mode);
   if (paperImageSources(paper).some(source => !images.has(source))) throw new Error('Some diagram or logo images have not loaded. Retry export; no incomplete file will be downloaded.');
@@ -64,15 +76,25 @@ export function createPaperDocx(paper: ExamPaper, mode: PaperExportMode, images:
       // responses must remain free to paginate rather than overflow a page.
       const compactPrompt = q.questionText.length <= 600 && q.questionText.split('\n').length <= 6;
       const keepWritingBlock = hasWritingSpace && lines <= 8 && compactPrompt && !q.imageUrls?.length;
+      const options = (q.options || []).map(o => ({ ...o, text: optionText(o.id, o.text) }));
+      const keepChoiceBlock = q.questionType === 'MULTIPLE_CHOICE' && compactPrompt && !q.imageUrls?.length
+        && options.length > 0 && options.length <= 6
+        && options.every(o => o.text.length <= 300 && o.text.split('\n').length <= 3);
       children.push(new Paragraph({
         children: wordEquationRuns(`${index + 1}. ${q.questionText} (${q.marks} marks)`),
         spacing: { after: 120 },
-        keepNext: hasWritingSpace && !q.imageUrls?.length,
+        keepNext: keepChoiceBlock || (hasWritingSpace && !q.imageUrls?.length),
         keepLines: compactPrompt,
       }));
       (q.imageUrls || []).forEach((source, imageIndex) => children.push(imageParagraph(source, `${section.title}, question ${index + 1}, image ${imageIndex + 1}`)));
       if (q.questionType === 'MULTIPLE_CHOICE') {
-        children.push(...(q.options || []).map(o => paragraph(`${o.id}. ${o.text}`)));
+        children.push(...options.map((o, optionIndex) => new Paragraph({
+          children: wordEquationRuns(`${o.id}. ${o.text}`),
+          spacing: { after: 120 },
+          keepLines: keepChoiceBlock,
+          // End the chain at the final choice, not at the next question or answer key.
+          keepNext: keepChoiceBlock && optionIndex < options.length - 1,
+        })));
       }
       if (marking) {
         children.push(paragraph(`Expected answer: ${q.correctAnswer || 'Not supplied'}`));

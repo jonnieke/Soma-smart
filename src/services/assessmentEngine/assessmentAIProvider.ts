@@ -1,219 +1,44 @@
-import { Question, QuestionType, CognitiveLevel, DifficultyLevel, CurriculumFramework } from '../../types/paperStudio';
-import { supabase } from '../../lib/supabase';
+import type { Question, QuestionType, CognitiveLevel, DifficultyLevel, CurriculumFramework } from '../../types/paperStudio';
+import { parseModelJson } from '../jsonResponse';
+import { paperStudioService } from '../paperStudioService';
+import { validateGeneratedQuestions } from './generatedPaperValidation';
+import { assessmentAnswerGuidance } from './assessmentAnswerGuidance';
 
 export interface QuestionGenerationInput {
-  subject: string;
-  grade: string;
-  curriculum?: CurriculumFramework;
-  topic?: string;
-  strand?: string;
-  subStrand?: string;
-  questionType: QuestionType;
-  difficulty: DifficultyLevel;
-  cognitiveLevel?: CognitiveLevel;
-  marks: number;
-  existingQuestionsToAvoid?: string[];
+  subject: string; grade: string; curriculum?: CurriculumFramework; topic?: string; strand?: string; subStrand?: string;
+  questionType: QuestionType; difficulty: DifficultyLevel; cognitiveLevel?: CognitiveLevel; marks: number; existingQuestionsToAvoid?: string[];
 }
-
-export interface VariationInput {
-  originalQuestion: Question;
-  instruction?: string; // e.g. "Change the numbers", "Make it slightly harder"
-}
-
-export interface MarkingSchemeInput {
-  examTitle: string;
-  grade: string;
-  subject: string;
-  questions: Array<{ id: string; text: string; marks: number; questionType: string }>;
-}
-
-export interface QuestionValidation {
-  isValid: boolean;
-  qualityScore: number;
-  warnings: string[];
-  suggestions: string[];
-}
+export interface VariationInput { originalQuestion: Question; instruction?: string }
+export interface MarkingSchemeInput { examTitle: string; grade: string; subject: string; questions: Array<{ id: string; text: string; marks: number; questionType: string }> }
+export interface QuestionValidation { isValid: boolean; qualityScore: number; warnings: string[]; suggestions: string[] }
 
 export const assessmentAIProvider = {
-  /**
-   * Generates a single curriculum-aligned question using AI
-   */
   async generateQuestion(input: QuestionGenerationInput): Promise<Question> {
-    const prompt = `Generate a high-quality ${input.grade} ${input.subject} examination question for the topic "${input.topic || input.subject}".
-Curriculum: ${input.curriculum || 'CBC_CBE'}
-Question Type: ${input.questionType}
-Difficulty: ${input.difficulty}
-Marks: ${input.marks}
-
-Return STRICT JSON only matching this schema:
-{
-  "questionText": "Clear question prompt",
-  "options": [{"id": "A", "text": "Option A"}, {"id": "B", "text": "Option B"}, {"id": "C", "text": "Option C"}, {"id": "D", "text": "Option D"}],
-  "correctAnswer": "Exact answer or correct option letter",
-  "explanation": "Step by step working or explanation",
-  "markingScheme": [{"criterion": "Point description", "marks": 1, "code": "M1"}],
-  "cognitiveLevel": "APPLICATION",
-  "difficulty": "${input.difficulty}"
-}`;
-
-    try {
-      // Execute through Supabase edge function or local fallback
-      const { data, error } = await supabase.functions.invoke('assessment-ai', {
-        body: { feature: 'generate_question', prompt, input }
-      });
-
-      if (error || !data?.questionText) {
-        // Fallback generator for reliability
-        return this.createFallbackQuestion(input);
-      }
-
-      return {
-        id: `ai_q_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-        visibility: 'PRIVATE',
-        status: 'AI_CHECKED',
-        questionType: input.questionType,
-        questionText: data.questionText,
-        options: data.options || undefined,
-        correctAnswer: data.correctAnswer || 'Answer working step',
-        explanation: data.explanation || '',
-        markingScheme: data.markingScheme || [{ criterion: 'Correct response', marks: input.marks, code: 'M1' }],
-        marks: input.marks,
-        grade: input.grade,
-        subject: input.subject,
-        curriculum: input.curriculum || 'CBC_CBE',
-        topic: input.topic || input.subject,
-        strand: input.strand,
-        subStrand: input.subStrand,
-        cognitiveLevel: (data.cognitiveLevel as CognitiveLevel) || input.cognitiveLevel || 'APPLICATION',
-        difficulty: input.difficulty,
-        sourceType: 'AI_GENERATED',
-        qualityScore: 90,
-      };
-    } catch {
-      return this.createFallbackQuestion(input);
-    }
+    const owner = await paperStudioService.getOwnerId();
+    const { generateTeacherPaperJson } = await import('../geminiService');
+    const raw = await generateTeacherPaperJson(`Create one teacher assessment question matching these requirements: ${JSON.stringify(input)}.
+${assessmentAnswerGuidance}
+Return JSON {"questions":[{"questionText":"...","questionType":"${input.questionType}","marks":${input.marks},"correctAnswer":"...","explanation":"worked solution","markingScheme":[{"criterion":"specific point","marks":1}],"options":[{"text":"..."}]}]}.
+The marking criteria must sum to ${input.marks}. No placeholders, no external diagrams. MCQ requires four options and answer A/B/C/D. Use plain text or $...$ equations with fractions, roots, powers and subscripts only. JSON-escape backslashes.`);
+    if (await paperStudioService.getOwnerId() !== owner) throw new Error('Your account changed. No question was replaced.');
+    const data = parseModelJson<{ questions: unknown }>(raw);
+    const [question] = validateGeneratedQuestions(data.questions, { ...input, topics: input.topic || input.subject, questionCount: 1, totalMarks: input.marks, durationMinutes: 10, schoolName: '' }, owner);
+    if (question.questionType !== input.questionType) throw new Error('The generated question type does not match. Your question is unchanged.');
+    return { ...question, curriculum: input.curriculum || 'CBC_CBE', difficulty: input.difficulty };
   },
-
-  /**
-   * Creates a controlled variation of an existing question
-   */
-  async generateVariation(input: VariationInput): Promise<Question> {
-    const orig = input.originalQuestion;
-    const prompt = `Create an independent equivalent variation of this question:
-Original Question: "${orig.questionText}"
-Subject: ${orig.subject}, Grade: ${orig.grade}
-Instruction: ${input.instruction || 'Change figures or scenario while keeping same difficulty and curriculum objective.'}
-
-Return STRICT JSON with questionText, options, correctAnswer, and markingScheme.`;
-
-    try {
-      const { data, error } = await supabase.functions.invoke('assessment-ai', {
-        body: { feature: 'generate_variation', prompt }
-      });
-
-      if (error || !data?.questionText) {
-        return {
-          ...orig,
-          id: `var_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-          questionText: `${orig.questionText} (Variation B)`,
-          sourceType: 'AI_GENERATED',
-        };
-      }
-
-      return {
-        ...orig,
-        id: `var_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-        questionText: data.questionText,
-        options: data.options || orig.options,
-        correctAnswer: data.correctAnswer || orig.correctAnswer,
-        markingScheme: data.markingScheme || orig.markingScheme,
-        sourceType: 'AI_GENERATED',
-      };
-    } catch {
-      return {
-        ...orig,
-        id: `var_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-        questionText: `${orig.questionText} (Variation B)`,
-        sourceType: 'AI_GENERATED',
-      };
-    }
+  async generateVariation({ originalQuestion: original, instruction }: VariationInput): Promise<Question> {
+    const question = await this.generateQuestion({ ...original, topic: `${original.topic || original.subject}. Create an equivalent but different question. ${instruction || ''}`, existingQuestionsToAvoid: [original.questionText] });
+    if (question.questionText.trim().toLowerCase() === original.questionText.trim().toLowerCase()) throw new Error('Soma returned the same question. Your original is unchanged.');
+    return question;
   },
-
-  /**
-   * Creates complete marking scheme criteria for a list of questions
-   */
-  async generateMarkingScheme(input: MarkingSchemeInput): Promise<Record<string, Question['markingScheme']>> {
-    const schemeMap: Record<string, Question['markingScheme']> = {};
-    for (const q of input.questions) {
-      schemeMap[q.id] = [
-        { criterion: `Correct answer/working for ${q.text.substring(0, 30)}...`, marks: q.marks, code: 'M1' }
-      ];
-    }
-    return schemeMap;
+  async generateMarkingScheme(_input: MarkingSchemeInput): Promise<Record<string, Question['markingScheme']>> {
+    throw new Error('Generate a paper with its marking guide, or enter teacher-reviewed criteria. Standalone marking-guide generation is not available yet.');
   },
-
-  /**
-   * Validates a question against curriculum & quality standards
-   */
   async validateQuestion(q: Question): Promise<QuestionValidation> {
     const warnings: string[] = [];
-    const suggestions: string[] = [];
-
-    if (!q.questionText || q.questionText.trim().length < 5) {
-      warnings.push('Question text is too short or missing.');
-    }
-    if (q.questionType === 'MULTIPLE_CHOICE' && (!q.options || q.options.length < 2)) {
-      warnings.push('Multiple choice question requires at least 2 options.');
-    }
-    if (!q.correctAnswer) {
-      warnings.push('Expected answer is missing.');
-    }
-    if (!q.markingScheme || q.markingScheme.length === 0) {
-      suggestions.push('Add step-by-step marking scheme criteria for clearer grading.');
-    }
-
-    return {
-      isValid: warnings.length === 0,
-      qualityScore: warnings.length === 0 ? 95 : 60,
-      warnings,
-      suggestions,
-    };
-  },
-
-  /**
-   * Fallback offline question builder when network AI call fails
-   */
-  createFallbackQuestion(input: QuestionGenerationInput): Question {
-    const isMcq = input.questionType === 'MULTIPLE_CHOICE';
-    return {
-      id: `fallback_q_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
-      visibility: 'PRIVATE',
-      status: 'DRAFT',
-      questionType: input.questionType,
-      questionText: `Sample ${input.subject} (${input.grade}) Question: Explain the primary principles of ${input.topic || input.subject}.`,
-      options: isMcq
-        ? [
-            { id: 'A', text: 'Option A - Primary Principle' },
-            { id: 'B', text: 'Option B - Secondary Factor' },
-            { id: 'C', text: 'Option C - Alternative Process' },
-            { id: 'D', text: 'Option D - Unrelated Element' },
-          ]
-        : undefined,
-      correctAnswer: isMcq ? 'A' : 'Clear step-by-step explanation highlighting key facts.',
-      explanation: 'Detailed answer explanation and solution steps.',
-      markingScheme: [
-        { criterion: 'Identification of key principles', marks: Math.max(1, Math.floor(input.marks / 2)), code: 'M1' },
-        { criterion: 'Correct explanation and conclusion', marks: Math.max(1, Math.ceil(input.marks / 2)), code: 'A1' },
-      ],
-      marks: input.marks,
-      grade: input.grade,
-      subject: input.subject,
-      curriculum: input.curriculum || 'CBC_CBE',
-      topic: input.topic || input.subject,
-      cognitiveLevel: input.cognitiveLevel || 'APPLICATION',
-      difficulty: input.difficulty,
-      sourceType: 'AI_GENERATED',
-      qualityScore: 85,
-    };
+    if (!q.questionText?.trim()) warnings.push('Question text is missing.');
+    if (!q.correctAnswer?.trim()) warnings.push('Expected answer is missing.');
+    if (!q.markingScheme?.length || q.markingScheme.reduce((sum, m) => sum + m.marks, 0) !== q.marks) warnings.push('Marking criteria must match the question marks.');
+    return { isValid: warnings.length === 0, qualityScore: 0, warnings, suggestions: ['Structural checks only. A teacher must review subject accuracy.'] };
   },
 };

@@ -4,6 +4,8 @@ import { buildScaffoldingContext } from "./spacedRepetitionService";
 import { buildTargetedStrategiesInstruction } from "./strategyService";
 import { buildPersonaInstruction, recommendPersona } from "./adminAgentService";
 import { parseModelJson } from "./jsonResponse";
+import { parseClassroomFollowUp } from './classroomFollowUp';
+import { parseAiAllowance, type AiAllowance } from './aiAllowance';
 
 // --- PROXY CONFIG ---
 // We no longer use VITE_GEMINI_API_KEY on the client.
@@ -15,7 +17,7 @@ import { assertPlanLimit, recordPlanUsage } from "./planLimitService";
 // Custom error thrown when the backend returns 429 (usage limit exceeded).
 // Callers can instanceof-check this to show login/register UI instead of a generic error.
 export class RateLimitError extends Error {
-  constructor(message = 'Daily AI limit reached. Please register or log in to continue.') {
+  constructor(message = 'Daily AI limit reached. Please register or log in to continue.', public allowance?: AiAllowance) {
     super(message);
     this.name = 'RateLimitError';
   }
@@ -74,7 +76,7 @@ export const callGeminiProxy = async (model: string, contents: any, generationCo
         console.error("System Google API Quota Exceeded:", errorData);
         throw new SystemQuotaError();
       }
-      throw new RateLimitError(errorData?.error || undefined);
+      throw new RateLimitError(errorData?.error?.message || errorData?.error || undefined, parseAiAllowance(errorData));
     }
 
     console.error("Gemini Proxy Error:", errorData);
@@ -158,8 +160,9 @@ export interface PracticeQuestion {
 export const generatePracticeQuestions = async (
   subject: string,
   topic: string = '',
-  examType: 'KCSE' | 'KPSEA' | 'JSS' = 'KCSE',
-  count: number = 3
+  examType: 'KCSE' | 'KPSEA' | 'JSS' | 'CBC' = 'KCSE',
+  count: number = 3,
+  grade?: string
 ): Promise<PracticeQuestion[]> => {
   const topicClause = topic ? `focused on the topic: "${topic}"` : 'covering the most commonly tested topics';
   const systemInstruction = {
@@ -178,6 +181,7 @@ Format:
   }
 ]
 Rules:
+- Learner level: ${grade || examType}. Stay within this learner's syllabus and grade.
 - Questions must match ${examType} difficulty, style, and high rigor standards.
 - Mix question types (definition, explain, calculate, describe, analyze, compare).
 - NO PHYSICAL DRAWING/SKETCHING: All questions must be answerable via text input. Do NOT ask the student to physically draw, sketch, paint, shade, or color. Instead, ask them to "describe the steps to draw", "explain the principles of", or "compare".
@@ -193,27 +197,31 @@ Rules:
     parts: [{ text: `Generate ${count} ${examType} ${subject} practice questions ${topicClause}. Include strong marking guidance and realistic exam language.` }]
   }];
 
-  const fallback: PracticeQuestion[] = Array.from({ length: count }, (_, i) => ({
-    number: i + 1,
-    text: `${subject} question ${i + 1} on ${topic || 'core syllabus content'}.`,
-    topic: topic || subject,
-    marks: 4,
-    modelAnswerOutline: '- Identify the main idea\n- Give one correct explanation\n- Show the relevant example\n- State the final conclusion'
-  }));
-
   try {
     const result = await callGeminiProxy(
       MODEL_NAME,
       contents,
-      { maxOutputTokens: 1200, temperature: 0.35 },
+      { maxOutputTokens: 3000, temperature: 0.35, responseMimeType: 'application/json',
+        responseSchema: { type: SchemaType.ARRAY, items: { type: SchemaType.OBJECT,
+          properties: { number: { type: SchemaType.NUMBER }, text: { type: SchemaType.STRING }, topic: { type: SchemaType.STRING }, marks: { type: SchemaType.NUMBER }, modelAnswerOutline: { type: SchemaType.STRING } },
+          required: ['number', 'text', 'topic', 'marks', 'modelAnswerOutline'] } } },
       systemInstruction
     );
     const text = result.response.text();
     const cleaned = (text || '[]').replace(/```json|```/g, '').trim();
-    return parseModelJson<PracticeQuestion[]>(cleaned).slice(0, count);
+    const parsed = parseModelJson<PracticeQuestion[] | { questions: PracticeQuestion[] }>(cleaned);
+    const questions = Array.isArray(parsed) ? parsed : parsed?.questions;
+    if (!Array.isArray(questions) || questions.length < count || questions.some(q =>
+      !q || typeof q.text !== 'string' || !q.text.trim() || typeof q.topic !== 'string' ||
+      typeof q.modelAnswerOutline !== 'string' || !q.modelAnswerOutline.trim() || !Number.isFinite(q.marks) || q.marks <= 0
+    )) {
+      if (import.meta.env.DEV) console.warn('Practice response shape', { array: Array.isArray(parsed), keys: parsed && typeof parsed === 'object' ? Object.keys(parsed).slice(0, 8) : [], count: questions?.length, fields: questions?.[0] ? Object.keys(questions[0]) : [] });
+      throw new Error('Practice questions were incomplete. Please try again.');
+    }
+    return questions.slice(0, count);
   } catch (error: any) {
     console.error('Generate practice questions error:', error);
-    return fallback;
+    throw error;
   }
 };
 // --- STREAMING PROXY HELPER ---
@@ -306,6 +314,13 @@ const genAI = {
 };
 
 const MODEL_NAME = "gemini-2.5-flash"; // GA and widely supported
+
+// Paper Studio reuses the established authenticated proxy and its usage limits.
+export async function generateTeacherPaperJson(prompt: string): Promise<string> {
+  const result = await callGeminiProxy(MODEL_NAME, [{ role: 'user', parts: [{ text: prompt }] }],
+    { temperature: 0.3, maxOutputTokens: 16000, responseMimeType: 'application/json' });
+  return result.response.text();
+}
 
 // --- SUPER TEACHER INSTRUCTIONS ---
 const SYLLABUS_GROUNDING_INSTRUCTION = `
@@ -989,11 +1004,15 @@ export const continueResearch = async (
         type: SchemaType.OBJECT,
         properties: {
           topic: { type: SchemaType.STRING },
-          explanation: { type: SchemaType.STRING, description: "Markdown formatted explanation" },
+          explanationParagraphs: {
+            type: SchemaType.ARRAY,
+            items: { type: SchemaType.STRING },
+            description: "Separate short paragraphs, one complete paragraph per array item. Use plain sentences with optional bold emphasis. No Markdown headings or embedded lists."
+          },
           summaryPoints: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } },
           relatedTopics: { type: SchemaType.ARRAY, items: { type: SchemaType.STRING } }
         },
-        required: ["topic", "explanation", "summaryPoints", "relatedTopics"]
+        required: ["topic", "explanationParagraphs", "summaryPoints", "relatedTopics"]
       }
     }
   });
@@ -1015,6 +1034,7 @@ TASK:
     3. ${langInstruction}
 4. Explain in ${level === 'Simple' ? 'very simple language' : 'academic language'}.
 5. Provide updated summary points and related topics.
+6. Put the explanation in explanationParagraphs: an array of short paragraphs, one paragraph per item. Do not combine the lesson into one item. Do not add Markdown heading markers. The application adds paragraph spacing.
     
     Output JSON.
   `;
@@ -1023,8 +1043,7 @@ TASK:
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
-    const json = JSON.parse(text);
-    return { ...json, level } as ExplanationResult;
+    return parseClassroomFollowUp(parseModelJson<unknown>(text), level);
   } catch (error) {
     console.error("Error continuing research:", error);
     throw error;

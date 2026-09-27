@@ -1,7 +1,7 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest';
-import { LandingHome } from '../components/LandingHome';
+import { LegacyLandingHome as LandingHome } from '../components/LandingHome';
 
 const baseProps = {
   isRegistered: false,

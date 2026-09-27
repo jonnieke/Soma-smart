@@ -20,6 +20,7 @@ import { Button } from '../../../components/Shared';
 import { ingestPastPaper } from '../../../services/geminiService';
 import { contentNotificationService } from '../../../services/contentNotificationService';
 import { ExamAnalysis } from '../../../types';
+import { DraftExamTest } from './DraftExamTest';
 interface Exam {
   id: string;
   title: string;
@@ -89,6 +90,7 @@ const normalizeExamType = (value: unknown): 'KCSE' | 'KPSEA' | 'KJSEA' | 'OTHER'
   return 'OTHER';
 };
 export const ExamsView: React.FC = () => {
+  const [testExam, setTestExam] = useState<Exam | null>(null);
   const [exams, setExams] = useState<Exam[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -873,6 +875,7 @@ export const ExamsView: React.FC = () => {
       String(exam.examYear || '').includes(query)
     );
   });
+  if (testExam) return <DraftExamTest key={testExam.id} examId={testExam.id} title={testExam.title} onBack={() => setTestExam(null)} />;
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
@@ -996,6 +999,9 @@ export const ExamsView: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-center justify-end gap-2">
+                  {exam.reviewStatus === 'DRAFT' && exam.questionCount > 0 && (
+                    <button onClick={() => setTestExam(exam)} className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-bold text-white">Test marking privately</button>
+                  )}
                   {exam.indexingStatus !== 'READY' && (
                     <button
                       onClick={() => indexStructuredExam(exam)}

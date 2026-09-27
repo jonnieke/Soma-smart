@@ -15,6 +15,7 @@ import {
     predictLikelyQuestions, getPaperGuidance, explainQuestion
 } from '../../services/geminiService';
 import { examService } from '../../services/examService';
+import { readTimedExam, saveTimedExam, removeTimedExam, type TimedExamRecovery } from './timedExamRecovery';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface Props {
@@ -183,7 +184,13 @@ const shuffleQuestions = <T,>(items: T[]) => {
     return copy;
 };
 
-export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, onExit }) => {
+export const RevisionSession: React.FC<Props> = (props) => {
+    const { studentCode, studentProfile, userId } = useApp();
+    const owner = studentCode || studentProfile?.id || userId || 'guest';
+    return <RevisionSessionWorkspace key={owner} {...props} />;
+};
+
+const RevisionSessionWorkspace: React.FC<Props> = ({ data, mode, initialAnalysis, onExit }) => {
     const { language, isPro, studentCode, studentProfile, userId } = useApp();
     const isLimited = !isPro;
 
@@ -201,6 +208,13 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     const [answerByQuestion, setAnswerByQuestion] = useState<Record<string, string>>({});
     const [attempts, setAttempts] = useState<AnswerAttempt[]>([]);
     const [isMarking, setIsMarking] = useState(false);
+    const [submissionError, setSubmissionError] = useState<string | null>(null);
+    const [startError, setStartError] = useState<string | null>(null);
+    const startingRef = useRef(false);
+    const finishingRef = useRef(false);
+    const finishQuizRef = useRef<() => Promise<void>>(async () => {});
+    const deadlineRef = useRef(0);
+    const markedResponsesRef = useRef(new Map<string, AnswerAttempt>());
     const [currentMarking, setCurrentMarking] = useState<MarkingResult | null>(null);
     const [showModelAnswer, setShowModelAnswer] = useState(false);
 
@@ -262,6 +276,66 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         return String(payload?.file_url || payload?.fileUrl || payload?.paperUrl || payload?.publicUrl || '').trim();
     }, [activeExamId, data]);
     const learnerId = studentCode || studentProfile?.id || userId || 'guest';
+    const [recovery, setRecovery] = useState<TimedExamRecovery | null>(() => activeExamId ? readTimedExam(learnerId, activeExamId) : null);
+    const [recoveryBusy, setRecoveryBusy] = useState(false);
+    const [recoveryError, setRecoveryError] = useState('');
+    const [submittedReceipt, setSubmittedReceipt] = useState<string | null>(null);
+    const [localSaveFailed, setLocalSaveFailed] = useState(false);
+    const submittingRef = useRef(false);
+    const recoverySnapshot = useRef<TimedExamRecovery | null>(null);
+
+    useEffect(() => {
+        if (!activeExamId || !serverAttemptId || practiceMode !== ExamPracticeMode.TIMED_QUIZ ||
+            !['QUIZ_ACTIVE', 'MARKING'].includes(phase) || !quizQuestions.length) return;
+        const snapshot: TimedExamRecovery = {
+            version: 1, examId: activeExamId, attemptId: serverAttemptId,
+            questionIds: quizQuestions.map(q => String(q.id)), answers: answerByQuestion,
+            index: currentQuestionIdx, startedAt: quizStartTime, deadline: deadlineRef.current,
+            timeLimit, submitting: submittingRef.current,
+        };
+        recoverySnapshot.current = snapshot;
+        setLocalSaveFailed(!saveTimedExam(learnerId, snapshot));
+    }, [activeExamId, serverAttemptId, practiceMode, phase, quizQuestions, answerByQuestion, currentQuestionIdx, quizStartTime, timeLimit, learnerId]);
+
+    const resumeExam = async () => {
+        if (!recovery || !analysis || recoveryBusy) return;
+        setRecoveryBusy(true);
+        setRecoveryError('');
+        try {
+            const saved = await examService.getAttemptResults(recovery.attemptId);
+            if (!saved || String(saved.exam_id) !== activeExamId || saved.learner_id !== learnerId || saved.mode !== ExamPracticeMode.TIMED_QUIZ)
+                throw new Error('Attempt unavailable');
+            if (saved.status === 'SUBMITTED') {
+                removeTimedExam(learnerId, recovery.examId);
+                setSubmittedReceipt(`This paper was already submitted: ${saved.score ?? 0}/${saved.maximum_marks ?? 0} marks. It will not be submitted again.`);
+                setRecovery(null);
+                return;
+            }
+            if (saved.status !== 'IN_PROGRESS') throw new Error('Attempt closed');
+            const questions = recovery.questionIds.map(id => analysis.questions.find(q => String(q.id) === id));
+            if (questions.some(q => !q) || JSON.stringify((saved.selected_questions || []).map(String)) !== JSON.stringify(recovery.questionIds))
+                throw new Error('Paper changed');
+            setQuizQuestions(questions as ExamQuestion[]);
+            setPracticeMode(ExamPracticeMode.TIMED_QUIZ);
+            setServerAttemptId(recovery.attemptId);
+            setAnswerByQuestion(recovery.answers);
+            setCurrentQuestionIdx(recovery.index);
+            setUserAnswer(recovery.answers[recovery.questionIds[recovery.index]] || '');
+            setQuizStartTime(recovery.startedAt);
+            setTimeLimit(recovery.timeLimit);
+            deadlineRef.current = recovery.deadline;
+            setTimeRemaining(Math.max(0, Math.ceil((recovery.deadline - Date.now()) / 1000)));
+            setExplainFirst(false);
+            submittingRef.current = recovery.submitting;
+            setPhase('QUIZ_ACTIVE');
+            if (recovery.submitting || recovery.deadline <= Date.now()) {
+                setSubmissionError('Your saved answers are ready. Retry submission to finish marking; the original exam time has not been extended.');
+            } else setTimerActive(true);
+            setRecovery(null);
+        } catch {
+            setRecoveryError('Could not verify this saved attempt. Check your connection and sign in with the same learner account, then retry. Your browser copy has been kept.');
+        } finally { setRecoveryBusy(false); }
+    };
 
     // ==================== INITIAL LOAD ====================
     useEffect(() => {
@@ -335,16 +409,14 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
 
     // ==================== TIMER ====================
     useEffect(() => {
-        if (timerActive && timeRemaining > 0) {
+        if (timerActive) {
             timerRef.current = setInterval(() => {
-                setTimeRemaining(prev => {
-                    if (prev <= 1) {
-                        setTimerActive(false);
-                        handleAutoSubmit();
-                        return 0;
-                    }
-                    return prev - 1;
-                });
+                const remaining = Math.max(0, Math.ceil((deadlineRef.current - Date.now()) / 1000));
+                setTimeRemaining(remaining);
+                if (remaining === 0) {
+                    setTimerActive(false);
+                    void finishQuizRef.current();
+                }
             }, 1000);
         }
         return () => { if (timerRef.current) clearInterval(timerRef.current); };
@@ -430,6 +502,9 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     }, [activeExamId, currentQuestionIdx, persistCurrentAnswer, serverAttemptId, userAnswer]);
 
     const startQuiz = async (mode: ExamPracticeMode, questions?: ExamQuestion[], overrideSecs?: number) => {
+        if (startingRef.current) return;
+        startingRef.current = true;
+        setStartError(null);
         const qs = questions || analysis?.questions || [];
         const sectionedQuestions = !questions && hasSectionTwo
             ? qs.filter(question => normalizeSection(question.section) !== 'II' || selectedQuestionIds.includes(String(question.id)))
@@ -439,6 +514,11 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         setPracticeMode(mode);
         setCurrentQuestionIdx(0);
         setAttempts([]);
+        setSubmissionError(null);
+        markedResponsesRef.current.clear();
+        submittingRef.current = false;
+        recoverySnapshot.current = null;
+        finishingRef.current = false;
         setUserAnswer('');
         setAnswerByQuestion({});
         setCurrentMarking(null);
@@ -461,20 +541,24 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                     selectedQuestions: preparedQuestions.map(question => String(question.id))
                 });
                 const attemptId = String((attempt as any)?.id || (attempt as any)?.attempt_id || (Array.isArray(attempt) ? attempt[0]?.id : '') || '');
-                if (attemptId) {
-                    setServerAttemptId(attemptId);
-                    setAutosaveStatus('saved');
-                }
+                if (!attemptId) throw new Error('No exam attempt was returned');
+                setServerAttemptId(attemptId);
+                setAutosaveStatus('saved');
             } catch (error) {
-                console.warn('Secure exam attempt could not be opened, continuing locally:', error);
-                setAutosaveStatus('offline');
+                console.warn('Secure exam attempt could not be opened:', error);
+                setStartError('We could not open a saved attempt. Check your connection and sign-in, then try again. The timer has not started.');
+                startingRef.current = false;
+                return;
             }
         }
+
+        startingRef.current = false;
 
         if (mode === ExamPracticeMode.TIMED_QUIZ) {
             const totalTime = overrideSecs ?? preparedQuestions.length * 120;
             setTimeLimit(totalTime);
             setTimeRemaining(totalTime);
+            deadlineRef.current = Date.now() + totalTime * 1000;
             setTimerActive(true);
         }
 
@@ -521,9 +605,15 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     };
 
     const updateAnswer = (value: string) => {
+        if (practiceMode === ExamPracticeMode.TIMED_QUIZ && (submittingRef.current || Date.now() >= deadlineRef.current)) return;
         setUserAnswer(value);
         const question = quizQuestions[currentQuestionIdx];
         if (question) setAnswerByQuestion(current => ({ ...current, [String(question.id)]: value }));
+        if (question && recoverySnapshot.current) {
+            const next = { ...recoverySnapshot.current, answers: { ...answerByQuestion, [String(question.id)]: value } };
+            recoverySnapshot.current = next;
+            setLocalSaveFailed(!saveTimedExam(learnerId, next));
+        }
     };
 
     const handleSaveTimedAnswer = async () => {
@@ -623,12 +713,15 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
         }
     };
 
-    const handleAutoSubmit = () => {
-        setTimerActive(false);
-        finishQuiz();
-    };
-
     const finishQuiz = async () => {
+        if (finishingRef.current) return;
+        finishingRef.current = true;
+        submittingRef.current = true;
+        if (recoverySnapshot.current) {
+            recoverySnapshot.current = { ...recoverySnapshot.current, submitting: true };
+            setLocalSaveFailed(!saveTimedExam(learnerId, recoverySnapshot.current));
+        }
+        setSubmissionError(null);
         if (timerRef.current) clearInterval(timerRef.current);
         setTimerActive(false);
         if (activeExamId) await persistCurrentAnswer().catch(() => null);
@@ -638,6 +731,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
             setPhase('MARKING');
             setIsMarking(true);
             const timedAttempts: AnswerAttempt[] = [];
+            let markingFailed = false;
             for (const question of quizQuestions) {
                 const learnerAnswer = answerByQuestion[String(question.id)]?.trim() || '';
                 if (!learnerAnswer) {
@@ -645,14 +739,27 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                     continue;
                 }
                 try {
+                    const cacheKey = JSON.stringify([String(question.id), learnerAnswer]);
+                    const cached = markedResponsesRef.current.get(cacheKey);
+                    if (cached) {
+                        timedAttempts.push(cached);
+                        continue;
+                    }
                     const result = activeExamId
                         ? await examService.markResponse(activeExamId, question.id, learnerAnswer, learnerId, serverAttemptId, language)
                         : await markStudentAnswer(question, learnerAnswer, language);
                     timedAttempts.push({ questionId: question.id, questionNumber: question.number, questionText: question.text, learnerAnswer, marksAwarded: result.marksAwarded, marksAvailable: result.marksAvailable, modelAnswer: result.modelAnswer, feedback: result.feedback, examTip: result.examTip, isCorrect: result.isCorrect, topic: question.topic });
+                    markedResponsesRef.current.set(cacheKey, timedAttempts[timedAttempts.length - 1]);
                 } catch (error) {
                     console.error('Could not mark timed response:', error);
-                    timedAttempts.push({ questionId: question.id, questionNumber: question.number, questionText: question.text, learnerAnswer, marksAwarded: 0, marksAvailable: question.marks || 1, modelAnswer: '', feedback: 'This response is awaiting marking.', isCorrect: false, topic: question.topic });
+                    markingFailed = true;
                 }
+            }
+            if (markingFailed) {
+                setSubmissionError('Some answers could not be marked. No final score has been recorded. Retry submission when your connection is ready.');
+                setIsMarking(false);
+                finishingRef.current = false;
+                return;
             }
             completedAttempts = timedAttempts;
             setAttempts(timedAttempts);
@@ -691,9 +798,6 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
             weakTopics,
             mode: practiceMode
         };
-        savePerformanceRecord(record);
-        setPastPerformance(loadPerformanceRecords());
-
         if (activeExamId && serverAttemptId) {
             try {
                 await examService.submitAttempt(serverAttemptId, timeSpentSeconds);
@@ -701,11 +805,22 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
             } catch (error) {
                 console.error('Could not submit exam attempt:', error);
                 setAutosaveStatus(navigator.onLine ? 'error' : 'offline');
+                setSubmissionError('Your answers were marked, but submission could not be confirmed. Retry submission when your connection is ready.');
+                finishingRef.current = false;
+                return;
             }
         }
 
+        if (activeExamId) removeTimedExam(learnerId, activeExamId);
+        recoverySnapshot.current = null;
+        try { savePerformanceRecord(record); } catch { /* A local history failure must not hide confirmed submission. */ }
+        setPastPerformance(loadPerformanceRecords());
         setPhase('RESULTS');
+        finishingRef.current = false;
     };
+
+    // The timer must submit the latest answers, not the state captured when it started.
+    useEffect(() => { finishQuizRef.current = finishQuiz; });
 
     // ==================== DASHBOARD ACTIONS ====================
     const handlePredictions = async () => {
@@ -729,6 +844,43 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
     };
 
     // ==================== RENDER ====================
+
+    if (submittedReceipt || (recovery && analysis)) {
+        return <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+            <section className="max-w-lg rounded-2xl bg-white border border-indigo-200 p-6">
+                <h2 className="text-xl font-bold">{submittedReceipt ? 'Paper submitted' : 'Resume your unfinished paper'}</h2>
+                <p className="mt-3">{submittedReceipt || 'Your answers are saved in this browser. The original timer keeps running while you are away.'}</p>
+                {recoveryError && <p role="alert" className="mt-3 text-red-700">{recoveryError}</p>}
+                {!submittedReceipt && <button disabled={recoveryBusy} onClick={() => void resumeExam()} className="mt-5 rounded-xl bg-indigo-600 text-white px-5 py-3 font-bold">{recoveryBusy ? 'Checking saved attempt…' : 'Resume saved paper'}</button>}
+                <button onClick={onExit} className="m-3 underline">Back to exam prep</button>
+            </section>
+        </div>;
+    }
+
+    if (startError) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+                <section className="max-w-lg rounded-2xl bg-white border border-amber-200 p-6">
+                    <h2 className="text-xl font-bold text-slate-900">Paper could not start</h2>
+                    <p role="alert" className="mt-3 text-slate-700">{startError}</p>
+                    <button onClick={() => { setStartError(null); setPhase('DASHBOARD'); }} className="mt-5 rounded-xl bg-indigo-600 text-white px-5 py-3 font-bold">Return to paper setup</button>
+                </section>
+            </div>
+        );
+    }
+
+    if (submissionError) {
+        return (
+            <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+                <section className="max-w-lg rounded-2xl bg-white border border-amber-200 p-6">
+                    <h2 className="text-xl font-bold text-slate-900">Submission needs attention</h2>
+                    <p role="alert" className="mt-3 text-slate-700">{submissionError}</p>
+                    <p className="mt-3">{localSaveFailed || !recoverySnapshot.current ? 'Keep this page open: a browser recovery copy could not be saved.' : 'Your answers are saved in this browser. You can return through Exam Prep → Unfinished paper.'}</p>
+                    <button onClick={() => void finishQuiz()} className="mt-5 rounded-xl bg-indigo-600 text-white px-5 py-3 font-bold">Retry submission</button>
+                </section>
+            </div>
+        );
+    }
 
     // --- LOADING ---
     if (loadError) {
@@ -776,7 +928,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                         <div className="w-16 h-16 bg-indigo-900/40 border border-indigo-700/60 rounded-2xl flex items-center justify-center mx-auto mb-4">
                             <Timer className="w-8 h-8 text-indigo-400" />
                         </div>
-                        <h2 className="text-slate-900 font-black text-xl">{hasOfficialDuration ? 'Official Exam Setup' : 'Set Exam Time'}</h2>
+                        <h2 className="text-slate-900 font-black text-xl">{hasOfficialDuration ? 'Timed Paper Setup' : 'Set Exam Time'}</h2>
                         <p className="text-slate-500 text-sm mt-1 font-medium">
                             {analysis.subject}  -  {analysis.questions.length} questions  -  {totalMarks} marks
                         </p>
@@ -784,7 +936,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
 
                     {hasOfficialDuration && (
                         <div className="rounded-2xl border border-indigo-700/60 bg-indigo-900/30 p-5 text-center">
-                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Official paper duration</p>
+                            <p className="text-[10px] font-black uppercase tracking-[0.2em] text-indigo-300">Paper duration</p>
                             <p className="mt-2 text-3xl font-black text-slate-900">{analysis.durationMinutes} minutes</p>
                             <p className="mt-1 text-xs text-slate-500">Timed Exam uses the duration approved with this paper.</p>
                         </div>
@@ -997,7 +1149,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                     >
                                         <Timer className="w-6 h-6 mb-3 opacity-80" />
                                         <p className="font-black text-sm mb-1">Timed Exam</p>
-                                        <p className="text-blue-200 text-[10px]">{analysis.questions.length} Qs  -  {analysis.durationMinutes ? `${analysis.durationMinutes} min official` : 'Set your time'}</p>
+                                        <p className="text-blue-200 text-[10px]">{analysis.questions.length} Qs  -  {analysis.durationMinutes ? `${analysis.durationMinutes} min` : 'Set your time'}</p>
                                     </motion.button>
 
                                     <motion.button
@@ -1413,7 +1565,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                                         : autosaveStatus === 'offline'
                                             ? 'text-[9px] font-black px-2 py-1 rounded-full uppercase bg-slate-100 text-slate-500'
                                             : 'text-[9px] font-black px-2 py-1 rounded-full uppercase bg-indigo-100 text-indigo-700'}>
-                                    {autosaveStatus === 'saving' ? 'Saving...' : autosaveStatus === 'saved' ? 'Saved' : autosaveStatus === 'offline' ? 'Saved offline' : 'Sync required'}
+                                    {autosaveStatus === 'saving' ? 'Saving...' : autosaveStatus === 'saved' ? 'Saved' : autosaveStatus === 'offline' ? 'Offline — not synced' : 'Sync required'}
                                 </span>
                             )}
                         </div>
@@ -1429,6 +1581,7 @@ export const RevisionSession: React.FC<Props> = ({ data, mode, initialAnalysis, 
                 </div>
 
                 {/* Question & Answer Area */}
+                {practiceMode === ExamPracticeMode.TIMED_QUIZ && activeExamId && <p role="status" className="px-5 py-2 text-sm bg-amber-50 text-slate-900">{localSaveFailed ? 'Browser recovery unavailable. Keep this page open until submission succeeds.' : 'Recovery copy saved in this browser. The timer continues if you leave.'}</p>}
                 <div className="flex-1 overflow-y-auto">
                     <div className="max-w-2xl mx-auto p-5 space-y-5">
                         <div className="bg-white text-slate-900 rounded-2xl p-4 shadow-sm border border-slate-200">

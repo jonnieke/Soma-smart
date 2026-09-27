@@ -1,4 +1,7 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
+import studyIllustration from '../assets/images/landing-study-illustration.webp';
+import './LandingHome.css';
 import {
   ArrowRight,
   BarChart3,
@@ -57,6 +60,8 @@ type Props = {
   onSomaGuide: () => void;
   onRevision: () => void;
   onContact?: () => void;
+  onPrivacy?: () => void;
+  onTerms?: () => void;
   onStartPaper: (paperId: string | number) => void;
   onPreviewPaper: (paperId: string | number) => void;
   onPreviewMarkingScheme?: (paperId: string | number) => void;
@@ -165,6 +170,55 @@ const teacherTools = [
 ] as const;
 
 export const LandingHome: React.FC<Props> = (props) => {
+  const [menuOpen, setMenuOpen] = React.useState(false);
+  const navigation = <>
+    <button onClick={() => props.onExamPapers()}>Past papers</button>
+    <Link to="/learning-videos">Learning videos</Link>
+    <button onClick={props.onTeacher}>For teachers</button>
+    <button onClick={props.onPricing}>Pricing</button>
+  </>;
+  return <div className="soma-landing">
+    <header className="soma-header">
+      <Link to="/" className="soma-brand" aria-label="Soma AI homepage"><img src={logoImg} alt="" width="52" height="52" /><span>Soma AI</span></Link>
+      <nav className="soma-desktop-nav" aria-label="Main navigation">{navigation}</nav>
+      <button className="soma-outline soma-signin" onClick={props.isRegistered ? props.onDashboard : props.onSignIn}>{props.isRegistered ? 'My dashboard' : 'Sign in'}</button>
+      <button className="soma-menu-toggle" aria-label="Toggle menu" aria-expanded={menuOpen} aria-controls="soma-mobile-menu" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button>
+    </header>
+    {menuOpen && <nav id="soma-mobile-menu" className="soma-mobile-nav" aria-label="Mobile navigation" onClick={() => setMenuOpen(false)}>{navigation}</nav>}
+    <div>
+      <section className="soma-hero" aria-labelledby="soma-headline">
+        <div className="soma-hero-copy">
+          <p className="soma-eyebrow">A little learning, every day.</p>
+          <h1 id="soma-headline">Understand more.<br />Learn at your<br />own pace.</h1>
+          <p className="soma-intro">Simple notes, clear explanations and practice for your next lesson.</p>
+          <button className="soma-primary" onClick={() => { props.onTrack('start_learning_free_clicked', { source: 'landing_hero' }); props.onStartLearning(); }}>Start learning <ArrowRight size={24} /></button>
+          <p className="soma-returning">{props.isRegistered ? 'Welcome back. ' : 'Already learning with us? '}<button onClick={props.isRegistered ? props.onDashboard : props.onSignIn}>{props.isRegistered ? 'Continue learning' : 'Sign in'}</button></p>
+        </div>
+        <div className="soma-hero-art">
+          <img src={studyIllustration} alt="Two learners studying together with an open book" width="1200" height="800" fetchPriority="high" />
+          <div className="soma-akili"><AskAkiliDemo {...props} compact /></div>
+        </div>
+      </section>
+      <section className="soma-paths" aria-labelledby="soma-paths-title">
+        <h2 id="soma-paths-title">What would you like to do?</h2>
+        <div>
+          <button onClick={props.onLibrary}><BookOpen /><span>Read notes</span><ArrowRight /></button>
+          <button onClick={props.onRevision}><Notebook /><span>Practise a topic</span><ArrowRight /></button>
+          <button onClick={() => props.onExamPapers()}><FileText /><span>Find past papers</span><ArrowRight /></button>
+        </div>
+      </section>
+      <section aria-label="Latest past papers" className="soma-paper-ribbon"><ExamPaperTickerBelt papers={props.latestPapers} onPaperClick={props.onExamPapers} /></section>
+      <section className="soma-teacher-strip">
+        <Users size={48} aria-hidden="true" /><div><h2>Teaching today?</h2><p>Prepare notes and assessments for your class.</p></div>
+        <button className="soma-outline" onClick={props.onTeacher}>Open Teacher Studio <ArrowRight size={20} /></button>
+      </section>
+    </div>
+    <footer className="soma-footer"><span>Soma AI</span><nav aria-label="Footer navigation"><button onClick={props.onParent}>For parents</button><button onClick={props.onContact}>Help</button><button onClick={props.onPrivacy}>Privacy</button><button onClick={props.onTerms}>Terms</button></nav></footer>
+  </div>;
+};
+
+// Retained for existing teacher-composer regression coverage; not rendered on the homepage.
+export const LegacyLandingHome: React.FC<Props> = (props) => {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const carouselRef = React.useRef<HTMLDivElement | null>(null);
 
@@ -805,7 +859,7 @@ const LandingFooter: React.FC<{
   </footer>
 );
 
-const AskAkiliDemo: React.FC<Props> = (props) => {
+const AskAkiliDemo: React.FC<Props & { compact?: boolean }> = (props) => {
   const [question, setQuestion] = React.useState('');
   const [attachedFile, setAttachedFile] = React.useState<File | null>(null);
   const [isListening, setIsListening] = React.useState(false);
@@ -1040,6 +1094,7 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
         )}
 
         {/* Quick subject & grade chips */}
+        {!props.compact && <>
         <div className="space-y-1.5">
           <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Quick syllabus topics</p>
           <div className="flex flex-wrap gap-1.5">
@@ -1162,6 +1217,7 @@ const AskAkiliDemo: React.FC<Props> = (props) => {
         >
           Open this full answer in Ask Akili <ArrowRight className="h-4 w-4" />
         </button>
+        </>}
       </div>
     </div>
   );

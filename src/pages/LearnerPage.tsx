@@ -19,7 +19,7 @@ export const LearnerPage: React.FC = () => {
         <>
             <Helmet>
                 <html lang="en" />
-                <title>Study Dashboard | Soma AI — AI Learning for Kenyan Students</title>
+                <title>My classroom | Soma AI — Learn with Akili</title>
                 <meta name="description" content="Your personalized AI study dashboard for Kenya. Ask homework questions, get step-by-step explanations, practice CBC, KPSEA & KCSE past papers, and track subject mastery." />
                 <meta name="keywords" content="Soma AI learner, KCSE revision, KPSEA past papers, CBC notes, Ask Akili AI, Kenyan study assistant, step-by-step homework help" />
 

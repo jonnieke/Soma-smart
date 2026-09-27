@@ -137,6 +137,7 @@ export interface ExamPaperSection {
 export type PaperVisibility = 'PRIVATE' | 'DEPARTMENT' | 'SCHOOL' | 'MARKETPLACE';
 
 export interface ExamPaper {
+  generation?: { status: 'pending' | 'received' | 'complete' | 'failed'; request: unknown; startedAt: string; rawResponse?: string; error?: string };
   id: string;
   ownerId: string;
   schoolId?: string;

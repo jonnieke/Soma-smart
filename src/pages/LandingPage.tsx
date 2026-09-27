@@ -1039,6 +1039,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 onSomaGuide={() => navigate('/guide')}
                 onRevision={() => navigate('/revision')}
                 onContact={() => navigate('/contact')}
+                onPrivacy={() => setShowPrivacy(true)}
+                onTerms={() => setShowTerms(true)}
                 onStartPaper={handleStartPaperFromHome}
                 onPreviewPaper={handlePreviewPaperFromHome}
                 onPreviewMarkingScheme={handlePreviewMarkingSchemeFromHome}

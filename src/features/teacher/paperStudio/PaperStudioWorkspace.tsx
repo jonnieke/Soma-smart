@@ -122,7 +122,7 @@ export const PaperStudioWorkspace: React.FC<WorkspaceProps> = ({
             Create professional exams in minutes
           </h1>
           <p className="text-sm sm:text-base text-slate-300 font-medium leading-relaxed max-w-2xl">
-            Build curriculum-aligned CATs, quizzes, mocks, revision papers, and end-of-term examinations from SomaAI&apos;s question bank or your own custom materials.
+            Describe the topics you have taught. Generate an editable assessment with answers and a marking guide, or build from your question bank. Review AI drafts before classroom use.
           </p>
 
           {/* Primary Workspace Quick Actions */}
@@ -132,7 +132,7 @@ export const PaperStudioWorkspace: React.FC<WorkspaceProps> = ({
               className="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 px-5 py-3 text-sm font-black text-white shadow-lg transition transform hover:-translate-y-0.5 active:translate-y-0"
             >
               <PlusCircle className="w-5 h-5" />
-              Create New Paper
+              Generate a paper
             </button>
 
             {launchFeatures.uploadBlueprintEnabled && (
@@ -184,10 +184,10 @@ export const PaperStudioWorkspace: React.FC<WorkspaceProps> = ({
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="flex items-center justify-between text-slate-500 mb-2">
-            <span className="text-xs font-bold uppercase tracking-wider">AI Credits</span>
+            <span className="text-xs font-bold uppercase tracking-wider">AI usage</span>
             <Coins className="w-4 h-4 text-purple-500" />
           </div>
-          <p className="text-2xl sm:text-3xl font-black text-slate-900">{metrics.remainingCredits}</p>
+          <p className="text-sm text-slate-700">Your account’s plan limits apply.</p>
         </div>
 
         <div className="col-span-2 sm:col-span-4 lg:col-span-1 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">

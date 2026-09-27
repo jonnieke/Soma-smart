@@ -1,0 +1,13 @@
+.git
+.deploy-audit
+artifacts
+test-results
+playwright-report
+coverage
+blob-report
+node_modules
+dist
+.env*
+*.log
+paper-guide-mobile.png
+paper-guide-review.png

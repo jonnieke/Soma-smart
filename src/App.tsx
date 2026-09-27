@@ -6,6 +6,7 @@ import { ConnectivityBanner } from './components/ConnectivityBanner';
 import { SessionConflictModal } from './components/SessionConflictModal';
 import { SubscriptionExpiredModal } from './components/SubscriptionExpiredModal';
 import { UpgradeModal } from './components/UpgradeModal';
+import { upgradeDestination } from './features/subscription/upgradeDestination';
 import { WhatsAppFloatingWidget } from './components/WhatsAppFloatingWidget';
 import { TeacherWorkspaceNavigation } from './components/TeacherWorkspaceNavigation';
 import { ErrorBoundary } from './components/ErrorBoundary';
@@ -22,6 +23,7 @@ import { TelegramService } from './services/telegramService';
 
 // Lazy Load Pages for Performance
 const LandingPage = React.lazy(() => safeImport(() => import('./pages/LandingPage').then(module => ({ default: module.LandingPage }))));
+const LearningVideosPage = React.lazy(() => safeImport(() => import('./pages/LearningVideosPage')));
 const LearnerPage = React.lazy(() => safeImport(() => import('./pages/LearnerPage').then(module => ({ default: module.LearnerPage }))));
 const TeacherPage = React.lazy(() => safeImport(() => import('./pages/TeacherPage').then(module => ({ default: module.TeacherPage }))));
 const ParentPage = React.lazy(() => safeImport(() => import('./pages/ParentPage').then(module => ({ default: module.ParentPage }))));
@@ -146,7 +148,7 @@ const GlobalNavigation: React.FC = () => {
         { label: 'Admin', icon: Shield, to: '/admin', active: pathname.startsWith('/admin') },
     ];
 
-    if (pathname === '/' || pathname.startsWith('/learner') || pathname.startsWith('/teacher') || pathname.startsWith('/revision') || pathname.startsWith('/exam-papers')) return null;
+    if (pathname === '/' || pathname === '/learning-videos' || pathname.startsWith('/learner') || pathname.startsWith('/teacher') || pathname.startsWith('/revision') || pathname.startsWith('/exam-papers')) return null;
 
     return (
         <div className="sticky top-0 z-[90] border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-slate-800/80 dark:bg-slate-950/95">
@@ -189,7 +191,8 @@ const GlobalNavigation: React.FC = () => {
 const App: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const hideGlobalAssistant = ['/learner', '/teacher', '/revision'].some(path => location.pathname.startsWith(path));
+    const quietPublicPage = location.pathname === '/' || location.pathname === '/learning-videos';
+    const hideGlobalAssistant = quietPublicPage || ['/learner', '/teacher', '/revision'].some(path => location.pathname.startsWith(path));
     const previousPathRef = React.useRef<string | null>(null);
 
     // Initialize Google Analytics
@@ -291,12 +294,16 @@ const App: React.FC = () => {
                 )}
                 <SessionConflictModal />
                 <SubscriptionExpiredModal />
-                <UpgradeModal onUpgrade={(_planId) => navigate('/pricing')} />
-                <WhatsAppFloatingWidget />
+                <UpgradeModal onUpgrade={(planId) => {
+                    const destination = upgradeDestination(planId, location.pathname);
+                    navigate(destination.pathname, { state: destination.state });
+                }} />
+                {!quietPublicPage && !location.pathname.startsWith('/learner') && <WhatsAppFloatingWidget />}
                 <Suspense fallback={<PageLoader />}>
                     <main id="main-content">
                         <Routes>
                             <Route path="/" element={<LandingPage />} />
+                            <Route path="/learning-videos" element={<LearningVideosPage />} />
                             <Route path="/learner" element={<LearnerPage />} />
                             <Route path="/teacher" element={<TeacherPage />} />
                             <Route path="/teacher/paper-studio" element={<TeacherPage />} />

@@ -23,7 +23,9 @@ import { AIFeedbackButtons } from '../../components/AIFeedbackButtons';
 import { LogoutModal } from '../../components/LogoutModal';
 import { ParentPinModal } from '../../components/ParentPinModal';
 import { MarkdownText, Button, Card } from '../../components/Shared';
-import { LearnerAnswerNotes } from './answer/LearnerAnswerNotes';
+import { LearnerClassroom } from './classroom/LearnerClassroom';
+import { initialClassroomLesson, starterClassroomLesson, protectingSoilLesson, nextClassroomTopic, isClassroomNoteSaved, isClassroomLimitError } from './classroom/classroomLessons';
+import { heroAnswerContinuation } from './answer/heroAnswerContinuation';
 import { MasteryDashboard } from '../../components/MasteryDashboard';
 import {
   calculateTotalXP, calculateLevel,
@@ -33,7 +35,6 @@ import { translations } from '../../data/translations';
 import { QuizReviewSummary, QuizRunner } from './QuizRunner';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { SidebarTab } from '../../components/DashboardSidebar';
-import { LearnerHome } from './home/LearnerHome';
 import { LearnerSidebar } from './home/LearnerSidebar';
 import { LearnerLibrary } from './home/LearnerLibrary';
 import { QuestionCamera } from './camera/QuestionCamera';
@@ -50,7 +51,7 @@ import { supabase } from '../../lib/supabase';
 import { trackAnalyticsEvent } from '../../services/analyticsEventService';
 import { extractTextFromURL } from '../../services/contextService';
 import { LearnerNotebook } from './LearnerNotebook';
-import { getNotebookOwnerKey, migrateGuestNotebook, saveStudyNote, syncNotebookFromCloud } from '../../services/notebookService';
+import { getNotebookOwnerKey, migrateGuestNotebook, saveStudyNote, syncNotebookFromCloud, loadStudyNotes, NOTEBOOK_CHANGED_EVENT } from '../../services/notebookService';
 import { formatAkiliAnswerForWhatsApp, formatParentConnectionForWhatsApp, formatQuizResultForWhatsApp, formatWeeklyProgressForWhatsApp, normalizeWhatsAppPhone, openWhatsAppShare } from '../../services/whatsappService';
 import { isKiswahiliSubject } from '../../services/academicLanguagePolicy';
 
@@ -863,8 +864,19 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   // Image data state (renamed from image for clarity and type safety)
   const [imageData, setImageData] = useState<{ base64: string, mimeType: string } | null>(null);
 
-  const [explanation, setExplanation] = useState<ExplanationResult | null>(null);
+  const [explanation, setExplanation] = useState<ExplanationResult | null>(() => initialClassroomLesson(history));
   const [explanationSubject, setExplanationSubject] = useState<string | undefined>(undefined);
+  useEffect(() => {
+    if (mode === 'MENU' && !explanation) setExplanation(starterClassroomLesson);
+  }, [mode, explanation]);
+  const restoredClassroomHistory = useRef(false);
+  useEffect(() => {
+    if (restoredClassroomHistory.current || history.length === 0) return;
+    restoredClassroomHistory.current = true;
+    if (mode === 'MENU' && explanation === starterClassroomLesson) {
+      setExplanation(initialClassroomLesson(history));
+    }
+  }, [history, mode, explanation]);
   const [stickyQuizTaken, setStickyQuizTaken] = useState(false);
   const [quizData, setQuizData] = useState<QuizData | null>(null);
   const [lastQuizReview, setLastQuizReview] = useState<QuizReviewSummary | null>(null);
@@ -962,6 +974,15 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const similarExampleFollowUpRef = useRef(false);
   const practiceNudgeTimerRef = useRef<number | null>(null);
   const [selectedPlan, setSelectedPlan] = useState<SubscriptionPlan | null>(null);
+  const [awaitingUpgradeCheckout, setAwaitingUpgradeCheckout] = useState(false);
+  useEffect(() => {
+    if (awaitingUpgradeCheckout && isRegistered && selectedPlan) {
+      setAwaitingUpgradeCheckout(false);
+      setShowRegistration(false);
+      setShowLimitModal(false);
+      setMode('PAYMENT');
+    }
+  }, [awaitingUpgradeCheckout, isRegistered, selectedPlan]);
   const [promptText, setPromptText] = useState("");
   const [groundedAnswerMode, setGroundedAnswerMode] = useState(() => localStorage.getItem('soma_grounded_answer_mode') !== 'off');
 
@@ -2072,6 +2093,19 @@ Stay anchored to this context unless I ask for something broader.`;
     return 'Akili will answer this directly first, then show examples and exam marks guidance after sign up.';
   }, [fadedSolutionData.answer, fadedSolutionData.query]);
 
+  // A homepage answer is the start of a lesson, not a dismiss-only modal.
+  // This also resumes the same answer after a guest signs in, without another AI call.
+  React.useEffect(() => {
+    const lesson = heroAnswerContinuation(isRegistered, fadedSolutionData);
+    if (!lesson) return;
+    setExplanation(lesson);
+    setExplanationSubject(undefined);
+    setStickyQuizTaken(false);
+    setPodcastScript(null);
+    setFadedSolutionData(prev => ({ ...prev, show: false }));
+    setMode('RESULT');
+  }, [isRegistered, fadedSolutionData.show, fadedSolutionData.isGenerating, fadedSolutionData.answer, fadedSolutionData.query]);
+
   // Check for subscription intent & Auto-open material intent
   React.useEffect(() => {
     const state = location.state as {
@@ -2205,7 +2239,10 @@ Stay anchored to this context unless I ask for something broader.`;
 
     // New Direct Payment handling
     if (state?.initiatePaymentFor) {
+      setSelectedPlan(state.initiatePaymentFor);
+      setShowLimitModal(false);
       if (!isRegistered) {
+        setAwaitingUpgradeCheckout(true);
         setShowRegistration(true);
       } else {
         setSelectedPlan(state.initiatePaymentFor);
@@ -2760,6 +2797,17 @@ Stay anchored to this context unless I ask for something broader.`;
     () => getNotebookOwnerKey(studentCode, userId),
     [studentCode, userId]
   );
+  const [classroomNotes, setClassroomNotes] = useState(() => loadStudyNotes(notebookOwnerKey));
+  useEffect(() => {
+    const refresh = () => setClassroomNotes(loadStudyNotes(notebookOwnerKey));
+    refresh();
+    window.addEventListener(NOTEBOOK_CHANGED_EVENT, refresh);
+    window.addEventListener('storage', refresh);
+    return () => {
+      window.removeEventListener(NOTEBOOK_CHANGED_EVENT, refresh);
+      window.removeEventListener('storage', refresh);
+    };
+  }, [notebookOwnerKey]);
 
   useEffect(() => {
     if (!isRegistered || notebookOwnerKey === 'guest') return;
@@ -2771,6 +2819,7 @@ Stay anchored to this context unless I ask for something broader.`;
   }, [isRegistered, notebookOwnerKey, trackFunnelEvent, userId]);
 
   type PendingPaywallAction = 
+    | { type: 'CLASSROOM_FOLLOWUP', instruction: string }
     | { type: 'PROCESS_FILE', file: File }
     | { type: 'AUDIO_EXPLANATION', blob: Blob, mimeType: string }
     | { type: 'TOPIC_CLICK', topic: string, multimedia?: { data: string, mimeType: string } }
@@ -3773,6 +3822,67 @@ ${explanation.explanation}
   };
 
   // --- VIEWS ---
+  const continueClassroomTopic = async (instruction: string) => {
+    if (loading || !checkLimit({ type: 'CLASSROOM_FOLLOWUP', instruction })) return;
+    const lesson = explanation || starterClassroomLesson;
+    setLoading(true);
+    setError(null);
+    try {
+      const result = await continueResearch(lesson.topic, lesson.explanation, instruction, level, language);
+      setExplanation(result);
+      setMode('RESULT');
+      void saveActivity({ id: crypto.randomUUID(), type: 'EXPLANATION', topic: result.topic,
+        date: new Date().toLocaleDateString(), details: JSON.stringify({ source: 'classroom_followup', explanation: result }) });
+    } catch (failure) {
+      if (isClassroomLimitError(failure)) {
+        handleRateLimitError(failure);
+        setPendingPaywallAction({ type: 'CLASSROOM_FOLLOWUP', instruction });
+        return;
+      }
+      setError({ title: 'Let’s try again', message: 'Akili could not extend this lesson just now. Your current lesson is still here.' });
+    } finally { setLoading(false); }
+  };
+
+  const classroomProps = () => ({
+    answer: explanation || starterClassroomLesson,
+    name: studentProfile?.name || profile?.name || 'Learner',
+    grade: studentProfile?.grade || '',
+    subject: explanationSubject,
+    busy: loading,
+    listening: isPlaying,
+    recording: isRecording,
+    examplesUsed: similarExamplesUsed,
+    saved: isClassroomNoteSaved(explanation || starterClassroomLesson, classroomNotes),
+    nextTopic: nextClassroomTopic(explanation || starterClassroomLesson),
+    onHome: () => handleSidebarTabChange('HOME'),
+    onSubjects: () => { setActiveLibrarySubject('ALL'); setActiveLibraryCategory('ALL'); setLibraryView('UNLOCKED'); setSelectedGrade(studentProfile?.grade || 'ALL'); setSelectedSource('ALL'); handleSidebarTabChange('RESOURCES'); },
+    onNotes: () => handleSidebarTabChange('NOTEBOOK'),
+    onPapers: () => handleSidebarTabChange('SUBJECTS'),
+    onProfile: () => runWithRecallExitGuard(() => setMode('PROFILE')),
+    onHomepage: () => navigate('/'),
+    onAsk: (question: string) => { setPromptText(question); void handlePromptSubmit(question); },
+    onScan: () => void startCamera(),
+    onUpload: () => fileInputRef.current?.click(),
+    onSpeak: () => { if (isRecording) stopRecording(); else void startVoiceQuestion(); },
+    onSimplify: () => void continueClassroomTopic('Explain this same topic more simply, using short learner-friendly notes and one everyday example. Keep the topic and do not replace it with a new subject.'),
+    onExample: () => { if (explanation?.practice?.isProblem) void requestAnotherSimilarExample(); else void continueClassroomTopic('Show one clear everyday example to help me understand this same topic. Explain why it works.'); },
+    onListen: () => void handleTTS(),
+    onPractise: () => void handleGenerateQuiz(),
+    onSave: handleSaveExplanationToNotebook,
+    onNext: () => {
+      if (explanation?.topic === 'Soil erosion') {
+        setExplanation(protectingSoilLesson); setMode('RESULT');
+        void saveActivity({ id: crypto.randomUUID(), type: 'EXPLANATION', topic: protectingSoilLesson.topic,
+          date: new Date().toLocaleDateString(), details: JSON.stringify({ source: 'classroom_next', explanation: protectingSoilLesson }) });
+      } else {
+        const next = nextClassroomTopic(explanation || starterClassroomLesson);
+        if (next) void handlePromptSubmit(`Teach me ${next}. Continue from our lesson on ${explanation?.topic}, using a short explanation, a worked example and a practice question.`);
+        else void continueClassroomTopic('Continue teaching this topic with the next useful concept, a worked example and a short practice question. Build on this lesson rather than repeating it.');
+      }
+    },
+    onVideos: () => navigate('/learning-videos'),
+  });
+
   const renderMode = () => {
     if (mode === 'FLASHCARDS') {
       const flashcardItems = (practiceMode === 'due' ? dueForReview : spacedRepetitionItems)
@@ -4166,6 +4276,9 @@ ${explanation.explanation}
             initialSubject={revisionInitialSubject}
             initialSearchQuery={revisionInitialSearchQuery}
             onBack={() => setMode('MENU')}
+            onNotes={() => handleSidebarTabChange('NOTEBOOK')}
+            onProfile={() => setMode('PROFILE')}
+            onAudio={() => handleSidebarTabChange('TALKBACK')}
             onNavigate={onNavigate}
             onStartSession={(data, sessionMode) => {
               if (!checkLimit({ type: 'REVISION_ENTRY' })) return;
@@ -4730,43 +4843,8 @@ ${explanation.explanation}
     }
 
     if (mode === 'MENU') {
-      const latestLearningActivity = history.find((item: LearnerActivity) => {
-        if (isSyllabusActivity(item) || !item.details) return false;
-        try {
-          const details = JSON.parse(item.details);
-          return (item.type === 'EXPLANATION' && Boolean(details.explanation))
-            || (item.type === 'STUDY' && Boolean(details.materialId && details.fileUrl));
-        } catch { return false; }
-      });
       return (
-        <LearnerHome
-          learnerName={studentProfile?.name || profile?.name || 'Learner'}
-          grade={studentProfile?.grade || 'Choose your grade'}
-          subjects={Array.from(new Set(gradeFilteredMaterials
-            .filter(material => Boolean(studentProfile?.grade) && normalizeGrade(material.grade) === normalizeGrade(studentProfile?.grade))
-            .map(material => material.subject?.trim()).filter((subject): subject is string => Boolean(subject) && subject.toLowerCase() !== 'all'))).sort()}
-          latestTopic={latestLearningActivity?.topic}
-          onOpenMenu={() => setSidebarOpen(true)}
-          onProfile={() => setMode('PROFILE')}
-          onTeach={(topic) => {
-            setPromptText(topic);
-            void handlePromptSubmit(topic);
-          }}
-          onScan={() => void startCamera()}
-          onUpload={() => fileInputRef.current?.click()}
-          onVoice={() => void startVoiceQuestion()}
-          onSubject={(subject) => {
-            setActiveLibrarySubject(subject);
-            setActiveLibraryCategory('ALL');
-            setLibraryView('UNLOCKED');
-            setSelectedGrade(studentProfile?.grade || 'ALL');
-            setSelectedSource('ALL');
-            handleSidebarTabChange('RESOURCES');
-          }}
-          onContinue={() => { if (latestLearningActivity) restoreActivity(latestLearningActivity); }}
-          onViewAll={() => { setActiveLibrarySubject('ALL'); setActiveLibraryCategory('ALL'); setLibraryView('UNLOCKED'); setSelectedGrade(studentProfile?.grade || 'ALL'); setSelectedSource('ALL'); handleSidebarTabChange('RESOURCES'); }}
-          onOpenRevision={() => handleSidebarTabChange('SUBJECTS')}
-        />
+        <LearnerClassroom key={`${explanation?.topic}:${explanation?.explanation}`} {...classroomProps()} />
       );
     }
 
@@ -6617,15 +6695,9 @@ ${explanation.explanation}
     if (mode === 'RESULT' && explanation) {
       return (
         <>
-          <LearnerAnswerNotes
-            answer={explanation}
-            onBack={() => runWithRecallExitGuard(() => { cancelPodcast(); handleExitResult(); })}
-            onListen={handleTTS}
-            listening={isPlaying}
-            onPractise={handleGenerateQuiz}
-            onExample={() => void requestAnotherSimilarExample()}
-            examplesUsed={similarExamplesUsed}
-            busy={loading}
+          <LearnerClassroom
+            key={`${explanation.topic}:${explanation.explanation}`}
+            {...classroomProps()}
             media={imageData ? <img className="mt-3 max-h-80 w-full object-contain" alt="Scanned question" src={`data:${imageData.mimeType};base64,${imageData.base64}`} /> : audioData ? <audio className="mt-3 w-full" controls src={`data:${audioData.mimeType};base64,${audioData.base64}`} /> : undefined}
           >
             <button onClick={handleDownload} className="min-h-12 rounded-xl border px-4 py-3 font-semibold">Download notes</button>
@@ -6885,7 +6957,7 @@ ${explanation.explanation}
               </motion.div>
             )}
 
-          </LearnerAnswerNotes>
+          </LearnerClassroom>
           {showPracticeNudge && explanation.practice?.isProblem && <div role="status" className="fixed bottom-20 left-4 right-4 z-[140] mx-auto flex max-w-lg items-center gap-3 rounded-xl bg-emerald-700 p-4 text-white shadow-lg"><p className="flex-1">Now it’s your turn to try the question. You can do it!</p><button className="min-h-11 px-3" aria-label="Dismiss encouragement" onClick={() => setShowPracticeNudge(false)}>Close</button></div>}
 
           {/* --- ONBOARDING MODAL --- */}
@@ -7101,6 +7173,7 @@ ${explanation.explanation}
               setPendingPaywallAction(null);
               setTimeout(() => {
                 if (action.type === 'PROCESS_FILE') processFile(action.file);
+                else if (action.type === 'CLASSROOM_FOLLOWUP') void continueClassroomTopic(action.instruction);
                 else if (action.type === 'AUDIO_EXPLANATION') handleAudioExplanation(action.blob, action.mimeType);
                 else if (action.type === 'TOPIC_CLICK') handleTopicClick(action.topic, action.multimedia);
                 else if (action.type === 'STUDY_SESSION') startStudySession(action.material);
@@ -7807,7 +7880,7 @@ ${explanation.explanation}
   return (
     <div className="relative min-h-screen bg-slate-50">
       {/* Sidebar */}
-      <LearnerSidebar
+      {mode !== 'MENU' && mode !== 'RESULT' && mode !== 'REVISION' && <LearnerSidebar
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         activeTab={sidebarTab}
@@ -7818,10 +7891,10 @@ ${explanation.explanation}
         sessionsLeft={Math.max(0, 5 - usageCount)}
         isPro={isPro}
         subscriptionPlan={subscriptionPlan}
-      />
+      />}
 
       {/* Main Content */}
-      <div className="lg:ml-[260px] min-h-screen overflow-x-hidden min-w-0 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
+      <div className={mode === 'MENU' || mode === 'RESULT' || mode === 'REVISION' ? 'min-h-screen min-w-0' : 'lg:ml-[260px] min-h-screen overflow-x-hidden min-w-0 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0'}>
         {renderMode()}
       </div>
 
@@ -8044,17 +8117,17 @@ ${explanation.explanation}
       {/* Global Modals - Available in ALL modes */}
       <RegistrationModal
         isOpen={showRegistration}
-        onClose={() => setShowRegistration(false)}
+        onClose={() => { setShowRegistration(false); setAwaitingUpgradeCheckout(false); }}
         onSuccess={() => {
           setShowRegistration(false);
           // Keep the answer the learner asked for in view after free sign-up.
-          setFadedSolutionData(prev => ({ ...prev, show: true }));
+          if (!awaitingUpgradeCheckout) setFadedSolutionData(prev => ({ ...prev, show: true }));
         }}
         onSwitchToLogin={() => { setShowRegistration(false); setShowLogin(true); }}
       />
       <LoginModal
         isOpen={showLogin}
-        onClose={() => setShowLogin(false)}
+        onClose={() => { setShowLogin(false); setAwaitingUpgradeCheckout(false); }}
         onSwitchToRegister={(role) => {
           setShowLogin(false);
           setShowRegistration(true);

@@ -46,9 +46,6 @@ export const UploadPaperModal: React.FC<UploadModalProps> = ({ isOpen, onClose, 
     setIsProcessing(true);
 
     try {
-      // Deduct 2 AI credits for document parsing
-      paperStudioService.deductCredits(2);
-
       const result = await paperUploadExtractor.extractPaperBlueprint(file, (p) => {
         setProgress(p);
       });

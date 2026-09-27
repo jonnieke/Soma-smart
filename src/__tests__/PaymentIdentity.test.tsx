@@ -33,6 +33,12 @@ async function pay(subscription = false) {
 }
 
 describe('checkout identity safeguards', () => {
+  it('never grants paid credits from the browser or falls back to a local wallet', () => {
+    const source = readFileSync('src/features/subscription/PaymentFlow.tsx', 'utf8');
+    expect(source).not.toContain('grant_learning_credits');
+    expect(source).not.toContain('grantLearningCredits');
+    expect(source).not.toContain('getCreditPackExpiry');
+  });
   it('blocks an unidentified learner buying the daily subscription', async () => {
     await pay(true);
     expect(await screen.findByRole('alert')).toHaveTextContent('No payment has been started');

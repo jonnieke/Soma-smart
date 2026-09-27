@@ -39,8 +39,8 @@ export const ExamPaperBankPage: React.FC = () => {
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState('');
   const [query, setQuery] = React.useState('');
-  const [subject, setSubject] = React.useState('All subjects');
-  const [grade, setGrade] = React.useState('All grades');
+  const [subject, setSubject] = React.useState(() => searchParams.get('subject') || 'All subjects');
+  const [grade, setGrade] = React.useState(() => searchParams.get('grade') || 'All grades');
   const [examBody, setExamBody] = React.useState('All exam bodies');
   const [selected, setSelected] = React.useState<ExamPaperBankItem | null>(null);
   const [checkoutOpen, setCheckoutOpen] = React.useState(false);
@@ -140,12 +140,12 @@ export const ExamPaperBankPage: React.FC = () => {
   }, [checkoutReference, markPaperUnlocked, navigate, selected]);
 
   const subjects = React.useMemo(
-    () => ['All subjects', ...Array.from(new Set(papers.map((paper) => normalise(paper.subject)).filter(Boolean))).sort()],
-    [papers],
+    () => ['All subjects', ...Array.from(new Set([subject, ...papers.map((paper) => normalise(paper.subject))].filter(value => value && value !== 'All subjects'))).sort()],
+    [papers, subject],
   );
   const grades = React.useMemo(
-    () => ['All grades', ...Array.from(new Set(papers.map((paper) => normalise(paper.grade)).filter(Boolean))).sort()],
-    [papers],
+    () => ['All grades', ...Array.from(new Set([grade, ...papers.map((paper) => normalise(paper.grade))].filter(value => value && value !== 'All grades'))).sort()],
+    [papers, grade],
   );
   const examBodies = React.useMemo(
     () => ['All exam bodies', ...Array.from(new Set(papers.map((paper) => normalise(paper.exam_body)).filter(Boolean))).sort()],

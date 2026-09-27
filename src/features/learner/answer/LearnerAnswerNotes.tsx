@@ -1,6 +1,8 @@
 import React from 'react';
 import { MarkdownText } from '../../../components/Shared';
 import type { ExplanationResult } from '../../../types';
+import { findLessonIllustration } from './lessonIllustrations';
+import { LessonVisual } from './LessonVisual';
 
 type Props = {
   answer: ExplanationResult;
@@ -61,6 +63,7 @@ export function LearnerAnswerNotes({
   children,
 }: Props) {
   const notes = buildLearnerNotes(answer);
+  const visual = findLessonIllustration(answer.topic);
   const paragraphs = answer.explanation.trim().split(/\n\s*\n/);
   const introduction = paragraphs[0] || '';
   const remainder = paragraphs.slice(1).join('\n\n');
@@ -104,6 +107,7 @@ export function LearnerAnswerNotes({
               </div>
             </section>
           )}
+          {visual && <LessonVisual key={`${visual.id}:${answer.topic}`} visual={visual} />}
           {notes.length > 0 && (
             <section aria-labelledby="key-notes" className="mt-8">
               <h2 id="key-notes" className="text-lg font-bold">

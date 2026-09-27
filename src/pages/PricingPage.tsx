@@ -177,10 +177,10 @@ export const PricingPage: React.FC = () => {
 
             <PricingComponent
                 currentTier={subscriptionPlan}
-                initialTab={state?.initialTab}
+                initialTab={searchParams.get('segment') === 'TEACHER' ? 'TEACHER' : state?.initialTab}
                 onSelectPlan={async (plan) => {
                     // 1. If user is logged in, Initiate Payment Directly
-                    if (isPro) {
+                    if (isPro && !(role === 'TEACHER' && plan.segment === 'TEACHER')) {
                         // Already pro? maybe show toast or just return
                         return;
                     }

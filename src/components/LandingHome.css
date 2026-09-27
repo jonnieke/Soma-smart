@@ -1,0 +1,422 @@
+.soma-landing {
+  background: #faf8f3;
+  color: #0b1740;
+  font-family: Arial, sans-serif;
+  min-height: 100vh;
+}
+.soma-landing button,
+.soma-landing a {
+  touch-action: manipulation;
+}
+.soma-landing :is(button, a, input):focus-visible {
+  outline: 3px solid #5265c9;
+  outline-offset: 4px;
+}
+.soma-header {
+  height: 84px;
+  padding: 0 5%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  border-bottom: 1px solid #e4e0d9;
+  background: #faf8f3;
+}
+.soma-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font:
+    bold 36px Georgia,
+    serif;
+  white-space: nowrap;
+}
+.soma-brand img {
+  object-fit: contain;
+}
+.soma-desktop-nav {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  font-size: 18px;
+}
+.soma-desktop-nav > * {
+  padding: 12px 0;
+}
+.soma-outline {
+  border: 1px solid #0b1740;
+  border-radius: 12px;
+  min-height: 48px;
+  padding: 12px 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: transparent;
+}
+.soma-menu-toggle,
+.soma-mobile-nav {
+  display: none;
+}
+.soma-hero {
+  max-width: 1536px;
+  margin: auto;
+  display: grid;
+  grid-template-columns: 1fr 1.08fr;
+  min-height: 560px;
+  align-items: center;
+  overflow: hidden;
+}
+.soma-hero-copy {
+  padding: 48px 0 38px 10%;
+  position: relative;
+  z-index: 1;
+}
+.soma-eyebrow {
+  color: #42694e;
+  font:
+    bold 26px Georgia,
+    serif;
+  margin-bottom: 20px;
+}
+.soma-hero h1 {
+  font:
+    bold clamp(48px, 5.45vw, 84px)/1.02 Georgia,
+    serif;
+  letter-spacing: -2.5px;
+  margin: 0 0 28px;
+}
+.soma-intro {
+  font-size: 20px;
+  line-height: 1.6;
+  color: #43506d;
+  max-width: 610px;
+  margin-bottom: 24px;
+}
+.soma-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  background: #3948b4;
+  color: white;
+  border-radius: 12px;
+  min-height: 60px;
+  padding: 14px 42px;
+  font-size: 23px;
+}
+.soma-primary:hover {
+  background: #293790;
+}
+.soma-returning {
+  font-size: 16px;
+  color: #43506d;
+  margin-top: 18px;
+}
+.soma-returning button {
+  color: #303fa4;
+  min-height: 44px;
+}
+.soma-hero-art {
+  align-self: stretch;
+  position: relative;
+  min-height: 530px;
+  display: flex;
+  align-items: center;
+}
+.soma-hero-art > img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  mix-blend-mode: multiply;
+}
+.soma-akili {
+  position: absolute;
+  bottom: 48px;
+  right: 5%;
+  width: clamp(390px, 31vw, 480px);
+  max-width: 94%;
+}
+.soma-akili > div {
+  box-shadow: 0 10px 24px #17234915;
+}
+.soma-akili input {
+  min-width: 0;
+}
+.soma-akili button {
+  min-height: 40px;
+  min-width: 36px;
+}
+.soma-paths {
+  padding: 30px 5% 36px;
+  border-top: 1px solid #e4e0d9;
+}
+.soma-paths h2 {
+  font:
+    bold 27px Georgia,
+    serif;
+  margin-bottom: 24px;
+}
+.soma-paths > div {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+.soma-paths button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  padding: 16px 12px;
+  color: #3345b4;
+  font:
+    25px Georgia,
+    serif;
+  min-height: 64px;
+}
+.soma-paths button + button {
+  border-left: 1px solid #e1ded6;
+}
+.soma-paths button > svg:first-child {
+  width: 40px;
+  height: 40px;
+  stroke-width: 1.4;
+}
+.soma-paper-ribbon {
+  overflow: hidden;
+}
+.soma-teacher-strip {
+  background: #e8edde;
+  padding: 34px 5%;
+  display: flex;
+  align-items: center;
+  gap: 28px;
+}
+.soma-teacher-strip > svg {
+  color: #42694e;
+}
+.soma-teacher-strip h2 {
+  font:
+    bold 31px Georgia,
+    serif;
+  margin-bottom: 8px;
+}
+.soma-teacher-strip p {
+  font-size: 20px;
+  color: #43506d;
+}
+.soma-teacher-strip button {
+  margin-left: auto;
+  white-space: nowrap;
+}
+.soma-footer {
+  padding: 28px 5%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.soma-footer > span {
+  font:
+    bold 23px Georgia,
+    serif;
+}
+.soma-footer nav {
+  display: flex;
+  gap: 28px;
+  color: #43506d;
+  font-size: 14px;
+}
+.soma-footer button {
+  min-height: 44px;
+}
+.soma-hero h1 {
+  font-size: clamp(43px, 4.6vw, 70px);
+}
+.soma-hero-art {
+  overflow: hidden;
+}
+.soma-hero-art > img {
+  position: absolute;
+  inset: 0;
+}
+@media (min-width: 1600px) {
+  .soma-header,
+  .soma-paths,
+  .soma-teacher-strip,
+  .soma-footer {
+    padding-left: max(5%, calc((100vw - 1382px) / 2));
+    padding-right: max(5%, calc((100vw - 1382px) / 2));
+  }
+}
+@media (max-width: 1000px) {
+  .soma-desktop-nav {
+    gap: 18px;
+    font-size: 15px;
+  }
+  .soma-brand {
+    font-size: 28px;
+  }
+  .soma-hero-copy {
+    padding-left: 8%;
+  }
+  .soma-hero h1 {
+    font-size: 57px;
+  }
+  .soma-akili {
+    right: 3%;
+    width: 96%;
+    max-width: 96%;
+  }
+  .soma-paths button {
+    gap: 12px;
+    font-size: 20px;
+  }
+}
+@media (max-width: 760px) {
+  .soma-header {
+    height: 76px;
+    gap: 12px;
+    padding: 0 20px;
+  }
+  .soma-brand {
+    font-size: 26px;
+    gap: 6px;
+  }
+  .soma-brand img {
+    width: 40px;
+    height: 40px;
+  }
+  .soma-desktop-nav {
+    display: none;
+  }
+  .soma-menu-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+  }
+  .soma-signin {
+    margin-left: auto;
+    padding: 10px 14px;
+    font-size: 14px;
+  }
+  .soma-mobile-nav {
+    display: flex;
+    flex-direction: column;
+    padding: 12px 24px;
+    border-bottom: 1px solid #e4e0d9;
+  }
+  .soma-mobile-nav > * {
+    padding: 14px;
+    text-align: left;
+  }
+  .soma-hero {
+    display: flex;
+    flex-direction: column;
+  }
+  .soma-hero-copy {
+    padding: 36px 24px 8px;
+    width: 100%;
+  }
+  .soma-eyebrow {
+    font-size: 21px;
+    margin-bottom: 18px;
+  }
+  .soma-hero h1 {
+    font-size: clamp(43px, 9vw, 65px);
+    letter-spacing: -1.4px;
+    margin-bottom: 20px;
+  }
+  .soma-intro {
+    font-size: 17px;
+    max-width: 490px;
+  }
+  .soma-primary {
+    font-size: 19px;
+    min-height: 54px;
+    padding: 12px 28px;
+  }
+  .soma-hero-art {
+    display: block;
+    min-height: 0;
+    width: 100%;
+    padding-bottom: 20px;
+  }
+  .soma-hero-art > img {
+    height: auto;
+    max-height: 420px;
+    object-fit: cover;
+  }
+  .soma-akili {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    width: auto;
+    max-width: none;
+    margin: -60px 20px 0;
+  }
+  .soma-paths {
+    padding: 28px 24px;
+  }
+  .soma-paths h2 {
+    font-size: 25px;
+  }
+  .soma-paths > div {
+    display: flex;
+    flex-direction: column;
+  }
+  .soma-paths button {
+    justify-content: flex-start;
+    gap: 22px;
+    padding: 18px 0;
+  }
+  .soma-paths button + button {
+    border-left: 0;
+    border-top: 1px solid #e1ded6;
+  }
+  .soma-paths button > svg:last-child {
+    margin-left: auto;
+  }
+  .soma-teacher-strip {
+    padding: 28px 24px;
+    gap: 16px;
+    flex-wrap: wrap;
+  }
+  .soma-teacher-strip > svg {
+    width: 32px;
+  }
+  .soma-teacher-strip h2 {
+    font-size: 26px;
+  }
+  .soma-teacher-strip p {
+    font-size: 16px;
+  }
+  .soma-teacher-strip button {
+    margin-left: 0;
+    width: 100%;
+    margin-top: 6px;
+  }
+  .soma-footer {
+    padding: 22px 24px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .soma-footer nav {
+    gap: 20px;
+    flex-wrap: wrap;
+  }
+}
+@media (min-width: 761px) and (max-width: 1000px) {
+  .soma-hero h1 {
+    font-size: 4.6vw;
+  }
+}
+@media (max-width: 760px) {
+  .soma-hero-art > img {
+    position: static;
+  }
+  .soma-hero h1 {
+    font-size: clamp(35px, 8.8vw, 65px);
+  }
+}

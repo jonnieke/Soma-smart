@@ -131,8 +131,9 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
         originalQuestion: selectedQuestion,
         instruction: 'Create an equivalent variation with different numbers or scenario.',
       });
-      paperStudioService.deductCredits(1);
-      handleUpdateQuestion(variation);
+      handleUpdateQuestion({ ...variation, id: selectedQuestion.id });
+    } catch (error) {
+      setSaveNotice(error instanceof Error ? error.message : 'Variation failed. Your question is unchanged.');
     } finally {
       setIsRegenerating(false);
     }
@@ -198,6 +199,18 @@ export const ExaminationEditor: React.FC<EditorProps> = ({ paperId, onBackToWork
   return (
     <div className="flex flex-col h-[calc(100dvh-4rem)] min-h-[420px] min-w-0 bg-slate-100 overflow-hidden">
       {saveNotice && <p role="status" className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-slate-800">{saveNotice}</p>}
+      {paper.generation && <p role="status" className="shrink-0 bg-indigo-50 p-3 text-sm text-indigo-900">{paper.generation.status === 'complete' ? 'AI draft — review the questions and marking guide before classroom use.' : `This generation is ${paper.generation.status}. ${paper.generation.error || 'If generation was interrupted, the request is saved. Return to My papers to start a new attempt.'}`}</p>}
+      {paper.generation?.rawResponse && paper.generation.status !== 'complete' && !paper.sections.some(s => s.questions.length) && <button disabled={isSaving} className="shrink-0 bg-indigo-600 px-4 py-3 text-white disabled:opacity-50" onClick={async () => {
+        setIsSaving(true);
+        try {
+          const { recoverGeneratedPaper } = await import('../../../services/assessmentEngine/paperGeneration');
+          const recovered = await recoverGeneratedPaper(paper);
+          setPaper(recovered);
+          setSelectedQuestionId(recovered.sections[0]?.questions[0]?.id || null);
+          setSaveNotice('Recovered the saved response. No new AI generation was used.');
+        } catch (error) { setSaveNotice(error instanceof Error ? error.message : 'Could not recover this response.'); }
+        finally { setIsSaving(false); }
+      }}>{isSaving ? 'Checking saved response…' : 'Recover saved response — no new AI usage'}</button>}
       {/* ── TOP TOOLBAR ── */}
       <header className="bg-white border-b border-slate-200 px-4 py-3 flex flex-wrap gap-3 items-center justify-between z-10 shrink-0">
         <div className="flex min-w-0 items-center gap-3">

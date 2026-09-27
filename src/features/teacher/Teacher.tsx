@@ -14,6 +14,7 @@ import { LogoutModal } from '../../components/LogoutModal';
 import { RegistrationModal } from '../../components/RegistrationModal';
 import { TeacherLanding } from '../../components/TeacherLanding';
 import { NotificationBell } from '../../components/NotificationBell';
+import { TeacherAssessmentNavigation } from './TeacherAssessmentNavigation';
 import { useApp } from '../../context/AppContext';
 import { ViewState, TeacherNote, QuizData, TeacherActivity, SubscriptionPlan, ChatMessage } from '../../types';
 import { PaymentFlow } from '../subscription/PaymentFlow';
@@ -1130,7 +1131,6 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                                     }
                                     if (item.tab === 'CREATION_HUB') {
                                         setActiveTab('CREATION_HUB');
-                                        navigate('/teacher/paper-studio');
                                         return;
                                     }
                                     if (item.tab === 'SYLLABUS_TRACKER') {
@@ -1194,6 +1194,7 @@ export const TeacherDashboard: React.FC<TeacherProps> = ({ onNavigate, initialTa
                         </div>
                     </div>
                 </div>
+                <TeacherAssessmentNavigation />
             </div>
 
             <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 sm:pt-8 pb-28 md:pb-24">

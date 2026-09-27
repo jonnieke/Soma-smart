@@ -1,0 +1,282 @@
+{
+  "exam": {
+    "title": "Soma Original Practice Mock 01 — Grade 9 Mathematics",
+    "examBody": "SomaAI (Original Practice)",
+    "examType": "KJSEA",
+    "grade": "Grade 9",
+    "subject": "Mathematics",
+    "paperCode": "SOMA-G9-MATH-ORIGINAL-01",
+    "paperNumber": "01",
+    "year": 2026,
+    "durationMinutes": 60,
+    "totalMarks": 48,
+    "instructions": [
+      "This is an original Soma practice mock, not an official KNEC paper or a reproduction of a past examination.",
+      "Answer all 12 questions. Each question carries 4 marks.",
+      "Show your working and include units where required. Equivalent correct methods are accepted.",
+      "Use π = 22/7 where specified. A basic calculator may be used for this practice.",
+      "This paper samples selected Grade 9 topics; it is not a full national-examination blueprint."
+    ]
+  },
+  "questions": [
+    {
+      "id": "SOMA-G9-M01-Q1",
+      "number": "1",
+      "orderIndex": 1,
+      "section": "A",
+      "questionType": "structured_text",
+      "text": "Evaluate (-18 + 30) ÷ (-3) + 7. Show each stage of your calculation.",
+      "topic": "Integers",
+      "marks": 4,
+      "markingScheme": [
+        "Evaluate the brackets: -18 + 30 = 12. [1 mark]",
+        "Divide 12 by -3 to get -4. [1 mark]",
+        "Add -4 and 7. [1 mark]",
+        "State the final answer 3. [1 mark]"
+      ],
+      "modelAnswer": "3",
+      "explanation": "Evaluate the brackets: -18 + 30 = 12. Divide 12 by -3 to get -4. Add -4 and 7. State the final answer 3.",
+      "answerFormat": {
+        "type": "text"
+      }
+    },
+    {
+      "id": "SOMA-G9-M01-Q2",
+      "number": "2",
+      "orderIndex": 2,
+      "section": "A",
+      "questionType": "structured_text",
+      "text": "A solid cube has a volume of 3375 cm³. Calculate (a) the length of one edge and (b) its total surface area.",
+      "topic": "Cubes and cube roots",
+      "marks": 4,
+      "markingScheme": [
+        "Use edge length = cube root of 3375. [1 mark]",
+        "Obtain 15 cm. [1 mark]",
+        "Use total surface area = 6 × 15². [1 mark]",
+        "Obtain 1350 cm². [1 mark]"
+      ],
+      "modelAnswer": "(a) 15 cm; (b) 1350 cm²",
+      "explanation": "Use edge length = cube root of 3375. Obtain 15 cm. Use total surface area = 6 × 15². Obtain 1350 cm².",
+      "answerFormat": {
+        "type": "text"
+      }
+    },
+    {
+      "id": "SOMA-G9-M01-Q3",
+      "number": "3",
+      "orderIndex": 3,
+      "section": "A",
+      "questionType": "structured_text",
+      "text": "(a) Simplify (2⁵ × 2³) ÷ 2⁴. Give your answer as an ordinary number. (b) Find log₁₀(1000), explaining the power of 10 used.",
+      "topic": "Indices and logarithms",
+      "marks": 4,
+      "markingScheme": [
+        "Combine indices: 2^(5 + 3 - 4) = 2⁴. [1 mark]",
+        "Evaluate 2⁴ = 16. [1 mark]",
+        "State 1000 = 10³. [1 mark]",
+        "Therefore log₁₀(1000) = 3. [1 mark]"
+      ],
+      "modelAnswer": "(a) 16; (b) 3",
+      "explanation": "Combine indices: 2^(5 + 3 - 4) = 2⁴. Evaluate 2⁴ = 16. State 1000 = 10³. Therefore log₁₀(1000) = 3.",
+      "answerFormat": {
+        "type": "text"
+      }
+    },
+    {
+      "id": "SOMA-G9-M01-Q4",
+      "number": "4",
+      "orderIndex": 4,
+      "section": "A",
+      "questionType": "structured_text",
+      "text": "Six workers, each working 5 hours per day, complete a job in 8 days. How many days will 10 workers take if each works 6 hours per day? Assume every worker works at the same constant rate.",
+      "topic": "Compound proportions and rates of work",
+      "marks": 4,
+      "markingScheme": [
+        "Calculate total work as 6 × 5 × 8 worker-hours. [1 mark]",
+        "Obtain 240 worker-hours. [1 mark]",
+        "New team's daily work is 10 × 6 = 60 worker-hours. [1 mark]",
+        "Days = 240 ÷ 60 = 4. [1 mark]"
+      ],
+      "modelAnswer": "4 days",
+      "explanation": "Calculate total work as 6 × 5 × 8 worker-hours. Obtain 240 worker-hours. New team's daily work is 10 × 6 = 60 worker-hours. Days = 240 ÷ 60 = 4.",
+      "answerFormat": {
+        "type": "text"
+      }
+    },
+    {
+      "id": "SOMA-G9-M01-Q5",
+      "number": "5",
+      "orderIndex": 5,
+      "section": "A",
+      "questionType": "structured_text",
+      "text": "A = [[2, -1], [3, 4]] and B = [[1, 5], [-2, 6]], where each inner bracket is a row. Calculate 2A - B. Write your answer in the same row format.",
+      "topic": "Matrices",
+      "marks": 4,
+      "markingScheme": [
+        "Top-left entry: 2(2) - 1 = 3. [1 mark]",
+        "Top-right entry: 2(-1) - 5 = -7. [1 mark]",
+        "Bottom-left entry: 2(3) - (-2) = 8. [1 mark]",
+        "Bottom-right entry: 2(4) - 6 = 2. [1 mark]"
+      ],
+      "modelAnswer": "[[3, -7], [8, 2]]",
+      "explanation": "Top-left entry: 2(2) - 1 = 3. Top-right entry: 2(-1) - 5 = -7. Bottom-left entry: 2(3) - (-2) = 8. Bottom-right entry: 2(4) - 6 = 2.",
+      "answerFormat": {
+        "type": "text"
+      }
+    },
+    {
+      "id": "SOMA-G9-M01-Q6",
+      "number": "6",
+      "orderIndex": 6,
+      "section": "A",
+      "questionType": "structured_text",
+      "text": "A straight line passes through P(2, 5) and Q(6, 13). Find its gradient and its equation in the form y = mx + c.",
+      "topic": "Equation of a straight line",
+      "marks": 4,
+      "markingScheme": [
+        "Use gradient = (13 - 5) ÷ (6 - 2). [1 mark]",
+        "Obtain gradient 2. [1 mark]",
+        "Substitute (2, 5): 5 = 2(2) + c, so c = 1. [1 mark]",
+        "State y = 2x + 1. [1 mark]"
+      ],
+      "modelAnswer": "Gradient 2; y = 2x + 1",
+      "explanation": "Use gradient = (13 - 5) ÷ (6 - 2). Obtain gradient 2. Substitute (2, 5): 5 = 2(2) + c, so c = 1. State y = 2x + 1.",
+      "answerFormat": {
+        "type": "text"
+      }
+    },
+    {
+      "id": "SOMA-G9-M01-Q7",
+      "number": "7",
+      "orderIndex": 7,
+      "section": "A",
+      "questionType": "structured_text",
+      "text": "Solve 3(2x - 1) ≤ 21. Then list all the positive integer values of x that satisfy the inequality.",
+      "topic": "Linear inequalities",
+      "marks": 4,
+      "markingScheme": [
+        "Expand to 6x - 3 ≤ 21. [1 mark]",
+        "Obtain 6x ≤ 24. [1 mark]",
+        "Divide by positive 6 to obtain x ≤ 4. [1 mark]",
+        "List exactly 1, 2, 3 and 4; zero is not positive. [1 mark]"
+      ],
+      "modelAnswer": "x ≤ 4; positive integers: 1, 2, 3, 4",
+      "explanation": "Expand to 6x - 3 ≤ 21. Obtain 6x ≤ 24. Divide by positive 6 to obtain x ≤ 4. List exactly 1, 2, 3 and 4; zero is not positive.",
+      "answerFormat": {
+        "type": "text"
+      }
+    },
+    {
+      "id": "SOMA-G9-M01-Q8",
+      "number": "8",
+      "orderIndex": 8,
+      "section": "A",
+      "questionType": "structured_text",
+      "text": "A cylindrical container has an internal radius of 7 cm and an internal height of 10 cm. Calculate its capacity (a) in cm³ and (b) in litres. Use π = 22/7 and 1000 cm³ = 1 litre.",
+      "topic": "Volume of solids",
+      "marks": 4,
+      "markingScheme": [
+        "Use V = πr²h. [1 mark]",
+        "Substitute (22/7) × 7² × 10. [1 mark]",
+        "Obtain 1540 cm³. [1 mark]",
+        "Convert to 1540 ÷ 1000 = 1.54 litres. [1 mark]"
+      ],
+      "modelAnswer": "(a) 1540 cm³; (b) 1.54 litres",
+      "explanation": "Use V = πr²h. Substitute (22/7) × 7² × 10. Obtain 1540 cm³. Convert to 1540 ÷ 1000 = 1.54 litres.",
+      "answerFormat": {
+        "type": "text"
+      }
+    },
+    {
+      "id": "SOMA-G9-M01-Q9",
+      "number": "9",
+      "orderIndex": 9,
+      "section": "A",
+      "questionType": "structured_text",
+      "text": "A metal block has a mass of 540 g and a volume of 200 cm³. Calculate (a) its density in g/cm³ and (b) its weight in newtons. Use gravitational field strength g = 10 N/kg.",
+      "topic": "Mass, volume, weight and density",
+      "marks": 4,
+      "markingScheme": [
+        "Density = mass ÷ volume = 540 ÷ 200. [1 mark]",
+        "Obtain 2.7 g/cm³. [1 mark]",
+        "Convert mass: 540 g = 0.54 kg. [1 mark]",
+        "Weight = 0.54 × 10 = 5.4 N. [1 mark]"
+      ],
+      "modelAnswer": "(a) 2.7 g/cm³; (b) 5.4 N",
+      "explanation": "Density = mass ÷ volume = 540 ÷ 200. Obtain 2.7 g/cm³. Convert mass: 540 g = 0.54 kg. Weight = 0.54 × 10 = 5.4 N.",
+      "answerFormat": {
+        "type": "text"
+      }
+    },
+    {
+      "id": "SOMA-G9-M01-Q10",
+      "number": "10",
+      "orderIndex": 10,
+      "section": "A",
+      "questionType": "structured_text",
+      "text": "A bus travels 84 km in 1 hour 24 minutes. Calculate its average speed (a) in km/h and (b) in m/s, correct to 1 decimal place.",
+      "topic": "Time, distance and speed",
+      "marks": 4,
+      "markingScheme": [
+        "Convert time: 1 + 24/60 = 1.4 hours. [1 mark]",
+        "Average speed = 84 ÷ 1.4 = 60 km/h. [1 mark]",
+        "Convert using 60 × 1000 ÷ 3600 m/s. [1 mark]",
+        "Obtain 16.7 m/s to 1 decimal place. [1 mark]"
+      ],
+      "modelAnswer": "(a) 60 km/h; (b) 16.7 m/s",
+      "explanation": "Convert time: 1 + 24/60 = 1.4 hours. Average speed = 84 ÷ 1.4 = 60 km/h. Convert using 60 × 1000 ÷ 3600 m/s. Obtain 16.7 m/s to 1 decimal place.",
+      "answerFormat": {
+        "type": "text"
+      }
+    },
+    {
+      "id": "SOMA-G9-M01-Q11",
+      "number": "11",
+      "orderIndex": 11,
+      "section": "A",
+      "questionType": "structured_text",
+      "text": "Two similar triangles have corresponding sides of 6 cm and 9 cm. The smaller triangle has an area of 24 cm². Find (a) the linear scale factor from the smaller triangle to the larger one and (b) the area of the larger triangle.",
+      "topic": "Similarity and enlargement",
+      "marks": 4,
+      "markingScheme": [
+        "Use scale factor = 9 ÷ 6. [1 mark]",
+        "Obtain 1.5. [1 mark]",
+        "Area scale factor = 1.5² = 2.25. [1 mark]",
+        "Larger area = 24 × 2.25 = 54 cm². [1 mark]"
+      ],
+      "modelAnswer": "(a) 1.5; (b) 54 cm²",
+      "explanation": "Use scale factor = 9 ÷ 6. Obtain 1.5. Area scale factor = 1.5² = 2.25. Larger area = 24 × 2.25 = 54 cm².",
+      "answerFormat": {
+        "type": "text"
+      }
+    },
+    {
+      "id": "SOMA-G9-M01-Q12",
+      "number": "12",
+      "orderIndex": 12,
+      "section": "A",
+      "questionType": "structured_text",
+      "text": "The journey times of 10 learners are grouped as follows: 0 ≤ t < 10 minutes: 2 learners; 10 ≤ t < 20 minutes: 5 learners; 20 ≤ t < 30 minutes: 3 learners. (a) Estimate the mean journey time using class midpoints. (b) One of the 10 learners is chosen at random, with each equally likely to be chosen. Find the probability that their journey time is at least 20 minutes.",
+      "topic": "Grouped data and probability",
+      "marks": 4,
+      "markingScheme": [
+        "Use midpoints 5, 15 and 25 minutes. [1 mark]",
+        "Calculate weighted sum 2(5) + 5(15) + 3(25) = 160. [1 mark]",
+        "Estimated mean = 160 ÷ 10 = 16 minutes. [1 mark]",
+        "Probability = 3/10 (accept 0.3 or 30%). [1 mark]"
+      ],
+      "modelAnswer": "(a) 16 minutes; (b) 3/10",
+      "explanation": "Use midpoints 5, 15 and 25 minutes. Calculate weighted sum 2(5) + 5(15) + 3(25) = 160. Estimated mean = 160 ÷ 10 = 16 minutes. Probability = 3/10 (accept 0.3 or 30%).",
+      "answerFormat": {
+        "type": "text"
+      }
+    }
+  ],
+  "review": {
+    "status": "DRAFT",
+    "authorship": "Original AI-authored Soma practice; human teacher approval required.",
+    "curriculumReference": "https://kicd.ac.ke/wp-content/uploads/2024/06/Mathematics-Grade-9-Design-Formatted-April-2024.pdf",
+    "notes": "Independent arithmetic and structure checks completed. Time allocation and grade appropriateness require teacher review. Do not label this marking guide official.",
+    "rubric": "Award up to 4 marks per question. Accept equivalent correct methods. Do not penalise the same carried-forward arithmetic error twice; award subsequent method marks where the method is correct. Do not exceed each question's allocation."
+  }
+}

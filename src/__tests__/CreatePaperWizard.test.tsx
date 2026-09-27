@@ -3,7 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, expect, it, vi } from 'vitest';
 const mocks = vi.hoisted(() => ({ getOwnerId: vi.fn(), getQuestionBank: vi.fn(), savePaper: vi.fn(), deductCredits: vi.fn() }));
 vi.mock('../services/paperStudioService', () => ({ paperStudioService: mocks }));
-import { CreatePaperWizard } from '../features/teacher/paperStudio/CreatePaperWizard';
+import { BankPaperWizard as CreatePaperWizard } from '../features/teacher/paperStudio/CreatePaperWizard';
 beforeEach(() => { vi.resetAllMocks(); mocks.getOwnerId.mockResolvedValue('teacher-1'); mocks.getQuestionBank.mockResolvedValue([]); });
 it('saves a complete paper with the teacher identity and calculated totals without charging AI credits', async () => {
     mocks.getQuestionBank.mockResolvedValue(Array.from({ length: 9 }, (_, index) => ({

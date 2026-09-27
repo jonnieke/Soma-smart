@@ -16,7 +16,7 @@ export const launchFeatures = {
   teacherClasses: enabled(import.meta.env.VITE_ENABLE_TEACHER_CLASSES, true),
   // Soma Paper Studio & Assessment Engine Flags
   paperStudioEnabled: enabled(import.meta.env.VITE_ENABLE_PAPER_STUDIO, true),
-  uploadBlueprintEnabled: enabled(import.meta.env.VITE_ENABLE_UPLOAD_BLUEPRINT, true),
+  uploadBlueprintEnabled: false, // Re-enable only after real PDF/DOCX/scan extraction is verified.
   schoolWorkspaceEnabled: enabled(import.meta.env.VITE_ENABLE_SCHOOL_WORKSPACE, false),
   sellerEarningsEnabled: enabled(import.meta.env.VITE_ENABLE_SELLER_EARNINGS, true),
   docxExportEnabled: enabled(import.meta.env.VITE_ENABLE_DOCX_EXPORT, true),
