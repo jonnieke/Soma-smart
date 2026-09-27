@@ -15,6 +15,8 @@ import {
   Send,
 } from 'lucide-react';
 import { curriculumOSService } from '../../services/curriculumOSService';
+import { CurriculumSources } from '../../components/CurriculumSources';
+import { CurriculumReviewQueue } from '../../components/CurriculumReviewQueue';
 import { resourceStudioService } from '../../services/resourceStudioService';
 import { teacherPlanningService } from '../../services/teacherPlanningService';
 import { schoolContentLibraryService } from '../../services/schoolContentLibraryService';
@@ -23,7 +25,6 @@ import { CurriculumNode, EducationalResource, SchemeOfWork, ContentRequest } fro
 export const TeacherContentOSView: React.FC = () => {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'EXPLORER' | 'STUDIO' | 'LESSONS' | 'SCHEMES' | 'REQUESTS'>('EXPLORER');
-  const [nodes, setNodes] = useState<CurriculumNode[]>([]);
   const [resources, setResources] = useState<EducationalResource[]>([]);
   const [schemes, setSchemes] = useState<SchemeOfWork[]>([]);
   const [requests, setRequests] = useState<ContentRequest[]>([]);
@@ -33,9 +34,9 @@ export const TeacherContentOSView: React.FC = () => {
   const [lessonTitle, setLessonTitle] = useState('');
   const [selectedGrade, setSelectedGrade] = useState('Grade 9');
   const [selectedSubject, setSelectedSubject] = useState('Mathematics');
+  const nodes: CurriculumNode[] = curriculumOSService.getNodesForFramework('fw_kicd_cbc', selectedGrade, selectedSubject);
 
   useEffect(() => {
-    setNodes(curriculumOSService.getNodesForFramework());
     setResources(resourceStudioService.getResources());
     setSchemes(teacherPlanningService.getSchemesOfWork());
     setRequests(schoolContentLibraryService.getContentRequests());
@@ -107,9 +108,16 @@ export const TeacherContentOSView: React.FC = () => {
                 <h3 className="font-black text-slate-900 dark:text-white text-sm flex items-center gap-2">
                   <Layers className="w-4 h-4 text-indigo-600" /> KICD CBC Curriculum Tree &amp; Learning Outcomes
                 </h3>
-                <span className="px-3 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full">KICD v2026.1 Active</span>
+                <span className="px-3 py-1 bg-indigo-50 text-indigo-700 font-bold text-xs rounded-full">Mapping pilot · not yet published</span>
               </div>
-
+              <label className="block text-sm">Curriculum grade
+                <select className="ml-3 border rounded-lg p-2" value={selectedGrade} onChange={e => setSelectedGrade(e.target.value)}>
+                  <option>Grade 6</option><option>Grade 9</option>
+                </select>
+              </label>
+              <CurriculumSources grade={selectedGrade} />
+              <CurriculumReviewQueue />
+              {!nodes.length && <p className="text-sm text-slate-600">No mapped outcomes for {selectedGrade} {selectedSubject} yet. Use the official document above while the mapping is reviewed.</p>}
               <div className="space-y-3">
                 {nodes.map((n) => (
                   <div key={n.id} className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-800 space-y-2">

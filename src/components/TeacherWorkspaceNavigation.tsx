@@ -16,6 +16,7 @@ const shouldShowTeacherWorkspaceNavigation = (pathname: string) =>
 
 const destinations = [
   { label: 'Teacher home', mobileLabel: 'Home', to: '/teacher', icon: Home, active: (path: string) => path === '/teacher' },
+  { label: 'Curriculum review', mobileLabel: 'Review', to: '/teacher/curriculum-review', icon: BookOpenCheck, active: (path: string) => path === '/teacher/curriculum-review' },
   { label: 'Paper Studio', mobileLabel: 'Paper Studio', to: '/teacher/paper-studio', icon: BookOpenCheck, active: (path: string) => path.startsWith('/teacher/paper-studio') || path === '/teacher/school-library' },
   { label: 'Sell materials', mobileLabel: 'Sell', to: '/teacher/creator-studio', icon: Store, active: (path: string) => path === '/teacher/earnings' || path.startsWith('/teacher/creator-studio') || path.startsWith('/teacher/seller') },
 ] as const;
@@ -36,7 +37,7 @@ export const TeacherWorkspaceNavigation: React.FC = () => {
           </Link>
         </div>
 
-        <div className="grid w-full grid-cols-3 items-center gap-1 md:flex md:w-auto md:gap-2">
+        <div className="grid w-full grid-cols-2 items-center gap-1 sm:grid-cols-4 md:flex md:w-auto md:gap-2">
           {destinations.map(({ label, mobileLabel, to, icon: Icon, active }) => {
             const isActive = active(pathname);
             return (

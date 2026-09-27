@@ -7,6 +7,11 @@ import { TeacherWorkspaceNavigation } from '../components/TeacherWorkspaceNaviga
 const LocationProbe = () => { const location = useLocation(); return <><output>{location.pathname}</output><output>{JSON.stringify(location.state)}</output></>; };
 
 describe('TeacherWorkspaceNavigation', () => {
+  it('provides a direct curriculum review link', () => {
+    render(<MemoryRouter initialEntries={['/teacher/curriculum-review']}><TeacherWorkspaceNavigation /></MemoryRouter>);
+    expect(screen.getByRole('link', {name:'Curriculum review'})).toHaveAttribute('href','/teacher/curriculum-review');
+    expect(screen.getByRole('link', {name:'Curriculum review'})).toHaveAttribute('aria-current','page');
+  });
   it.each([0, 1])('preserves explicit homepage intent for link %s', index => {
     render(<MemoryRouter initialEntries={['/teacher/paper-studio']}><TeacherWorkspaceNavigation /><LocationProbe /></MemoryRouter>);
     fireEvent.click(screen.getAllByRole('link', { name: /Soma homepage/ })[index]);

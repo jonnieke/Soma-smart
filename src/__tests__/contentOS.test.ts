@@ -21,20 +21,17 @@ describe('Phase 7 — Soma Content OS', () => {
       expect(cbc?.authority).toBe('KICD');
     });
 
-    it('navigates curriculum node hierarchy (strands, sub-strands, learning outcomes)', () => {
+    it('does not substitute sample outcomes for an unmapped curriculum', () => {
       const nodes = curriculumOSService.getNodesForFramework('fw_kicd_cbc', 'Grade 9', 'Mathematics');
-      expect(nodes.length).toBeGreaterThan(0);
-
-      const outcome = nodes.find((n) => n.type === 'learning_outcome');
-      expect(outcome).toBeDefined();
-      expect(outcome?.parentId).toBeDefined();
+      expect(nodes).toEqual([]);
     });
 
     it('imports curriculum framework nodes via administrative JSON importer', () => {
       const payload = JSON.stringify({
-        frameworkId: 'fw_kicd_test',
+        frameworkId: 'fw_kicd_cbc',
+        sourceId: 'kicd-regular-grade6-mathematics',
         nodes: [
-          { id: 'n1', frameworkId: 'fw_kicd_test', type: 'strand', title: 'Algebra', versionId: 'v1', status: 'active' },
+          { id: 'n1', type: 'strand', title: 'Test mapping', sourcePageNumber: 1 },
         ],
       });
 

@@ -268,6 +268,9 @@ export const TeacherDashboardOverview: React.FC<TeacherDashboardOverviewProps> =
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
+      <div className="flex justify-end">
+        <button onClick={() => navigate('/teacher/curriculum-review')} className="rounded-lg border border-indigo-200 px-4 py-2 text-sm font-semibold text-indigo-700 hover:bg-indigo-50">Curriculum review · assigned mappings</button>
+      </div>
       {/* --- CLASSROOM CONTEXT & COMMAND BAR --- */}
       <section className="bg-white text-slate-900 rounded-[2rem] p-6 sm:p-8 shadow-sm border border-slate-200 relative overflow-hidden">
         <div className="absolute top-0 right-0 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />

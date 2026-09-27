@@ -88,6 +88,7 @@ const AdminEducationIntelligenceView = React.lazy(() => safeImport(() => import(
 
 // Phase 7 — Soma Content OS
 const TeacherContentOSView = React.lazy(() => safeImport(() => import('./features/teacher/TeacherContentOSView').then(module => ({ default: module.TeacherContentOSView }))));
+const CurriculumReviewPage = React.lazy(() => safeImport(() => import('./features/teacher/CurriculumReviewPage')));
 const SchoolContentLibraryView = React.lazy(() => safeImport(() => import('./features/school/SchoolContentLibraryView').then(module => ({ default: module.SchoolContentLibraryView }))));
 const PublisherPortalView = React.lazy(() => safeImport(() => import('./features/publisher/PublisherPortalView').then(module => ({ default: module.PublisherPortalView }))));
 const AdminContentOSView = React.lazy(() => safeImport(() => import('./features/admin/AdminContentOSView').then(module => ({ default: module.AdminContentOSView }))));
@@ -399,6 +400,7 @@ const App: React.FC = () => {
                             <Route path="/admin/education-intelligence/*" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminEducationIntelligenceView /></AdminGuard>} />
 
                             {/* Phase 7 — Teacher Content OS Routes */}
+                            <Route path="/teacher/curriculum-review" element={<CurriculumReviewPage />} />
                             <Route path="/teacher/content" element={launchFeatures.contentOSEnabled ? <TeacherContentOSView /> : <Navigate to="/teacher" replace />} />
                             <Route path="/teacher/content/*" element={launchFeatures.contentOSEnabled ? <TeacherContentOSView /> : <Navigate to="/teacher" replace />} />
 

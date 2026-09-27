@@ -27,6 +27,11 @@ export interface CurriculumFramework {
 }
 
 export interface CurriculumNode {
+  grade?: string;
+  subject?: string;
+  sourceId?: string;
+  sourcePageNumber?: number;
+  reviewStatus?: 'unreviewed' | 'reviewed';
   id: string;
   frameworkId: string;
   parentId?: string;
