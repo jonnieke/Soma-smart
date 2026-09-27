@@ -2,9 +2,37 @@ import React from 'react';
 import { beforeEach, expect, it, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { PurchaseReport } from '../features/admin/views/PurchaseReport';
+import { CustomerCareView } from '../features/admin/views/CustomerCare';
 const invoke = vi.hoisted(() => vi.fn());
 vi.mock('../lib/supabase', () => ({ supabase: { functions: { invoke } } }));
 beforeEach(() => invoke.mockReset());
+const buyer = { id: 'care-1', name: 'Care Test', studentId: '', reference: 'test', category: 'Past paper', product: 'Science', amount: 20, status: 'SUCCESS', phone: '0700000000', email: '', contactSource: 'Checkout', createdAt: '2026-09-27T00:00:00Z', planStatus: '', planExpiry: '' };
+it('opens customer care with successful purchases selected and no sending', async () => {
+  invoke.mockResolvedValue({ data: { purchases: [buyer, { ...buyer, id: 'pending', name: 'Pending buyer', status: 'PENDING' }] } });
+  render(<CustomerCareView />);
+  expect(await screen.findByText('Care Test')).toBeInTheDocument();
+  expect(screen.queryByText('Pending buyer')).not.toBeInTheDocument();
+  expect(screen.getByLabelText('Payment status')).toHaveValue('SUCCESS');
+  expect(screen.getByText(/Drafts only/)).toBeInTheDocument();
+  expect(invoke).toHaveBeenCalledTimes(1);
+  expect(invoke).toHaveBeenCalledWith('admin-purchases', { body: { days: 30 } });
+});
+it('requires current permission for new-material drafts and resets it on purpose change', async () => {
+  invoke.mockResolvedValue({ data: { purchases: [buyer] } });
+  render(<PurchaseReport />);
+  fireEvent.click(await screen.findByText('Message buyer'));
+  fireEvent.change(screen.getByLabelText('Message purpose'), { target: { value: 'feature' } });
+  expect((screen.getByLabelText('Message') as HTMLTextAreaElement).value).toContain('communication-preferences');
+  fireEvent.change(screen.getByLabelText('Message'), { target: { value: 'A new science lesson is ready.' } });
+  expect(screen.getByText('Copy message')).toBeDisabled();
+  fireEvent.click(screen.getByRole('checkbox'));
+  expect(screen.getByText('Copy message')).toBeEnabled();
+  expect(screen.getByRole('link', { name: 'Open WhatsApp draft' })).toBeInTheDocument();
+  fireEvent.change(screen.getByLabelText('Message purpose'), { target: { value: 'offer' } });
+  expect(screen.getByRole('checkbox')).not.toBeChecked();
+  expect(screen.getByText('Copy message')).toBeDisabled();
+  expect(invoke).toHaveBeenCalledTimes(1);
+});
 it('shows failures instead of zero revenue', async () => {
   invoke.mockResolvedValue({ error: new Error('Forbidden') });
   render(<PurchaseReport />);

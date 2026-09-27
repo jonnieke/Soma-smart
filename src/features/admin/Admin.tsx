@@ -4,6 +4,7 @@ import { AdminLayout } from './layout/AdminLayout';
 import { Overview } from './views/Overview';
 import { UsersView } from './views/Users';
 import { FinancialsView } from './views/Financials';
+import { CustomerCareView } from './views/CustomerCare';
 import { SettingsView } from './views/Settings';
 import { CurriculumView } from './views/Curriculum';
 import { ExamsView } from './views/Exams';
@@ -68,6 +69,7 @@ export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate, authStatus = 
             {activeTab === 'OVERVIEW' && <Overview />}
             {activeTab === 'USERS' && <UsersView />}
             {activeTab === 'FINANCE' && <FinancialsView />}
+            {activeTab === 'CUSTOMER_CARE' && <CustomerCareView />}
             {activeTab === 'CURRICULUM' && <CurriculumView />}
             {activeTab === 'EXAMS' && <ExamsView />}
             {activeTab === 'CREATOR_MATERIALS' && <CreatorMaterialsView />}

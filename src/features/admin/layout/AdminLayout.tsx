@@ -47,6 +47,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({ children, activeTab, o
     const navItems = [
         { id: 'OVERVIEW', label: 'Overview', icon: <LayoutDashboard className="w-5 h-5" /> },
         { id: 'USERS', label: 'User Management', icon: <Users className="w-5 h-5" /> },
+        { id: 'CUSTOMER_CARE', label: 'Customer care', icon: <Users className="w-5 h-5" /> },
         { id: 'EXAMS', label: 'Past Papers', icon: <ClipboardCheck className="w-5 h-5" /> },
         { id: 'CREATOR_MATERIALS', label: 'Creator Materials', icon: <Store className="w-5 h-5" /> },
         { id: 'FINANCE', label: 'Financials', icon: <CreditCard className="w-5 h-5" /> },

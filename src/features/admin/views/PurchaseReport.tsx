@@ -16,21 +16,25 @@ function ContactDraft({ purchase: p, onClose }: { purchase: Purchase; onClose: (
   const [message, setMessage] = useState(thanks);
   const [copied, setCopied] = useState('');
   const [consent, setConsent] = useState(false);
+  const promotional = kind === 'offer' || kind === 'feature';
   const changeKind = (value: string) => {
     setKind(value);
     setCopied('');
+    setConsent(false);
     setMessage(
       value === 'thanks'
         ? thanks
         : value === 'update'
           ? `Hello ${p.name}, an update about your Soma AI purchase (${p.product}):\n\n[Add the update and what the customer needs to do.]`
-          : `Hello ${p.name}, thank you for learning with Soma AI.\n\n[Describe your approved offer, eligibility, expiry date and redemption link.]\n\nReply STOP if you do not want further offers.`
+          : value === 'feature'
+            ? `Hello ${p.name}, here is something new to help you learn with Soma AI.\n\n[Describe the new feature or material, who it helps and where to find it.]\n\nManage optional updates: https://www.somaai.co.ke/communication-preferences. You can also reply to ask us to stop optional updates.`
+            : `Hello ${p.name}, thank you for learning with Soma AI.\n\n[Describe your approved offer, eligibility, expiry date and redemption link.]\n\nManage optional updates: https://www.somaai.co.ke/communication-preferences. You can also reply to ask us to stop optional updates.`
     );
   };
   let phone = p.phone.replace(/\D/g, '');
   if (/^0[17]\d{8}$/.test(phone)) phone = `254${phone.slice(1)}`;
   if (/^[17]\d{8}$/.test(phone)) phone = `254${phone}`;
-  const ready = !!message.trim() && !/\[.*\]/.test(message) && (kind !== 'offer' || consent);
+  const ready = !!message.trim() && !/\[.*\]/.test(message) && (!promotional || consent);
   return (
     <section
       className="rounded-2xl border border-indigo-200 bg-indigo-50 p-5"
@@ -44,12 +48,14 @@ function ContactDraft({ purchase: p, onClose }: { purchase: Purchase; onClose: (
       </div>
       <p className="my-2 text-sm text-slate-600">
         Review the message, then send it yourself. Opening a draft does not send it.
+        Drafts are not saved when you close them or leave this page.
       </p>
       <label className="block text-sm">
         Message purpose{' '}
         <select className={field} value={kind} onChange={(e) => changeKind(e.target.value)}>
           <option value="thanks">Thank you for your purchase</option>
           <option value="update">Important purchase update</option>
+          <option value="feature">New feature / learning material</option>
           <option value="offer">Offer / discount</option>
         </select>
       </label>
@@ -60,19 +66,21 @@ function ContactDraft({ purchase: p, onClose }: { purchase: Purchase; onClose: (
         value={message}
         onChange={(e) => setMessage(e.target.value)}
       />
-      {kind === 'offer' && (
+      {kind === 'update' && <p className="mb-3 text-sm text-slate-600">Use this only for help with the existing purchase. New materials, features and offers belong in the optional-update categories.</p>}
+      {promotional && (
         <div className="mb-3 text-sm">
-          <p>
+          {kind === 'offer' && <p>
             Discount codes are not supported by the current checkout. Only include an offer you have
             already made redeemable.
-          </p>
+          </p>}
+          <p>This is a manual check, not verified consent from Soma. Check the customer’s latest channel permission and any opt-out before sending. Handle replies yourself; there is no automatic STOP processing here.</p>
           <label className="mt-2 flex gap-2">
             <input
               type="checkbox"
               checked={consent}
               onChange={(e) => setConsent(e.target.checked)}
             />
-            This customer agreed to receive promotional messages.
+            I checked current permission for the email or WhatsApp channel I will use, including any opt-out.
           </label>
         </div>
       )}
@@ -117,7 +125,7 @@ function ContactDraft({ purchase: p, onClose }: { purchase: Purchase; onClose: (
     </section>
   );
 }
-export function PurchaseReport() {
+export function PurchaseReport({ customerCare = false }: { customerCare?: boolean }) {
   const [days, setDays] = useState(30),
     [rows, setRows] = useState<Purchase[]>([]),
     [loading, setLoading] = useState(true),
@@ -125,7 +133,7 @@ export function PurchaseReport() {
   const [retry, setRetry] = useState(0),
     [query, setQuery] = useState(''),
     [category, setCategory] = useState('All purchases'),
-    [status, setStatus] = useState('All statuses'),
+    [status, setStatus] = useState(customerCare ? 'SUCCESS' : 'All statuses'),
     [page, setPage] = useState(0);
   const [contact, setContact] = useState<Purchase | null>(null);
   useEffect(() => {

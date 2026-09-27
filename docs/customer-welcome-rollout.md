@@ -1,6 +1,6 @@
 # Customer welcome rollout
 
-Backend deployed on 27 September 2026; frontend remains local and uncommitted.
+Backend and customer-welcome/preferences frontend deployed on 27 September 2026 (commit d3d3c69). Public domains were explicitly assigned to verified deployment dpl_7dU1z7QbCMQ3HMhe6Ke8FfbN5GLi after the Git-triggered deployment raced the promotion.
 
 - PaymentFlow and pricing callback retain a verified-receipt thank-you until the customer continues. Existing active subscriptions are not presented as new payments. Purchase types are not inferred from URL parameters.
 - Notification menu and purchase confirmation link to /communication-preferences. Supabase Auth users can save and revoke optional channel choices. Student-ID-only and guest preference persistence is not implemented; no automatic enrollment.
@@ -9,7 +9,11 @@ Backend deployed on 27 September 2026; frontend remains local and uncommitted.
 
 ## Remaining before customer outreach
 
-Deploy the frontend. Add contact verification, consent history, verified-payment event/outbox with deduplication, provider delivery webhooks, retries, approved WhatsApp templates and unsubscribe processing. Exercise administrator and owning-teacher notification flows before enabling campaigns. No thank-you emails, WhatsApp messages or campaigns are sent by this implementation.
+Add contact verification, consent history, verified-payment event/outbox with deduplication, provider delivery webhooks, retries, approved WhatsApp templates and unsubscribe processing. Exercise administrator and owning-teacher notification flows before enabling campaigns. No thank-you emails, WhatsApp messages or campaigns are sent by this implementation.
+
+## Customer care (local follow-up, not released)
+
+Admin sidebar now exposes Customer care at /admin?tab=CUSTOMER_CARE, reusing the protected purchase report and defaulting to successful purchases. Individual buyer drafts include thank-you, purchase support, new features/materials and offers. Promotional drafts require a manual current-channel-permission acknowledgement, reset when changing purpose. This is not a verified consent lookup, saved-draft store, subscriber audience builder or bulk sender. Operators must handle opt-out replies themselves. No provider calls, new database privileges or outbound sending were added.
 
 The guest exam-paper checkout now uses the shared thank-you after the server confirms paid access, preserving read/revision intent. It displays the returned title but does not invent a receipt amount. Restored purchases still open directly; pending access does not produce a thank-you. Guest buyers are not enrolled in messaging.
 
