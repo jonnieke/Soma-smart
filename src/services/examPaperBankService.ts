@@ -49,6 +49,29 @@ export const getPaperBuyerToken = () => {
 };
 
 export const examPaperBankService = {
+  async listPurchasedPaperIds(): Promise<string[]> {
+    // Do not create a new identity just to restore purchases. A missing token
+    // means this browser has no prior guest-purchase identity to look up.
+    const buyerToken = localStorage.getItem(TOKEN_KEY);
+    if (!buyerToken) return [];
+    const ids = new Set<string>();
+    let offset = 0;
+    for (let page = 0; page < 51; page += 1) {
+      const { data, error } = await supabase.functions.invoke('exam-paper-library', {
+        body: { buyerToken, offset },
+      });
+      if (error) throw error;
+      if (!data || !Array.isArray(data.paperIds) || !data.paperIds.every((id: unknown) => typeof id === 'string' && /^\d+$/.test(id))) {
+        throw new Error('Invalid purchase library response');
+      }
+      data.paperIds.forEach((id: string) => ids.add(id));
+      if (data.nextOffset === null) return [...ids];
+      if (data.nextOffset !== offset + 200) throw new Error('Invalid purchase library pagination');
+      offset = data.nextOffset;
+    }
+    throw new Error('Purchase library is too large to restore. Please contact support.');
+  },
+
   async listPapers(): Promise<ExamPaperBankItem[]> {
     const { data, error } = await supabase.rpc('list_exam_paper_bank', {
       p_grade: null,
@@ -62,13 +85,12 @@ export const examPaperBankService = {
     const { data: exams, error: examError } = await supabase.rpc('list_published_exams', {
       p_grade: null,
       p_subject: null,
-      p_exam_body: null,
     });
     if (examError) throw examError;
     return ((exams || []) as Array<Record<string, unknown>>).map((paper) => ({
       ...(paper as unknown as ExamPaperBankItem),
-      has_exam_paper: Boolean(paper.file_url || paper.file_path || paper.fileUrl || paper.filePath),
-      has_marking_scheme: Boolean(
+      has_exam_paper: typeof paper.has_exam_paper === 'boolean' ? paper.has_exam_paper : Boolean(paper.file_url || paper.file_path || paper.fileUrl || paper.filePath),
+      has_marking_scheme: typeof paper.has_marking_scheme === 'boolean' ? paper.has_marking_scheme : Boolean(
         paper.marking_scheme_url || paper.marking_scheme_path || paper.markingSchemeUrl || paper.markingSchemePath,
       ),
     }));

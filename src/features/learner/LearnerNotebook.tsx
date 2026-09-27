@@ -24,6 +24,7 @@ import {
 } from '../../services/notebookService';
 import { formatStudyNoteForWhatsApp, formatStudyPackForWhatsApp, openWhatsAppShare } from '../../services/whatsappService';
 import { NotebookAudioPlayer } from '../../components/NotebookAudioPlayer';
+import LearnerMarkdown from '../../components/LearnerMarkdown';
 
 interface LearnerNotebookProps {
   ownerKey: string;
@@ -335,9 +336,9 @@ export const LearnerNotebook: React.FC<LearnerNotebookProps> = ({
                   </div>
                 </div>
 
-                <p className={`mt-3 whitespace-pre-wrap break-words leading-8 text-slate-700 ${expandedNoteId === note.id ? 'text-base' : 'line-clamp-3 text-sm'}`}>
-                  {note.content}
-                </p>
+                <div className={`mt-3 break-words leading-8 text-slate-700 ${expandedNoteId === note.id ? 'text-base' : 'line-clamp-3 text-sm'}`}>
+                  <LearnerMarkdown content={note.content} />
+                </div>
 
                 <div className="mt-4 flex flex-wrap gap-2">
                   <button

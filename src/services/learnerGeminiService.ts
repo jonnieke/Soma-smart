@@ -3,6 +3,9 @@ import { speak as ttSpeak, stopSpeech as ttStop } from "./elevenLabsService";
 import { buildScaffoldingContext } from "./spacedRepetitionService";
 import { buildTargetedStrategiesInstruction } from "./strategyService";
 import { parseModelJson } from "./jsonResponse";
+import { validateStudyGuide } from './studyGuideValidation';
+import { safeLearnerPractice } from './learnerPractice';
+import { normalizeLearnerText } from './learnerText';
 import {
   ACADEMIC_LANGUAGE_CLASSIFICATION_INSTRUCTION,
   academicLanguageInstruction,
@@ -262,7 +265,7 @@ const extractJsonStringArrayField = (raw: string, key: string): string[] => {
 };
 
 const buildFallbackSummaryPoints = (topic: string, explanation: string): string[] => {
-  const cleanExplanation = explanation.replace(/\\n/g, '\n');
+  const cleanExplanation = normalizeLearnerText(explanation);
   const lines = cleanExplanation
     .split(/\n+/)
     .map((line) => line.replace(/^[-*#\d.\s]+/, '').trim())
@@ -295,23 +298,6 @@ const salvageAudioExplanationResult = (rawText: string, level: 'Simple' | 'Exam'
   } as ExplanationResult;
 };
 
-const normalizeLearnerText = (value: string | undefined | null): string => {
-  if (!value) return '';
-  let text = value
-    .replace(/\\n/g, '\n')
-    .replace(/\\t/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
-
-  // Strip Curriculum Alignment line (usually the very first line)
-  text = text.replace(/^Curriculum Alignment:[^\n]*\n*/im, '');
-
-  // Strip Exam Insight section (usually at the end)
-  text = text.replace(/(\n|^)(#*\s*\*\*?)?Exam Insight(s)?:?[\s\S]*$/gi, '');
-
-  return text.trim();
-};
-
 const sanitizeExplanationResult = (result: ExplanationResult): ExplanationResult => ({
   ...result,
   topic: normalizeLearnerText(result.topic),
@@ -333,12 +319,12 @@ const sanitizeExplanationResult = (result: ExplanationResult): ExplanationResult
     point: normalizeLearnerText(node.point),
     details: normalizeLearnerText(node.details)
   })),
-  practice: result.practice ? {
+  practice: safeLearnerPractice(result.practice ? {
     isProblem: Boolean(result.practice.isProblem),
     originalQuestion: normalizeLearnerText(result.practice.originalQuestion),
     workedExample: normalizeLearnerText(result.practice.workedExample),
     yourTurnPrompt: normalizeLearnerText(result.practice.yourTurnPrompt)
-  } : undefined,
+  } : undefined),
   flashcard: result.flashcard ? {
     question: normalizeLearnerText(result.flashcard.question),
     answer: normalizeLearnerText(result.flashcard.answer)
@@ -392,7 +378,8 @@ GUIDED PROBLEM PRACTICE — prevent copying while still teaching:
   3. Create ONE closely similar problem that tests the same method and difficulty, but change the figures, names, objects, or context. Put its complete step-by-step solution in practice.workedExample.
   4. Do NOT reveal the final answer to the learner's exact original problem. In the main explanation, teach only the concept, formula, and method needed.
   5. Put a short encouraging handoff in practice.yourTurnPrompt telling the learner to solve the question now.
-- If it is NOT a specific problem, set practice.isProblem to false and use empty strings for the other practice fields.
+- For a TOPIC LESSON REQUEST, the learner wants to learn a topic, not solve the request text. Create a NEW concrete, age-appropriate question on that topic. Set practice.isProblem=true and put ONLY the new question in practice.originalQuestion. Provide a solved example with different numbers or details in practice.workedExample. Keep the new question's answer hidden. Never copy teaching instructions as a question.
+- For other requests that are NOT specific problems, set practice.isProblem to false and use empty strings for the other practice fields.
 - Never claim the changed example is the learner's original question.
 `;
 
@@ -1032,9 +1019,12 @@ export const explainTopic = async (
   }
 };
 
-export const summarizeDocument = async (title: string, documentId: string, language: 'EN' | 'SW' = 'EN', subject?: string, grade?: string): Promise<ExplanationResult> => {
+export const summarizeDocument = async (title: string, documentId: string, language: 'EN' | 'SW' = 'EN', subject?: string, grade?: string, sourceText = ''): Promise<ExplanationResult> => {
   // We use search-knowledge to get a broad overview of the document
-  const ragContext = await retrieveContext("Analyze this document and explain the main content, purpose, examinable areas, and learner takeaways", documentId);
+  const ragContext = sourceText.trim()
+    ? { text: sourceText.trim(), sources: [title] }
+    : await retrieveContext("Analyze this document and explain the main content, purpose, examinable areas, and learner takeaways", documentId);
+  if (!ragContext.text.trim()) throw new Error('The source document could not be retrieved. Please read the source document or try again later.');
 
   const model = genAI.getGenerativeModel({
     model: HEAVY_MODEL_NAME,
@@ -1092,6 +1082,7 @@ export const summarizeDocument = async (title: string, documentId: string, langu
     ${EXAM_CROSS_LINK_INSTRUCTION}
 
     You are an Expert Kenyan Teacher and AI Study Companion building a COMPREHENSIVE LEARNING HUB.
+    For this document guide, explanation must contain a substantive introduction, not just curriculum labels or exam metadata. Put curriculum context and supported exam guidance in lesson blocks instead. Never invent exam-year citations.
     A student in ${grade || 'their grade'} is studying the document: "${title}" for the subject: "${subject || 'General Studies'}".
     
     SYSTEM CONTEXT: You are operating within the Kenyan Education System(CBC, KCPE, and KCSE). 
@@ -1126,7 +1117,7 @@ export const summarizeDocument = async (title: string, documentId: string, langu
 
     2. DEEP STRUCTURED NOTES(subtopics field): This is the MOST IMPORTANT part.Break the document content into EXACTLY 3 distinct subtopics structured like a textbook syllabus.For EACH subtopic:
   - Give it a clear, descriptive title(like a chapter heading, e.g. "1. Types of Soil and Their Properties", "2. Factors Affecting Soil Formation")
-    - Write comprehensive but highly readable notes in the content field using the formatting rules above.Include:
+    - Write comprehensive but highly readable notes in the blocks array using paragraph blocks with text and list blocks with items. Do not use a content field. Include:
          - Clear definitions of key terms
     - Fun, relatable examples for young learners
       - Step - by - step numbered lists for processes or steps
@@ -1153,7 +1144,7 @@ export const summarizeDocument = async (title: string, documentId: string, langu
     const text = result.response.text();
     if (!text) throw new Error("No response");
     const json = parseModelJson<ExplanationResult>(text);
-    return sanitizeExplanationResult({ ...json, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult);
+    return validateStudyGuide(sanitizeExplanationResult({ ...json, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult));
   } catch (error) {
     console.error("Error summarizing document:", error);
     throw error;

@@ -3,9 +3,17 @@ import { cleanup, render, screen } from '@testing-library/react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { LearnerClassroom, type LearnerClassroomProps } from '../features/learner/classroom/LearnerClassroom';
 import { initialClassroomLesson, isClassroomNoteSaved, nextClassroomTopic, starterClassroomLesson, isClassroomLimitError } from '../features/learner/classroom/classroomLessons';
+import { buildLessonNotebookEntry } from '../services/lessonNotebook';
 
 afterEach(cleanup);
 describe('classroom continuity', () => {
+  it('does not restore a failed scan as a teachable lesson', () => {
+    const rejected = { ...starterClassroomLesson, topic: 'No Academic Content Found' };
+    expect(initialClassroomLesson([{ id: 'scan', type: 'EXPLANATION', topic: rejected.topic, date: '', details: JSON.stringify({ explanation: rejected }) }])).toEqual(starterClassroomLesson);
+  });
+  it('recognizes the new complete notebook format', () => {
+    expect(isClassroomNoteSaved(starterClassroomLesson, [buildLessonNotebookEntry(starterClassroomLesson, {})])).toBe(true);
+  });
   it('routes both server and client allowance failures to the limit flow', () => {
     expect(isClassroomLimitError({ name: 'RateLimitError' })).toBe(true);
     expect(isClassroomLimitError({ name: 'PlanLimitError' })).toBe(true);

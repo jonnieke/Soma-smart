@@ -1,4 +1,5 @@
 import type { ExplanationResult, LearnerActivity } from '../../../types';
+import { buildLessonNotebookEntry } from '../../../services/lessonNotebook';
 
 export const starterClassroomLesson: ExplanationResult = {
   topic: 'Soil erosion',
@@ -24,6 +25,7 @@ export function initialClassroomLesson(history: LearnerActivity[]): ExplanationR
       if (
         saved &&
         typeof saved.topic === 'string' &&
+        !/^(?:no academic content(?: found)?|no (?:text|content) (?:found|detected)|unable to (?:read|analy[sz]e))$/i.test(saved.topic.trim()) &&
         typeof saved.explanation === 'string' &&
         saved.explanation.trim()
       ) {
@@ -52,5 +54,6 @@ export function isClassroomLimitError(error: unknown): boolean {
 export function isClassroomNoteSaved(answer: ExplanationResult, notes: { title: string; content: string; source?: string }[]): boolean {
   return notes.some(note => note.source === 'ai_answer' &&
     note.title.trim().toLowerCase() === answer.topic.trim().toLowerCase() &&
-    note.content.endsWith(`FULL EXPLANATION:\n${answer.explanation}`));
+    (note.content === buildLessonNotebookEntry(answer, {}).content ||
+      note.content.endsWith(`FULL EXPLANATION:\n${answer.explanation}`)));
 }

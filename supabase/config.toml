@@ -24,6 +24,11 @@ verify_jwt = false
 [functions.exam-paper-bank]
 verify_jwt = false
 
+# Guest purchase ownership is verified using the existing browser buyer token.
+# Read-only list of successful paper IDs; no customer details or signed URLs.
+[functions.exam-paper-library]
+verify_jwt = false
+
 [functions.notify-users]
 verify_jwt = true
 

@@ -40,6 +40,13 @@ function props(): LearnerClassroomProps {
   };
 }
 describe('learner classroom', () => {
+  it('does not display teaching instructions as a saved practice question', () => {
+    const p = props();
+    p.answer = {...p.answer, practice: {isProblem:true,originalQuestion:'Teach me about fractions in Mathematics at Grade 7 level. Explain the key ideas directly to me as a learner.',workedExample:'Example',yourTurnPrompt:'Try it'}};
+    render(<LearnerClassroom {...p} />);
+    expect(screen.queryByText(/Teach me about fractions/)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', {name:'Check my answer'})).toBeInTheDocument();
+  });
   it('personalizes the classroom and connects navigation', () => {
     const p = props();
     render(<LearnerClassroom {...p} />);

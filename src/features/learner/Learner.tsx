@@ -36,7 +36,10 @@ import { QuizReviewSummary, QuizRunner } from './QuizRunner';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { SidebarTab } from '../../components/DashboardSidebar';
 import { LearnerSidebar } from './home/LearnerSidebar';
-import { LearnerLibrary } from './home/LearnerLibrary';
+import { LearnerLibrary, recentStudyIds } from './home/LearnerLibrary';
+import { studyDocumentId, validateStudyGuide } from '../../services/studyGuideValidation';
+import { buildSubjectLessonRequest } from '../../services/learnerPractice';
+import { buildLessonNotebookEntry } from '../../services/lessonNotebook';
 import { QuestionCamera } from './camera/QuestionCamera';
 import { ReadingNavigation, ReadingToolbar, ReadingPager } from './home/ReadingControls';
 import { classroomService, StudentClassroomSummary } from '../../services/classroomService';
@@ -866,6 +869,7 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   const [explanation, setExplanation] = useState<ExplanationResult | null>(() => initialClassroomLesson(history));
   const [explanationSubject, setExplanationSubject] = useState<string | undefined>(undefined);
+  const [explanationGrade, setExplanationGrade] = useState<string | undefined>(undefined);
   useEffect(() => {
     if (mode === 'MENU' && !explanation) setExplanation(starterClassroomLesson);
   }, [mode, explanation]);
@@ -997,24 +1001,12 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
 
   const handleSaveExplanationToNotebook = () => {
     if (!explanation) return;
-    const stepGuide = buildStepByStepGuide(explanation, studentProfile?.grade || currentDocument?.grade || educationLevel || '', explanation.level);
-    const noteContent = [
-      explanation.summaryPoints.length > 0
-        ? `SUMMARY POINTS:\n${explanation.summaryPoints.map(point => `- ${point}`).join('\n')}`
-        : '',
-      stepGuide.length > 0
-        ? `STEP-BY-STEP GUIDE:\n${stepGuide.map((step, index) => `${index + 1}. ${step.title}${step.detail ? ` - ${step.detail}` : ''}`).join('\n')}`
-        : '',
-      `FULL EXPLANATION:\n${explanation.explanation}`,
-    ].filter(Boolean).join('\n\n');
     const note = saveStudyNote(notebookOwnerKey, {
-      title: explanation.topic,
-      topic: explanation.topic,
-      content: noteContent,
-      subject: currentDocument?.subject || 'General',
-      grade: studentProfile?.grade || currentDocument?.grade || '',
-      source: 'ai_answer',
-      masteryStatus: 'learning',
+      ...buildLessonNotebookEntry(explanation, {
+        subject: explanationSubject, grade: explanationGrade,
+        documentSubject: currentDocument?.subject, documentGrade: currentDocument?.grade,
+        profileGrade: studentProfile?.grade,
+      }),
       userId: userId || undefined,
       studentCode: studentCode || undefined,
     });
@@ -2329,9 +2321,10 @@ Stay anchored to this context unless I ask for something broader.`;
     setOriginalPageIndex(0);
 
     const docUrl = material.fileUrl || material.file_url;
+    let sourceTextPromise: Promise<string> = Promise.resolve('');
     if (docUrl) {
       setIsExtractingOriginal(true);
-      extractTextFromURL(docUrl)
+      sourceTextPromise = extractTextFromURL(docUrl)
         .then(fullText => {
           if (fullText) {
             const rawPages = fullText.split(/--- Page \d+ ---/);
@@ -2340,8 +2333,9 @@ Stay anchored to this context unless I ask for something broader.`;
               .filter(p => p.length > 0);
             setExtractedOriginalPages(parsedPages);
           }
+          return fullText || '';
         })
-        .catch(err => console.error("Error extracting original textbook pages:", err))
+        .catch(err => { console.error("Error extracting original textbook pages:", err); return ''; })
         .finally(() => setIsExtractingOriginal(false));
     }
 
@@ -2365,9 +2359,9 @@ Stay anchored to this context unless I ask for something broader.`;
 
     try {
       // Check Cache or Offline
-      const cacheKey = `${material.id}-${language}`;
+      const cacheKey = `study-v2-${material.id}-${language}`;
       if (explanationCache[cacheKey]) {
-        setExplanation(explanationCache[cacheKey]);
+        setExplanation(validateStudyGuide(explanationCache[cacheKey]));
         setLoading(false);
         setIsSummarizing(false);
         return;
@@ -2383,11 +2377,18 @@ Stay anchored to this context unless I ask for something broader.`;
         return;
       }
 
-      const result = await summarizeDocument(material.title, (material.id || material.realId).toString(), language, material.subject, material.grade);
+      const sourceText = await sourceTextPromise;
+      const result = validateStudyGuide(await summarizeDocument(material.title, sourceText.trim() ? '' : studyDocumentId(material), language, material.subject, material.grade, sourceText));
       setExplanation(result);
       setExplanationCache(prev => ({ ...prev, [cacheKey]: result }));
     } catch (err: any) {
       console.error("Study Guide error:", err);
+      // Keep the reader and its source-document control available on failure.
+      if (docUrl) {
+        setStudyViewMode('original');
+        setToastMessage('The AI guide could not be prepared. Your source document is still available to read.');
+        return;
+      }
       // Even if isOnline was true at start, the request might fail due to network drop
       if (!isOnline || !navigator.onLine || err.message?.includes('network') || err.message?.includes('Failed to fetch')) {
         if (!navigator.onLine) {
@@ -3322,14 +3323,16 @@ Stay anchored to this context unless I ask for something broader.`;
   const handleTopicClick = async (
     topic: string,
     multimedia?: { data: string, mimeType: string },
-    subjectOverride?: string
+    subjectOverride?: string,
+    gradeOverride?: string,
+    displayTopic?: string
   ) => {
     if (!checkLimit({ type: 'TOPIC_CLICK', topic, multimedia })) return;
 
     setLoading(true);
     setError(null);
-    const requestedQuizTopic = !multimedia ? getQuizRequestTopic(topic) : null;
-    setLoadingText(requestedQuizTopic ? `Akili is crafting a quiz on ${requestedQuizTopic}...` : topic ? `Akili is exploring ${topic}...` : "Akili is reading your attachment...");
+    const requestedQuizTopic = !multimedia && !(subjectOverride && gradeOverride) ? getQuizRequestTopic(topic) : null;
+    setLoadingText(requestedQuizTopic ? `Akili is crafting a quiz on ${requestedQuizTopic}...` : topic ? `Akili is exploring ${displayTopic || topic}...` : "Akili is reading your attachment...");
     setMode('SCAN'); // Show loading
     const purpose = sidebarTab === 'HOMEWORK' ? 'HOMEWORK' : 'TUTOR';
     try {
@@ -3352,7 +3355,9 @@ Stay anchored to this context unless I ask for something broader.`;
         return;
       }
 
-      const startupPrompt = buildFocusedStartupPrompt(topic || (multimedia?.mimeType.includes('audio') ? "Voice Message" : "Image Analysis"));
+      // A Subjects request carries its own topic/grade; do not append the
+      // previous document or profile grade and contradict that selection.
+      const startupPrompt = subjectOverride && gradeOverride ? topic : buildFocusedStartupPrompt(topic || (multimedia?.mimeType.includes('audio') ? "Voice Message" : "Image Analysis"));
 
       const declaredSubject = subjectOverride || currentDocument?.subject;
       const result = await explainTopic(
@@ -3361,7 +3366,7 @@ Stay anchored to this context unless I ask for something broader.`;
         language,
         undefined,
         declaredSubject,
-        currentDocument?.grade,
+        gradeOverride || currentDocument?.grade || studentProfile?.grade,
         multimedia,
         { masteryGraph, recentHurdles: weakTopics },
         activeStrategies,
@@ -3371,6 +3376,7 @@ Stay anchored to this context unless I ask for something broader.`;
       );
       setExplanation(result);
       setExplanationSubject(declaredSubject);
+      setExplanationGrade(gradeOverride || currentDocument?.grade || studentProfile?.grade);
       trackFunnelEvent('learner_grounding_result', {
         requested: groundedAnswerMode,
         used: !!result.grounding?.used,
@@ -3382,7 +3388,7 @@ Stay anchored to this context unless I ask for something broader.`;
         addSpacedRepetitionItem({
           topic: result.topic,
           subject: declaredSubject || 'General',
-          grade: studentProfile?.grade || currentDocument?.grade || '',
+          grade: gradeOverride || studentProfile?.grade || currentDocument?.grade || '',
           nextReviewDate: new Date().toISOString(),
           intervalDays: 1,
           easeFactor: 2.5,
@@ -3846,7 +3852,7 @@ ${explanation.explanation}
   const classroomProps = () => ({
     answer: explanation || starterClassroomLesson,
     name: studentProfile?.name || profile?.name || 'Learner',
-    grade: studentProfile?.grade || '',
+    grade: explanationGrade || studentProfile?.grade || '',
     subject: explanationSubject,
     busy: loading,
     listening: isPlaying,
@@ -7706,6 +7712,18 @@ ${explanation.explanation}
     if (mode === 'LIBRARY') {
       return (
         <LearnerLibrary
+          name={studentProfile?.name || profile?.name || 'Learner'}
+          onHomepage={() => navigate('/')}
+          onNotes={() => handleSidebarTabChange('NOTEBOOK')}
+          onVideos={() => navigate('/learning-videos')}
+          onScan={() => { void startCamera(); }}
+          onProfile={() => runWithRecallExitGuard(() => setMode('PROFILE'))}
+          recentIds={recentStudyIds(history)}
+          busy={loading}
+          online={isOnline}
+          onLearnTopic={(topic, subject, grade) => {
+            void handleTopicClick(buildSubjectLessonRequest(topic, subject, grade), undefined, subject, grade, topic);
+          }}
           entries={unifiedMaterials.map(material => ({
             id: material.id,
             title: material.title,
@@ -7880,7 +7898,7 @@ ${explanation.explanation}
   return (
     <div className="relative min-h-screen bg-slate-50">
       {/* Sidebar */}
-      {mode !== 'MENU' && mode !== 'RESULT' && mode !== 'REVISION' && <LearnerSidebar
+      {mode !== 'MENU' && mode !== 'RESULT' && mode !== 'REVISION' && mode !== 'LIBRARY' && <LearnerSidebar
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         activeTab={sidebarTab}
@@ -7894,7 +7912,7 @@ ${explanation.explanation}
       />}
 
       {/* Main Content */}
-      <div className={mode === 'MENU' || mode === 'RESULT' || mode === 'REVISION' ? 'min-h-screen min-w-0' : 'lg:ml-[260px] min-h-screen overflow-x-hidden min-w-0 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0'}>
+      <div className={mode === 'MENU' || mode === 'RESULT' || mode === 'REVISION' || mode === 'LIBRARY' ? 'min-h-screen min-w-0' : 'lg:ml-[260px] min-h-screen overflow-x-hidden min-w-0 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0'}>
         {renderMode()}
       </div>
 

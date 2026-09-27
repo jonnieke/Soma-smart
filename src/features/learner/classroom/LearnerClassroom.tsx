@@ -13,8 +13,9 @@ import {
   Volume2,
 } from 'lucide-react';
 import logo from '../../../assets/images/main_logo.png';
-import { MarkdownText } from '../../../components/Shared';
+import MarkdownText from '../../../components/LearnerMarkdown';
 import type { ExplanationResult } from '../../../types';
+import { safeLearnerPractice } from '../../../services/learnerPractice';
 import { findLessonIllustration } from '../answer/lessonIllustrations';
 import { PhotosynthesisDiagram, FractionDiagram } from '../answer/LessonVisual';
 import { buildLearnerNotes } from '../answer/LearnerAnswerNotes';
@@ -53,7 +54,7 @@ export type LearnerClassroomProps = {
 };
 
 export function LearnerClassroom(props: LearnerClassroomProps) {
-  const { answer } = props;
+  const answer = { ...props.answer, practice: safeLearnerPractice(props.answer.practice) };
   const visual = findLessonIllustration(answer.topic);
   const starter = answer.topic === 'Soil erosion';
   const [step, setStep] = useState(0);
