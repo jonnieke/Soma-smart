@@ -1,4 +1,5 @@
 import type { PaymentRecord } from '../services/transactionAccessService';
+import { SomaCommunityInvite } from './SomaCommunityInvite';
 
 export function purchaseNextStep(receipt: Pick<PaymentRecord, 'type'>, role?: string) {
   if (receipt.type === 'CREDIT_PACK') return { label: 'Continue with your credits', path: role === 'TEACHER' ? '/teacher' : '/learner', text: 'Thank you for buying learning credits. This purchase is separate from a subscription.' };
@@ -21,6 +22,7 @@ export function PurchaseThankYou({ receipt, role, onContinue, ready = true, titl
     <p className="font-semibold">Payment confirmed{typeof receipt.amount === 'number' && Number.isFinite(receipt.amount) ? ` · KES ${receipt.amount.toLocaleString()}` : ''}</p>
     <button type="button" disabled={!ready} onClick={onContinue} className="w-full rounded-xl bg-indigo-700 px-4 py-3 font-semibold text-white disabled:opacity-60">{ready ? continueLabel || next.label : 'Preparing your account…'}</button>
     {guest ? <p className="text-sm">Your paper is remembered in this browser. Keep your payment receipt for support if you change devices. You have not been signed up for updates.</p> : <p className="text-sm">You choose whether to receive updates. <a href="/communication-preferences" target="_blank" rel="noopener noreferrer" className="text-indigo-700 underline">Manage preferences (new tab)</a></p>}
+    <SomaCommunityInvite />
     <a href="https://wa.me/254722763760" target="_blank" rel="noopener noreferrer" className="inline-block text-sm text-indigo-700 underline">Need help? Contact Soma support</a>
   </section>;
 }

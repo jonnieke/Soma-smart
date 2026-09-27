@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { SomaCommunityInvite } from '../components/SomaCommunityInvite';
 import { communicationPreferencesService as service, defaultPreferences } from '../services/communicationPreferencesService';
 
 export default function CommunicationPreferencesPage() {
@@ -33,6 +34,7 @@ export default function CommunicationPreferencesPage() {
     </fieldset>
     {message && <p role="status" className="mt-4 rounded-xl bg-slate-100 p-4">{message}</p>}
     {!ready && !message && <p role="status">Loading preferences…</p>}
+    <div className="mt-6"><SomaCommunityInvite /></div>
     <p className="mt-6 text-sm">Need help? <a className="text-indigo-700 underline" href="https://wa.me/254722763760" target="_blank" rel="noopener noreferrer">Contact Soma support</a></p>
   </main>;
 }

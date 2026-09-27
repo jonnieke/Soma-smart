@@ -53,3 +53,25 @@ it('blocks saves when authentication or loading fails', async () => {
   expect(screen.getByRole('button', { name: 'Save preferences' })).toBeDisabled();
 });
 import { vi, beforeEach, it, expect } from 'vitest';
+
+it.each([false, true])('offers an optional community link after purchase (guest=%s)', guest => {
+  const go = vi.fn();
+  render(<PurchaseThankYou receipt={receipt} guest={guest} onContinue={go} />);
+  const link = screen.getByRole('link', { name: /Join the Soma community/ });
+  expect(link).toHaveAttribute('href', 'https://chat.whatsapp.com/GOUM9g5U75s4YcUcW0j8yS');
+  expect(link).toHaveAttribute('target', '_blank');
+  expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  fireEvent.click(link);
+  expect(go).not.toHaveBeenCalled();
+  expect(mocks.save).not.toHaveBeenCalled();
+});
+
+it('keeps community joining separate from update consent even if preferences cannot load', async () => {
+  mocks.load.mockRejectedValue(new Error('Sign in first'));
+  render(<MemoryRouter><CommunicationPreferencesPage /></MemoryRouter>);
+  await screen.findByText('Sign in first');
+  fireEvent.click(screen.getByRole('link', { name: /Join the Soma community/ }));
+  expect(mocks.save).not.toHaveBeenCalled();
+  expect(screen.getByLabelText('WhatsApp updates')).not.toBeChecked();
+  expect(screen.getByText(/Manage or leave the community in WhatsApp/)).toBeInTheDocument();
+});
