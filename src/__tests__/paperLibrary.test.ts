@@ -13,6 +13,18 @@ beforeEach(() => {
 });
 
 describe('purchase library endpoint', () => {
+  it('sends the existing learner credential pair for server subscription verification', async () => {
+    localStorage.setItem('soma_active_student', 'SOMA-TEST');
+    localStorage.setItem('soma_active_student_pin', '1234');
+    invoke.mockResolvedValue({ data: { canStudy: true }, error: null });
+    await examPaperBankService.getAccess(7);
+    expect(invoke).toHaveBeenLastCalledWith('exam-paper-bank/access', expect.objectContaining({
+      body: expect.objectContaining({ examId: 7, learnerCode: 'SOMA-TEST', learnerPin: '1234' }),
+    }));
+    localStorage.removeItem('soma_active_student_pin');
+    await examPaperBankService.getAccess(7);
+    expect(invoke.mock.calls.at(-1)?.[1].body).not.toHaveProperty('learnerCode');
+  });
   it('uses the legacy catalog signature and preserves redacted file availability', async () => {
     rpc.mockResolvedValueOnce({ error: { message: 'Unavailable' } })
       .mockResolvedValueOnce({ data: [{ id: 7, has_exam_paper: true, has_marking_scheme: true }], error: null });

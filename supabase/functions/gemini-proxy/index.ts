@@ -2,6 +2,7 @@
 // The client sends the prompt/model config, this function adds the key and forwards to Google.
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { requireVerifiedUsageCount } from '../_shared/verifiedUsage.ts';
 import { encode as encodeBase64 } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
@@ -586,10 +587,7 @@ const enforceFeatureLimit = async (supabase: any, requester: any, feature: strin
     else query.eq('metadata->>identifier', requester.identifier);
 
     const { count, error } = await query;
-    if (error) {
-        console.error('Feature limit count failed, falling back to legacy limiter:', error);
-        return;
-    }
+    requireVerifiedUsageCount(count, error, corsHeaders);
 
     if ((count || 0) >= limit) {
         if (requester.userId) {

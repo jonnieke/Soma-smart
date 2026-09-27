@@ -9,6 +9,7 @@ import { SyllabusViewer } from './SyllabusViewer';
 import { NotesViewer } from './NotesViewer';
 import { examService } from '../../services/examService';
 import { examPaperBankService } from '../../services/examPaperBankService';
+import { canStudyExamPaper } from '../../services/examPaperEntitlement';
 import { RevisionMode, TeacherActivity, ViewState, UserRole, ExamAnalysis } from '../../types';
 import { Button } from '../../components/Shared';
 
@@ -47,13 +48,11 @@ export const RevisionDashboard: React.FC = () => {
     const openPaperRevision = async (paperId: string | number, fallbackPaper?: File | TeacherActivity, mode: RevisionMode = RevisionMode.EXAM) => {
         setCheckingPaperAccess(true);
         try {
-            if (!isPro) {
-                const access = await examPaperBankService.getAccess(paperId);
-                if (!access.paid) {
-                    setLockedPaperId(paperId);
-                    setShowRevisionPaywall(true);
-                    return;
-                }
+            const access = await examPaperBankService.getAccess(paperId);
+            if (!canStudyExamPaper(access)) {
+                setLockedPaperId(paperId);
+                setShowRevisionPaywall(true);
+                return;
             }
 
             const paper = fallbackPaper || await examService.getExamForAttempt(paperId);

@@ -17,6 +17,7 @@ import {
 import { FALLBACK_LATEST_PAPERS } from '../components/ExamPaperTickerBelt';
 import { PaperBankCatalog } from '../components/PaperBankCatalog';
 import { paperDestination, rememberPaperMode } from '../services/paperCheckoutIntent';
+import { canStudyExamPaper } from '../services/examPaperEntitlement';
 
 
 export const ExamPaperBankPage: React.FC = () => {
@@ -178,7 +179,7 @@ export const ExamPaperBankPage: React.FC = () => {
     }
     try {
       const access = await examPaperBankService.getAccess(paper.id);
-      if (access.paid) {
+      if (canStudyExamPaper(access)) {
         markPaperUnlocked(paper.id);
         navigate(`/exam-papers/${encodeURIComponent(String(paper.id))}/read`);
         return;
@@ -199,7 +200,7 @@ export const ExamPaperBankPage: React.FC = () => {
     }
     try {
       const access = await examPaperBankService.getAccess(paper.id);
-      if (access.paid) {
+      if (canStudyExamPaper(access)) {
         markPaperUnlocked(paper.id);
         navigate(`/revision?paper=${encodeURIComponent(String(paper.id))}`);
         return;

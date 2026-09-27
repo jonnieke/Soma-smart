@@ -27,6 +27,9 @@ export type PaperBuyer = {
 
 export type PaperAccess = {
   paid: boolean;
+  subscribed?: boolean;
+  canStudy?: boolean;
+  canDownload?: boolean;
   examId: string | number;
   paperUrl?: string | null;
   markingSchemeUrl?: string | null;
@@ -106,11 +109,14 @@ export const examPaperBankService = {
   },
 
   async getAccess(examId: string | number, reference?: string | null): Promise<PaperAccess> {
+    const learnerCode = localStorage.getItem('soma_active_student');
+    const learnerPin = localStorage.getItem('soma_active_student_pin');
     const { data, error } = await supabase.functions.invoke('exam-paper-bank/access', {
       body: {
         examId,
         buyerToken: getPaperBuyerToken(),
         reference: reference || undefined,
+        ...(learnerCode && learnerPin ? { learnerCode, learnerPin } : {}),
       },
     });
     if (error) throw error;

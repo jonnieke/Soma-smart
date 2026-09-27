@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ArrowLeft, BookOpen, FileCheck2, FileText, Loader2, Share2 } from 'lucide-react';
 import { PaperAccess, examPaperBankService } from '../services/examPaperBankService';
 import { useApp } from '../context/AppContext';
+import { canStudyExamPaper } from '../services/examPaperEntitlement';
 
 export const ExamPaperReaderPage: React.FC = () => {
   const { id = '' } = useParams();
@@ -13,20 +14,28 @@ export const ExamPaperReaderPage: React.FC = () => {
   const initialDocument = React.useMemo(() => new URLSearchParams(location.search).get('source') === 'scheme' ? 'scheme' : 'paper', [location.search]);
   const [activeDocument, setActiveDocument] = React.useState<'paper' | 'scheme'>(initialDocument);
   const [loading, setLoading] = React.useState(true);
+  const [accessError, setAccessError] = React.useState('');
+  const [accessAttempt, setAccessAttempt] = React.useState(0);
 
   React.useEffect(() => {
     setActiveDocument(initialDocument);
   }, [initialDocument]);
 
   React.useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setAccess(null);
+    setAccessError('');
     examPaperBankService.getAccess(id)
       .then((result) => {
-        if (!result.paid) navigate(`/exam-papers?paper=${encodeURIComponent(id)}`, { replace: true });
-        else setAccess(result);
+        if (!active) return;
+        if (canStudyExamPaper(result)) setAccess(result);
+        else setAccessError('This paper needs a verified purchase or an active learner subscription.');
       })
-      .catch(() => navigate(`/exam-papers?paper=${encodeURIComponent(id)}`, { replace: true }))
-      .finally(() => setLoading(false));
-  }, [id, navigate]);
+      .catch(() => { if (active) setAccessError('We could not verify your access. Please retry before paying again.'); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [id, accessAttempt]);
 
   const currentUrl = activeDocument === 'scheme' ? access?.markingSchemeUrl : access?.paperUrl;
 
@@ -38,7 +47,12 @@ export const ExamPaperReaderPage: React.FC = () => {
   };
 
   if (loading) return <div className="flex min-h-screen items-center justify-center bg-slate-50"><Loader2 className="h-8 w-8 animate-spin text-indigo-600" /></div>;
-  if (!access) return null;
+  if (!access) return <main className="mx-auto max-w-xl p-8">
+    <h1 className="text-xl font-bold">Paper access</h1>
+    <p role="alert" className="my-4">{accessError}</p>
+    <button type="button" onClick={() => setAccessAttempt(value => value + 1)} className="mr-3 rounded-xl bg-indigo-600 px-4 py-3 text-white">Retry access</button>
+    <button type="button" onClick={() => navigate('/exam-papers')} className="rounded-xl border px-4 py-3">Back to paper bank</button>
+  </main>;
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-100">
