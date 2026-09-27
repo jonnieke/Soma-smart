@@ -1,0 +1,259 @@
+[
+  {
+    "id": "4oXDoJkprx0",
+    "category": "upper",
+    "title": "The Journey of Human Digestion",
+    "subject": "Science",
+    "level": "Foundation science",
+    "duration": "1:49",
+    "published": true,
+    "description": "Follow food through the body, then practise distinguishing digestion, absorption and egestion.",
+    "transcript": "",
+    "source_note": "Soma supplementary topic guide, not a transcript or a claim about the video's exact narration. Video: Somo Smart. Background reference: https://www.niddk.nih.gov/health-information/digestive-diseases/digestive-system-how-it-works. Practice questions are original, not official exam predictions.",
+    "notes": "## The big idea\nFood contains nutrients, but many food molecules must be broken into smaller ones before the body can absorb them. Digestion includes physical breakdown and chemical breakdown.\n\n## Follow the journey\n1. **Mouth:** teeth break food into smaller pieces. Saliva moistens it and starts starch digestion.\n2. **Oesophagus:** muscular movements push the swallowed food towards the stomach.\n3. **Stomach:** food is mixed with digestive juices.\n4. **Small intestine:** digestion continues and most nutrients are absorbed.\n5. **Large intestine:** water is absorbed and the remaining waste forms stool.\n\n## Check your understanding\nBreaking food down is not the same as moving its nutrients into the body. Explain that difference in your own words.\n\n## Revision tip\nPractise putting the organs in order and matching each organ to its job. Avoid saying that all digestion happens in the stomach.",
+    "terms": [
+      {
+        "term": "Digestion",
+        "definition": "Breaking food down into smaller substances.",
+        "example": "Chewing is physical breakdown."
+      },
+      {
+        "term": "Absorption",
+        "definition": "Movement of digested nutrients across the gut wall.",
+        "example": "Nutrients pass from the small intestine into the body."
+      },
+      {
+        "term": "Peristalsis",
+        "definition": "Waves of muscle contraction that move food along the gut.",
+        "example": "Food moves through the oesophagus."
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Where are most digested nutrients absorbed?",
+        "options": ["Oesophagus", "Small intestine", "Mouth"],
+        "answer": 1,
+        "marks": 1,
+        "explanation": "The small intestine is the main site of nutrient absorption."
+      },
+      {
+        "question": "Which sequence follows food after it leaves the mouth?",
+        "options": [
+          "Stomach → oesophagus → small intestine",
+          "Oesophagus → stomach → small intestine",
+          "Small intestine → stomach → oesophagus"
+        ],
+        "answer": 1,
+        "marks": 1,
+        "explanation": "The oesophagus carries food to the stomach; it then enters the small intestine."
+      }
+    ]
+  },
+  {
+    "id": "M-elC3LZvno",
+    "category": "upper",
+    "title": "Respiratory System for CBE Learners",
+    "subject": "Science",
+    "level": "Foundation science",
+    "duration": "0:59",
+    "published": true,
+    "description": "Explore breathing and the exchange of gases, with key vocabulary and a quick revision check.",
+    "transcript": "",
+    "source_note": "Soma supplementary topic guide; not the video's transcript. Video: Somo Smart. Original practice questions, not official exam predictions.",
+    "notes": "## Why do we breathe?\nThe body needs oxygen for aerobic respiration. Breathing brings air into the lungs and removes air containing carbon dioxide. **Breathing and respiration are not the same process:** breathing moves air; respiration releases energy in cells.\n\n## The route of air\nAir passes through the nose or mouth, down the trachea, into the bronchi and through smaller branches to the air sacs called alveoli.\n\n## Gas exchange\nOxygen passes from air in the alveoli into the blood. Carbon dioxide passes from the blood into the alveoli and is breathed out.\n\n## Inhaling and exhaling\nWhen the diaphragm contracts, it flattens and helps increase the chest's volume. Air enters. When it relaxes during quiet breathing, air moves out.\n\n## Revision tip\nBe precise: lungs do not make oxygen. They allow oxygen from inhaled air to enter the blood. Try drawing the air pathway and labelling its parts.",
+    "terms": [
+      {
+        "term": "Trachea",
+        "definition": "The windpipe that carries air towards the lungs.",
+        "example": "It divides into the two main bronchi."
+      },
+      {
+        "term": "Alveoli",
+        "definition": "Tiny lung air sacs where gas exchange takes place.",
+        "example": "Oxygen moves from an alveolus into nearby blood."
+      },
+      {
+        "term": "Diaphragm",
+        "definition": "A sheet of muscle below the lungs that helps with breathing.",
+        "example": "It contracts and flattens during inhalation."
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Where does gas exchange take place in the lungs?",
+        "options": ["Alveoli", "Stomach", "Oesophagus"],
+        "answer": 0,
+        "marks": 1,
+        "explanation": "The alveoli provide a large surface for exchange with the blood."
+      },
+      {
+        "question": "Which statement distinguishes breathing from respiration?",
+        "options": [
+          "They are exactly the same",
+          "Breathing moves air; respiration releases energy in cells",
+          "Respiration only happens in the nose"
+        ],
+        "answer": 1,
+        "marks": 1,
+        "explanation": "Breathing supplies air for gas exchange; cellular respiration releases energy."
+      }
+    ]
+  },
+  {
+    "id": "nhw-0EdUDIw",
+    "category": "lower",
+    "title": "Common Greetings: CBC Learning Videos",
+    "subject": "English",
+    "level": "Early years",
+    "duration": "0:51",
+    "published": true,
+    "description": "Practise greeting someone politely. Watch with a parent or teacher, then say your answers aloud.",
+    "transcript": "",
+    "source_note": "Soma supplementary activity, not a transcript. Video: Somo Smart. Oral practice is recommended for early-years learners.",
+    "notes": "## Say hello\nA greeting is a polite way to start speaking to someone. You can say **Hello** or **Good morning**.\n\n## Take turns\nAsk a partner, **How are you?** Listen to the reply. Try answering, **I am well, thank you. How are you?**\n\n## Practise together\nWith a trusted adult, pretend you have just arrived at school. Greet your teacher, then greet a friend. Use a friendly voice and give the other person time to reply.\n\n## Your turn\nWhat greeting could you use in the afternoon? Say it aloud. A parent or teacher can help you read the practice questions.",
+    "terms": [
+      {
+        "term": "Greeting",
+        "definition": "Words used to welcome someone or begin a conversation.",
+        "example": "Hello!"
+      },
+      {
+        "term": "Polite",
+        "definition": "Showing care and respect for other people.",
+        "example": "Saying thank you."
+      }
+    ],
+    "quiz": [
+      {
+        "question": "What could you say when you meet your teacher in the morning?",
+        "options": ["Good morning", "Goodbye"],
+        "answer": 0,
+        "marks": 1,
+        "explanation": "Good morning is a greeting used in the morning."
+      }
+    ]
+  },
+  {
+    "id": "0uIq3qhulXE",
+    "category": "lower",
+    "title": "Farewell: CBC Learning Videos for PP1",
+    "subject": "English",
+    "level": "Early years",
+    "duration": "0:37",
+    "published": true,
+    "description": "Learn how to end a conversation politely and practise saying goodbye.",
+    "transcript": "",
+    "source_note": "Soma supplementary activity, not a transcript. Video: Somo Smart. Practise with a parent or teacher.",
+    "notes": "## Saying goodbye\nA farewell is what we say when we leave. We can say **Goodbye** or **See you later**.\n\n## Act it out\nPretend the school day has ended. Say goodbye to your teacher. Now take turns with a partner: one person says goodbye and the other replies.\n\n## Think about it\nDo we normally say goodbye when we arrive or when we leave? Explain your answer to a trusted adult.",
+    "terms": [
+      {
+        "term": "Farewell",
+        "definition": "Words used when someone is leaving.",
+        "example": "Goodbye!"
+      }
+    ],
+    "quiz": [
+      {
+        "question": "When would you usually say goodbye?",
+        "options": ["When leaving", "When first arriving"],
+        "answer": 0,
+        "marks": 1,
+        "explanation": "A farewell ends a meeting or conversation."
+      }
+    ]
+  },
+  {
+    "id": "e19qjbFKRl4",
+    "category": "lower",
+    "title": "Greetings and Farewell: CBC Learning Videos",
+    "subject": "English",
+    "level": "Early years",
+    "duration": "1:00",
+    "published": true,
+    "description": "Put it together: start a conversation, listen, reply and say goodbye.",
+    "transcript": "",
+    "source_note": "Soma supplementary activity, not a transcript. Video: Somo Smart. These are original practice activities.",
+    "notes": "## Start and finish a conversation\nUse a greeting when you meet someone. Listen while they speak. Use a farewell when it is time to leave.\n\n## A short practice conversation\n**A:** Hello! How are you?\n\n**B:** I am well, thank you.\n\n**A:** It was nice talking to you. Goodbye!\n\n**B:** Goodbye!\n\n## Try it\nPractise with a parent, teacher or classmate. Change the greeting to suit the time of day. Remember to take turns.",
+    "terms": [
+      {
+        "term": "Reply",
+        "definition": "An answer to what someone says.",
+        "example": "Saying Hello back."
+      },
+      {
+        "term": "Conversation",
+        "definition": "People talking and listening to each other.",
+        "example": "Two friends asking how each other is."
+      }
+    ],
+    "quiz": [
+      {
+        "question": "Which pair shows a greeting followed by a farewell?",
+        "options": ["Hello → Goodbye", "Goodbye → Hello"],
+        "answer": 0,
+        "marks": 1,
+        "explanation": "Hello starts the conversation; goodbye ends it."
+      }
+    ]
+  },
+  {
+    "id": "6XkLIFUNMdo",
+    "category": "fun",
+    "title": "Tortoise Colorful Journey",
+    "subject": "Storytelling",
+    "level": "Family learning",
+    "duration": "0:51",
+    "published": true,
+    "description": "A short story from Somo Smart’s Story Time collection. Watch together and talk about what you notice.",
+    "transcript": "",
+    "source_note": "Video title and playlist membership verified from Somo Smart’s public Story Time playlist. Notes, transcript and practice questions await editorial review.",
+    "notes": "",
+    "terms": [],
+    "quiz": []
+  },
+  {
+    "id": "7Cp59eBytDY",
+    "category": "fun",
+    "title": "Lion Ants and Humility",
+    "subject": "Storytelling",
+    "level": "Family learning",
+    "duration": "0:44",
+    "published": true,
+    "description": "A short story from Somo Smart’s Story Time collection. Watch together and talk about what you notice.",
+    "transcript": "",
+    "source_note": "Video title and playlist membership verified from Somo Smart’s public Story Time playlist. Notes, transcript and practice questions await editorial review.",
+    "notes": "",
+    "terms": [],
+    "quiz": []
+  },
+  {
+    "id": "5uNHe5uvvUA",
+    "category": "fun",
+    "title": "hyena honest apetite",
+    "subject": "Storytelling",
+    "level": "Family learning",
+    "duration": "0:43",
+    "published": true,
+    "description": "A short story from Somo Smart’s Story Time collection. Watch together and talk about what you notice.",
+    "transcript": "",
+    "source_note": "Video title and playlist membership verified from Somo Smart’s public Story Time playlist. Notes, transcript and practice questions await editorial review.",
+    "notes": "",
+    "terms": [],
+    "quiz": []
+  },
+  {
+    "id": "hL6j79gYWOw",
+    "category": "fun",
+    "title": "The talking goat",
+    "subject": "Storytelling",
+    "level": "Family learning",
+    "duration": "0:47",
+    "published": true,
+    "description": "A short story from Somo Smart’s Story Time collection. Watch together and talk about what you notice.",
+    "transcript": "",
+    "source_note": "Video title and playlist membership verified from Somo Smart’s public Story Time playlist. Notes, transcript and practice questions await editorial review.",
+    "notes": "",
+    "terms": [],
+    "quiz": []
+  }
+]

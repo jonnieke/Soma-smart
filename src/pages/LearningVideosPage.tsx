@@ -1,76 +1,298 @@
-import React from 'react';
-import { Link } from 'react-router-dom';
+import React, { Suspense, useEffect, useRef, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
-import { ArrowLeft, ExternalLink, Play } from 'lucide-react';
+import { ArrowLeft, BookOpen, CheckCircle2, Play, Search } from 'lucide-react';
 import logo from '../assets/images/main_logo.png';
-
+import { LearningVideo, learningVideoService } from '../services/learningVideoService';
+import VideoLesson from '../components/VideoLesson';
+import VideoThumbnail from '../components/VideoThumbnail';
+import { VIDEO_CATEGORIES } from '../data/videoCategories';
+import '../styles/learning-videos.css';
+const Editor = React.lazy(() => import('../components/VideoHubEditor'));
 export const LEARNING_VIDEO_URL = 'https://www.youtube.com/watch?v=4oXDoJkprx0&list=PLIjFyZ2La_D0';
+
 export default function LearningVideosPage() {
-  const [loaded, setLoaded] = React.useState(false);
+  const [params, setParams] = useSearchParams();
+  const [videos, setVideos] = useState<LearningVideo[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [attempt, setAttempt] = useState(0);
+  const [admin, setAdmin] = useState(false);
+  const [manage, setManage] = useState(params.has('generation'));
+  const [search, setSearch] = useState('');
+  const [subject, setSubject] = useState('All subjects');
+  const [level, setLevel] = useState('All levels');
+  const [playVideo, setPlayVideo] = useState('');
+  const playerSection = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (playVideo) playerSection.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' });
+  }, [playVideo]);
+  useEffect(() => {
+    let active = true;
+    learningVideoService
+      .isAdmin()
+      .then((v) => {
+        if (active) setAdmin(v);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError('');
+    learningVideoService
+      .list(admin && manage)
+      .then((v) => {
+        if (active) setVideos(v);
+      })
+      .catch((e) => {
+        if (active) setError(e.message);
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [attempt, admin, manage]);
+  const published = videos.filter((v) => v.published);
+  const category = VIDEO_CATEGORIES.find((c) => c.id === params.get('category'));
+  const inCategory = published.filter((v) => !category || v.category === category.id);
+  const selected =
+    published.find((v) => v.id === params.get('video')) ||
+    (!params.has('video') ? inCategory[0] : undefined);
+  const filtered = inCategory.filter(
+    (v) =>
+      (subject === 'All subjects' || subject === v.subject) &&
+      (level === 'All levels' || level === v.level) &&
+      `${v.title} ${v.description} ${v.subject}`.toLowerCase().includes(search.toLowerCase())
+  );
   return (
-    <div className="min-h-screen bg-[#faf8f3] text-[#0b1740]">
+    <div className="video-hub">
       <Helmet>
-        <title>Learning videos | Soma AI</title>
+        <title>{selected ? `${selected.title} | ` : ''}Learning videos | Soma AI</title>
         <meta
           name="description"
-          content="Watch learning videos with Soma AI. Pause, revisit and learn at your own pace."
+          content="Watch, understand and practise with Soma learning videos, study notes, key terms and revision quizzes."
         />
       </Helmet>
-      <header className="border-b border-stone-200 px-6 py-4 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-3 text-2xl font-bold">
-          <img src={logo} alt="" width="44" height="44" />
+      <header className="video-header">
+        <Link to="/" className="video-brand">
+          <img src={logo} width="42" height="42" alt="" />
           Soma AI
         </Link>
-        <Link to="/" className="flex items-center gap-2 py-3">
-          <ArrowLeft size={18} /> Homepage
-        </Link>
-      </header>
-      <section className="max-w-6xl mx-auto px-5 py-10 sm:py-16">
-        <p className="text-green-800 mb-3">Watch. Pause. Understand.</p>
-        <h1 className="font-serif text-4xl sm:text-6xl mb-5">Learning videos</h1>
-        <p className="text-slate-600 text-lg mb-8">
-          Learn at your own pace. Use the player’s playlist menu to explore more videos.
-        </p>
-        <div className="aspect-video overflow-hidden rounded-2xl bg-[#0b1740] flex items-center justify-center">
-          {loaded ? (
-            <iframe
-              title="Soma learning video playlist"
-              src="https://www.youtube-nocookie.com/embed/4oXDoJkprx0?list=PLIjFyZ2La_D0&rel=0"
-              className="w-full h-full border-0"
-              allow="accelerometer; encrypted-media; gyroscope; picture-in-picture; fullscreen"
-              allowFullScreen
-              referrerPolicy="strict-origin-when-cross-origin"
-            />
-          ) : (
-            <button
-              onClick={() => setLoaded(true)}
-              className="text-white flex flex-col items-center gap-4 rounded-xl p-8 focus-visible:ring-4 focus-visible:ring-indigo-300"
-            >
-              <Play size={48} />
-              <span className="text-xl">Load learning videos</span>
-              <span className="text-sm text-slate-300">
-                Connects to YouTube only when you choose
-              </span>
+        <nav aria-label="Video hub navigation">
+          <Link to="/learner">My classroom</Link>
+          <Link to="/exam-papers">Past papers</Link>
+          <Link to="/">
+            <ArrowLeft size={16} /> Homepage
+          </Link>
+          {admin && (
+            <button onClick={() => setManage((m) => !m)}>
+              {manage ? 'View library' : 'Manage videos'}
             </button>
           )}
+        </nav>
+      </header>
+      <main className="video-main">
+        <div className="video-intro">
+          <div>
+            <p className="video-eyebrow">
+              <Play size={15} /> SOMA LEARNING HUB
+            </p>
+            <h1>
+              A little watching.
+              <br />
+              <em>A lot of understanding.</em>
+            </h1>
+            <p>Watch a lesson. Unpack the words. Put what you learn into practice.</p>
+          </div>
+          <div className="video-journey">
+            <span>
+              <Play size={18} />
+              Watch
+            </span>
+            <span>
+              <BookOpen size={18} />
+              Understand
+            </span>
+            <span>
+              <CheckCircle2 size={18} />
+              Practise
+            </span>
+          </div>
         </div>
-        <div className="mt-6 flex flex-wrap gap-5 justify-between items-center">
-          <p className="text-sm text-slate-600">
-            If a video or playlist is unavailable here, open it on YouTube.
-          </p>
-          <a
-            href={LEARNING_VIDEO_URL}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex gap-2 items-center border border-indigo-900 rounded-xl px-5 py-3"
+        <nav className="video-categories" aria-label="Video categories">
+          <button
+            aria-pressed={!category}
+            onClick={() => {
+              setParams({});
+              setPlayVideo('');
+              setSearch('');
+              setSubject('All subjects');
+              setLevel('All levels');
+            }}
           >
-            Open on YouTube <ExternalLink size={16} />
-          </a>
-        </div>
-        <Link to="/learner" className="inline-block text-indigo-800 mt-10 underline py-3">
-          Continue learning with Akili →
-        </Link>
-      </section>
+            All videos
+          </button>
+          {VIDEO_CATEGORIES.map((c) => (
+            <button
+              key={c.id}
+              aria-label={c.label}
+              aria-pressed={category?.id === c.id}
+              onClick={() => {
+                setParams({ category: c.id });
+                setPlayVideo('');
+                setSearch('');
+                setSubject('All subjects');
+                setLevel('All levels');
+              }}
+            >
+              <strong>{c.label}</strong>
+              <small>{c.description}</small>
+            </button>
+          ))}
+        </nav>
+        {category && (
+          <p className="video-collection-source">
+            {category.label} collection ·{' '}
+            <a
+              href={`https://www.youtube.com/playlist?list=${category.playlist}`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              View full playlist on YouTube ↗
+            </a>
+          </p>
+        )}
+        {admin && manage && (
+          <Suspense fallback={<p>Loading publishing desk…</p>}>
+            <Editor
+              videos={videos}
+              generationId={params.get('generation')}
+              onSaved={() => setAttempt((a) => a + 1)}
+            />
+          </Suspense>
+        )}
+        {loading ? (
+          <p role="status">Loading your video library…</p>
+        ) : error ? (
+          <div role="alert" className="video-panel">
+            <p>{error}</p>
+            <button onClick={() => setAttempt((a) => a + 1)}>Retry library</button>
+          </div>
+        ) : (
+          <div className="video-layout">
+            <aside className="video-library video-panel">
+              <div className="video-library-heading">
+                <h2>Find your next lesson</h2>
+                <span>{inCategory.length} videos</span>
+              </div>
+              <label className="video-search">
+                <Search size={18} />
+                <input
+                  aria-label="Search videos"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search a topic…"
+                />
+              </label>
+              <div className="video-filters">
+                <select
+                  aria-label="Filter by subject"
+                  value={subject}
+                  onChange={(e) => setSubject(e.target.value)}
+                >
+                  {['All subjects', ...new Set(inCategory.map((v) => v.subject))].map((s) => (
+                    <option key={s}>{s}</option>
+                  ))}
+                </select>
+                <select
+                  aria-label="Filter by level"
+                  value={level}
+                  onChange={(e) => setLevel(e.target.value)}
+                >
+                  {['All levels', ...new Set(inCategory.map((v) => v.level))].map((s) => (
+                    <option key={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="video-list">
+                {filtered.map((v) => (
+                  <button
+                    className={`video-card ${selected?.id === v.id ? 'is-active' : ''}`}
+                    key={v.id}
+                    aria-pressed={selected?.id === v.id}
+                    onClick={() => {
+                      setPlayVideo(v.id);
+                      setParams(
+                        category ? { video: v.id, category: category.id } : { video: v.id }
+                      );
+                      playerSection.current?.scrollIntoView?.({
+                        block: 'start',
+                        behavior: 'smooth',
+                      });
+                    }}
+                  >
+                    <div className={`video-card-art subject-${v.subject.toLowerCase()}`}>
+                      <VideoThumbnail key={v.id} id={v.id} />
+                      <Play size={19} />
+                      <small>{v.duration}</small>
+                    </div>
+                    <div>
+                      <small>{v.level}</small>
+                      <h3>{v.title}</h3>
+                      <p>
+                        {v.terms.length} key terms · {v.quiz.length} practice questions
+                      </p>
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {!filtered.length && (
+                <div className="video-notice">
+                  <p>
+                    {published.length
+                      ? 'No lessons match these filters.'
+                      : 'The first lessons are being prepared.'}
+                  </p>
+                  {!!published.length && (
+                    <button
+                      onClick={() => {
+                        setSearch('');
+                        setSubject('All subjects');
+                        setLevel('All levels');
+                      }}
+                    >
+                      Clear filters
+                    </button>
+                  )}
+                </div>
+              )}
+              <Link className="video-classroom-link" to="/learner">
+                Bring a question to Akili →
+              </Link>
+            </aside>
+            {selected ? (
+              <div ref={playerSection} className="video-player-section">
+                <VideoLesson
+                  key={selected.id}
+                  video={selected}
+                  playRequested={playVideo === selected.id}
+                />
+              </div>
+            ) : (
+              <section className="video-panel">
+                <h2>{params.has('video') ? 'This lesson is not available' : 'Choose a lesson'}</h2>
+                <p>Choose a published lesson from the library to start learning.</p>
+              </section>
+            )}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

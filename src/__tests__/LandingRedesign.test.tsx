@@ -5,6 +5,15 @@ import { HelmetProvider } from 'react-helmet-async';
 import { expect, it, vi } from 'vitest';
 import { LandingHome } from '../components/LandingHome';
 import LearningVideosPage from '../pages/LearningVideosPage';
+import videos from '../data/learningVideoSeed.json';
+vi.mock('../services/learningVideoService', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../services/learningVideoService')>()),
+  learningVideoService: {
+    list: vi.fn(async () => videos),
+    isAdmin: vi.fn(async () => false),
+    rating: vi.fn(async () => ({ average: null, count: 0 })),
+  },
+}));
 
 const props = () => ({
   isRegistered: false,
@@ -64,7 +73,7 @@ it('keeps the real Ask Akili submission and camera controls', () => {
   expect(p.onAskQuestion).toHaveBeenCalledWith('What is soil erosion?', undefined);
   expect(screen.getByLabelText('Capture homework photo')).toHaveAttribute('capture', 'environment');
 });
-it('loads YouTube only on request and retains the supplied playlist URL', () => {
+it('loads the selected learning video only on request', async () => {
   render(
     <MemoryRouter>
       <HelmetProvider>
@@ -72,14 +81,16 @@ it('loads YouTube only on request and retains the supplied playlist URL', () => 
       </HelmetProvider>
     </MemoryRouter>
   );
-  expect(screen.queryByTitle('Soma learning video playlist')).not.toBeInTheDocument();
-  fireEvent.click(screen.getByRole('button', { name: /Load learning videos/ }));
-  expect(screen.getByTitle('Soma learning video playlist')).toHaveAttribute(
+  expect(screen.queryByTitle('The Journey of Human Digestion')).not.toBeInTheDocument();
+  fireEvent.click(
+    await screen.findByRole('button', { name: 'Watch The Journey of Human Digestion' })
+  );
+  expect(screen.getByTitle('The Journey of Human Digestion')).toHaveAttribute(
     'src',
-    'https://www.youtube-nocookie.com/embed/4oXDoJkprx0?list=PLIjFyZ2La_D0&rel=0'
+    'https://www.youtube-nocookie.com/embed/4oXDoJkprx0?autoplay=1&playsinline=1&rel=0&cc_load_policy=1'
   );
   expect(screen.getByRole('link', { name: /Open on YouTube/ })).toHaveAttribute(
     'href',
-    'https://www.youtube.com/watch?v=4oXDoJkprx0&list=PLIjFyZ2La_D0'
+    'https://www.youtube.com/watch?v=4oXDoJkprx0'
   );
 });

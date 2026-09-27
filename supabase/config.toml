@@ -38,3 +38,7 @@ verify_jwt = false
 # The endpoint validates the caller with getUser and the server admin allowlist.
 [functions.admin-purchases]
 verify_jwt = false
+
+# Body validates the administrator JWT or dedicated scheduler secret before any writes.
+[functions.sync-learning-videos]
+verify_jwt = false
