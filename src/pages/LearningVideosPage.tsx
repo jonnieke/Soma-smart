@@ -60,6 +60,8 @@ export default function LearningVideosPage() {
   }, [attempt, admin, manage]);
   const published = videos.filter((v) => v.published);
   const category = VIDEO_CATEGORIES.find((c) => c.id === params.get('category'));
+  const collectionView = params.get('view') === 'collection' && !params.has('video');
+  const collectionPath = `/learning-videos?${new URLSearchParams({ ...(category ? { category: category.id } : {}), view: 'collection' })}`;
   const inCategory = published.filter((v) => !category || v.category === category.id);
   const selected =
     published.find((v) => v.id === params.get('video')) ||
@@ -73,7 +75,7 @@ export default function LearningVideosPage() {
   return (
     <div className="video-hub">
       <Helmet>
-        <title>{selected ? `${selected.title} | ` : ''}Learning videos | Soma AI</title>
+        <title>{collectionView ? `${category?.label || 'All videos'} collection | ` : selected ? `${selected.title} | ` : ''}Learning videos | Soma AI</title>
         <meta
           name="description"
           content="Watch, understand and practise with Soma learning videos, study notes, key terms and revision quizzes."
@@ -129,7 +131,7 @@ export default function LearningVideosPage() {
           <button
             aria-pressed={!category}
             onClick={() => {
-              setParams({});
+              setParams({ view: 'collection' });
               setPlayVideo('');
               setSearch('');
               setSubject('All subjects');
@@ -144,7 +146,7 @@ export default function LearningVideosPage() {
               aria-label={c.label}
               aria-pressed={category?.id === c.id}
               onClick={() => {
-                setParams({ category: c.id });
+                setParams({ category: c.id, view: 'collection' });
                 setPlayVideo('');
                 setSearch('');
                 setSubject('All subjects');
@@ -159,13 +161,11 @@ export default function LearningVideosPage() {
         {category && (
           <p className="video-collection-source">
             {category.label} collection ·{' '}
-            <a
-              href={`https://www.youtube.com/playlist?list=${category.playlist}`}
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              View full playlist on YouTube ↗
-            </a>
+            <Link to={collectionPath} onClick={() => {
+              setPlayVideo(''); setSearch(''); setSubject('All subjects'); setLevel('All levels');
+            }}>
+              {collectionView ? 'Browse all videos in this collection' : 'View full collection on Soma'}
+            </Link>
           </p>
         )}
         {admin && manage && (
@@ -185,12 +185,13 @@ export default function LearningVideosPage() {
             <button onClick={() => setAttempt((a) => a + 1)}>Retry library</button>
           </div>
         ) : (
-          <div className="video-layout">
+          <div className={`video-layout${collectionView ? ' video-collection-layout' : ''}`}>
             <aside className="video-library video-panel">
               <div className="video-library-heading">
-                <h2>Find your next lesson</h2>
+                <h2>{collectionView ? `${category?.label || 'All videos'} collection` : 'Find your next lesson'}</h2>
                 <span>{inCategory.length} videos</span>
               </div>
+              {collectionView && <p>Choose a video to watch and study here on Soma.</p>}
               <label className="video-search">
                 <Search size={18} />
                 <input
@@ -276,8 +277,11 @@ export default function LearningVideosPage() {
                 Bring a question to Akili →
               </Link>
             </aside>
-            {selected ? (
+            {!collectionView && (selected ? (
               <div ref={playerSection} className="video-player-section">
+                <Link className="video-classroom-link" to={collectionPath} onClick={() => {
+                  setPlayVideo(''); setSearch(''); setSubject('All subjects'); setLevel('All levels');
+                }}>← Back to collection</Link>
                 <VideoLesson
                   key={selected.id}
                   video={selected}
@@ -289,7 +293,7 @@ export default function LearningVideosPage() {
                 <h2>{params.has('video') ? 'This lesson is not available' : 'Choose a lesson'}</h2>
                 <p>Choose a published lesson from the library to start learning.</p>
               </section>
-            )}
+            ))}
           </div>
         )}
       </main>

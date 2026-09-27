@@ -112,21 +112,21 @@ it('filters the three collections, resets stale filters and selects a matching l
   fireEvent.click(screen.getByRole('button', { name: 'Fun' }));
   expect(screen.getByText('4 videos')).toBeInTheDocument();
   expect(
-    screen.getByRole('button', { name: 'Watch Tortoise Colorful Journey' })
+    screen.getByRole('button', { name: /0:51 Family learning Tortoise/ })
   ).toBeInTheDocument();
-  expect(screen.getByRole('link', { name: /View full playlist/ })).toHaveAttribute(
+  expect(screen.getByRole('link', { name: /Browse all videos in this collection/ })).toHaveAttribute(
     'href',
-    'https://www.youtube.com/playlist?list=PLhhKTZSYPAy2HgTpwvb6RC8R91rIIdY2e'
+    '/learning-videos?category=fun&view=collection'
   );
   fireEvent.click(screen.getByRole('button', { name: 'Lower Education' }));
   expect(screen.getByText('3 videos')).toBeInTheDocument();
   expect(
-    screen.getByRole('button', { name: 'Watch Common Greetings: CBC Learning Videos' })
+    screen.getByRole('button', { name: /Common Greetings: CBC Learning Videos/ })
   ).toBeInTheDocument();
   fireEvent.click(screen.getByRole('button', { name: 'Upper Education' }));
   expect(screen.getByText('2 videos')).toBeInTheDocument();
   expect(
-    screen.getByRole('button', { name: 'Watch The Journey of Human Digestion' })
+    screen.getByRole('button', { name: /The Journey of Human Digestion/ })
   ).toBeInTheDocument();
 });
 it('restores a category from its URL', async () => {
@@ -136,6 +136,22 @@ it('restores a category from its URL', async () => {
     'aria-pressed',
     'true'
   );
+});
+it('opens the full collection on Soma, plays a lesson here and returns to the grid', async () => {
+  const { container } = setup('/learning-videos?category=upper');
+  await screen.findByText('2 videos');
+  const collection = screen.getByRole('link', { name: 'View full collection on Soma' });
+  expect(collection).not.toHaveAttribute('target');
+  fireEvent.click(collection);
+  expect(screen.getByRole('heading', { name: 'Upper Education collection' })).toBeInTheDocument();
+  expect(container.querySelector('.video-collection-layout')).not.toBeNull();
+  expect(container.querySelector('iframe')).toBeNull();
+  expect(container.querySelector('a[href*="youtube.com/playlist"]')).toBeNull();
+  fireEvent.click(screen.getByRole('button', { name: /The Journey of Human Digestion/ }));
+  expect(screen.getByTitle('The Journey of Human Digestion')).toHaveAttribute('src', expect.stringContaining('/embed/4oXDoJkprx0'));
+  fireEvent.click(screen.getByRole('link', { name: /Back to collection/ }));
+  expect(screen.getByRole('heading', { name: 'Upper Education collection' })).toBeInTheDocument();
+  expect(container.querySelector('iframe')).toBeNull();
 });
 it('shows YouTube thumbnails and opens the matching player directly from a card', async () => {
   const { container } = setup('/learning-videos?category=fun');

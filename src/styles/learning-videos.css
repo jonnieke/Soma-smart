@@ -216,6 +216,23 @@
   flex-shrink: 0;
   width: 100%;
 }
+.video-layout.video-collection-layout {
+  grid-template-columns: minmax(0, 1fr);
+}
+.video-collection-layout .video-library {
+  position: static;
+}
+.video-collection-layout .video-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  max-height: none;
+  overflow: visible;
+}
+.video-collection-layout .video-card {
+  width: 100%;
+  max-width: 460px;
+  align-self: start;
+}
 .video-card.is-active {
   border: 2px solid #5952d7;
   box-shadow: 0 3px 10px #514ac911;

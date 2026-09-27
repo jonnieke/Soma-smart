@@ -1,5 +1,13 @@
 # Learning video hub
 
+## On-site collections (28 September 2026)
+
+Collection navigation uses `/learning-videos?category=upper&view=collection` (also `lower` and `fun`) with a searchable thumbnail grid. Cards open the existing embedded lesson on Soma, and Back to collection returns to the grid. The former external full-playlist link is removed. YouTube's own player controls and explicit fallback video links remain external.
+
+Manual refresh of the existing live scheduler endpoint returned HTTP 200: 1 inserted and 13 refreshed, including the new Upper Education video Blood Circulation. All eligible public, embeddable entries returned by the configured playlists were processed; the catalogue has 14 videos (Upper 4, Lower 6, Fun 4). Private/non-embeddable videos are excluded. Newly imported videos still require reviewed study materials.
+
+Fourteen video-hub tests passed, including collection navigation, embedded-player selection, return to grid, filters, quizzes and rating failures. Phone-width inspection found no horizontal overflow; collection cards now fill the available width. Local browser catalogue retrieval subsequently failed, so deployed playback/return verification remains required.
+
 ## Content workflow
 
 Open `/learning-videos` while signed in as an existing Soma administrator. Choose **Manage videos**. Add a YouTube link, title, subject and learner level. You can edit notes, key terms, quiz options, correct answers and explanations using ordinary form fields.
