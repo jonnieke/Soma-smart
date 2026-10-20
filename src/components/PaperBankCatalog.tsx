@@ -7,6 +7,11 @@ import { EXAM_PAPER_PRICE_KES } from '../services/examPaperBankService';
 import './PaperBankCatalog.css';
 
 const clean = (value?: string | null) => (value || '').trim().replace(/\s+/g, ' ');
+const paperSourceLabel = (paper: ExamPaperBankItem) => {
+  const source = clean(paper.source);
+  if (/soma\s*ai\s+original|original mock/i.test(paper.title) || /soma\s*ai\s+original/i.test(source)) return 'Soma AI original';
+  return source && !/structured[_ -]?import/i.test(source) ? source : 'Source not specified';
+};
 export const paperLevel = (value: string) => {
   const level = clean(value);
   if (/^(kcse(?: level)?|form\s*4)$/i.test(level)) return 'Form 4';
@@ -335,9 +340,7 @@ export function PaperBankCatalog({
                       <FileText size={14} />
                       {isUnlocked(paper.id)
                         ? 'Access available'
-                        : paper.exam_body === 'SomaAI'
-                          ? 'Soma AI original'
-                          : paper.exam_body || 'Practice paper'}
+                      : paperSourceLabel(paper)}
                     </span>
                     <h3>{paper.title}</h3>
                     <p className="pb-card-meta">
@@ -354,7 +357,7 @@ export function PaperBankCatalog({
                         ) : null}
                         <p>
                           <CheckCircle2 className="pb-green" />
-                          <span>Marking scheme included</span>
+                          <span>{paper.has_marking_scheme === true ? 'Marking scheme available' : 'Marking scheme not listed'}</span>
                         </p>
                         <p>
                           <Tag />

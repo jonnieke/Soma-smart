@@ -92,6 +92,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
     const [generatedAnswer, setGeneratedAnswer] = useState<string | null>(null);
     const [showDetailedView, setShowDetailedView] = useState(false);
     const [detailedAnswer, setDetailedAnswer] = useState<string | null>(null);
+    const [detailedError, setDetailedError] = useState<string | null>(null);
+    const [pendingHeroFile, setPendingHeroFile] = useState<File | null>(null);
     const [isGeneratingDetailed, setIsGeneratingDetailed] = useState(false);
     const [heroLimitReached, setHeroLimitReached] = useState(false);
     const [detailedLimitReached, setDetailedLimitReached] = useState(false);
@@ -318,6 +320,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         const previousQuestion = questionInput.trim();
         if (!activeQuestion && !fileOverride) return;
         setQuestionInput(activeQuestion);
+        setPendingHeroFile(fileOverride || null);
         trackFunnelEvent('detailed_view_clicked', {
             source: 'landing_hero',
             is_registered: isRegistered,
@@ -326,7 +329,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         setDetailedLimitReached(false);
 
         // Registered users go straight to the learner workspace. Guests stay in the homepage demo preview.
-        if (isRegistered) {
+        if (isRegistered && !fileOverride) {
             setRole(UserRole.LEARNER);
             navigate('/learner', { state: { pendingHeroQuestion: activeQuestion } });
             return;
@@ -334,23 +337,31 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
 
         // Unregistered visitors: show the teaser modal with login gate, without dashboard looping.
         let count = 0;
-        try { count = parseInt(localStorage.getItem('soma_hero_detailed_uses') || '0', 10); } catch { /* ignore */ }
+        if (!isRegistered) {
+            try { count = parseInt(localStorage.getItem('soma_hero_detailed_uses') || '0', 10); } catch { /* ignore */ }
+        }
         setShowDetailedView(true);
         if (isGeneratingDetailed) return;
         if (detailedAnswer && previousQuestion === activeQuestion && !fileOverride) return;
-        if (count >= 5) {
+        if (!isRegistered && count >= 5) {
             setDetailedLimitReached(true);
             return;
         }
-        try {
-            localStorage.setItem('soma_hero_detailed_uses', String(count + 1));
-            setDetailedUsesLeft(Math.max(0, 5 - (count + 1)));
-        } catch { /* ignore */ }
+        if (!isRegistered) {
+            try {
+                localStorage.setItem('soma_hero_detailed_uses', String(count + 1));
+                setDetailedUsesLeft(Math.max(0, 5 - (count + 1)));
+            } catch { /* ignore */ }
+        }
         setDetailedAnswer(null);
+        setDetailedError(null);
         setIsGeneratingDetailed(true);
         try {
             let text = '';
-            if (fileOverride && fileOverride.type.startsWith('image/')) {
+            if (fileOverride) {
+                const isImage = fileOverride.type.startsWith('image/');
+                const isPdf = fileOverride.type === 'application/pdf' || /\.pdf$/i.test(fileOverride.name);
+                if (!isImage && !isPdf) throw new Error('UNSUPPORTED_ATTACHMENT');
                 const base64Data = await new Promise<string>((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onloadend = () => {
@@ -365,8 +376,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     contents: [{
                         role: 'user',
                         parts: [
-                            { text: `Analyze this homework problem image and provide a learner-friendly direct answer in short bullet points, aligned to the Kenyan CBC/KCSE curriculum. Question: ${activeQuestion || 'Explain this homework question'}` },
-                            { inlineData: { data: base64Data, mimeType: fileOverride.type } }
+                            { text: `Read the attached ${isPdf ? 'PDF' : 'image'} homework question and provide a learner-friendly answer with clear working and key exam points. If the attachment is unclear, say exactly what is unreadable rather than guessing. Question: ${activeQuestion || 'Explain the attached homework question'}` },
+                            { inlineData: { data: base64Data, mimeType: isPdf ? 'application/pdf' : fileOverride.type } }
                         ]
                     }]
                 };
@@ -379,6 +390,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     },
                     body: JSON.stringify(payload)
                 });
+                if (resp.status === 429) {
+                    let code = 'RATE_LIMIT';
+                    try { code = (await resp.json())?.code ?? code; } catch { /* keep the transient limit */ }
+                    throw new Error(code);
+                }
+                if (!resp.ok) throw new Error(`ANSWER_REQUEST_FAILED_${resp.status}`);
                 const data = await resp.json();
                 text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
             } else {
@@ -392,7 +409,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 .replace(/^#{1,6}\s*/gm, '')
                 .replace(/\*(.*?)\*/g, '$1')
                 .replace(/\*/g, '');
-            setDetailedAnswer(cleaned || 'Unable to generate answer.');
+            if (!cleaned.trim()) throw new Error('EMPTY_ANSWER');
+            setDetailedAnswer(cleaned);
+            setPendingHeroFile(null);
 
             // Auto-save to offline notebook so the student never loses it
             try {
@@ -410,20 +429,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             trackFunnelEvent('detailed_view_opened', { source: 'landing_hero', uses_left: Math.max(0, 5 - (count + 1)) });
         } catch (err: any) {
             const code = err?.message ?? '';
-            const qLower = (activeQuestion || '').toLowerCase();
-            let fallback = '';
-
-            if (qLower.includes('erosion')) {
-                fallback = `• Direct Answer: Soil erosion is the detachment and removal of fertile topsoil by water, wind, or human/animal activities.\n• Key Types: Splash erosion (raindrop impact), Sheet erosion (uniform surface runoff), Rill erosion (small channels), Gully erosion (deep trenches).\n• Prevention & Conservation: Terracing on steep slopes, contour ploughing, mulching/cover cropping, afforestation to bind topsoil.\n• Exam Tip: Always link water erosion progression from splash to gully with the appropriate soil conservation technique.`;
-            } else if (qLower.includes('photosynthesis')) {
-                fallback = `• Direct Answer: Photosynthesis is the biological process where green plants manufacture glucose from carbon dioxide and water using light energy absorbed by chlorophyll.\n• Equation: Carbon Dioxide + Water + Light → Glucose + Oxygen (6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂).\n• Stages: Light-dependent stage (grana) splits water (photolysis); Light-independent stage (stroma) fixes carbon dioxide.\n• Exam Tip: Chlorophyll reflects green wavelengths and absorbs red and blue light.`;
-            } else {
-                fallback = `• Direct Answer: Under the CBC/KCSE syllabus, this topic focuses on core definitions, underlying principles, and real-life Kenyan applications.\n• Key Points: State precise definitions, follow step-by-step calculations, and connect theory to practical local examples.\n• Exam Tip: Review corresponding past paper questions in the Exam Paper Bank to practise timed answering.`;
+            const limitReached = code === 'GUEST_LIMIT_REACHED' || code === 'PLAN_LIMIT_REACHED' || code === 'FEATURE_LIMIT_REACHED';
+            if (!isRegistered && !limitReached) {
+                try {
+                    localStorage.setItem('soma_hero_detailed_uses', String(count));
+                    setDetailedUsesLeft(Math.max(0, 5 - count));
+                } catch { /* ignore */ }
             }
+            setDetailedError(code === 'UNSUPPORTED_ATTACHMENT'
+                ? 'Please attach a photo or PDF. Word documents are not supported yet.'
+                : 'Akili could not generate a reliable answer just now. Your question is still here; please try again.');
 
-            setDetailedAnswer(fallback);
-
-            if (code === 'GUEST_LIMIT_REACHED' || code === 'PLAN_LIMIT_REACHED' || code === 'FEATURE_LIMIT_REACHED') {
+            if (limitReached) {
                 setDetailedLimitReached(true);
             }
         } finally {
@@ -2473,6 +2490,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                 {[100, 90, 100, 75, 100, 88, 60].map((w, i) => (
                                                     <div key={i} className={`h-3 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse`} style={{ width: `${w}%` }} />
                                                 ))}
+                                            </div>
+                                        ) : detailedError ? (
+                                            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950" role="status">
+                                                <p className="font-bold">{detailedError}</p>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => { void handleOpenDetailedView(questionInput, pendingHeroFile || undefined); }}
+                                                    className="mt-4 min-h-11 rounded-xl bg-indigo-600 px-4 font-black text-white hover:bg-indigo-700"
+                                                >
+                                                    Try again
+                                                </button>
                                             </div>
                                         ) : detailedAnswer ? (
                                             <div className="space-y-4 text-sm leading-relaxed text-slate-700 dark:text-slate-300">

@@ -14,7 +14,6 @@ import {
   ExamPaperBankItem,
   examPaperBankService,
 } from '../services/examPaperBankService';
-import { FALLBACK_LATEST_PAPERS } from '../components/ExamPaperTickerBelt';
 import { PaperBankCatalog } from '../components/PaperBankCatalog';
 import { paperDestination, rememberPaperMode } from '../services/paperCheckoutIntent';
 import { canStudyExamPaper } from '../services/examPaperEntitlement';
@@ -43,6 +42,7 @@ export const ExamPaperBankPage: React.FC = () => {
   const [restoringPurchases, setRestoringPurchases] = React.useState(true);
   const [purchaseRestoreError, setPurchaseRestoreError] = React.useState('');
   const [restoreAttempt, setRestoreAttempt] = React.useState(0);
+  const verifyingPaperIds = React.useRef(new Set<string>());
 
   React.useEffect(() => {
     let active = true;
@@ -74,7 +74,7 @@ export const ExamPaperBankPage: React.FC = () => {
     examPaperBankService.listPapers()
       .then((items) => {
         if (!active) return;
-        setPapers(items.filter((paper) => paper.has_exam_paper !== false && paper.has_marking_scheme !== false));
+        setPapers(items.filter((paper) => paper.has_exam_paper !== false));
       })
       .catch(() => {
         if (active) setLoadError('We could not load the paper bank. Please refresh and try again.');
@@ -86,24 +86,51 @@ export const ExamPaperBankPage: React.FC = () => {
   }, [loadAttempt]);
 
   React.useEffect(() => {
+    let active = true;
+    let verificationKey: string | null = null;
     const paperId = searchParams.get('paper');
-    if (!paperId) return;
+    if (!paperId) return () => { active = false; };
     // Let the verification flow finish and retain its thank-you until Continue.
-    if (searchParams.get('status') === 'verifying' || confirmedPaper) return;
-    const paper = papers.find((item) => String(item.id) === paperId) ||
-      (FALLBACK_LATEST_PAPERS.find((item) => String(item.id) === paperId) as unknown as ExamPaperBankItem);
+    if (searchParams.get('status') === 'verifying' || confirmedPaper) return () => { active = false; };
+    const paper = papers.find((item) => String(item.id) === paperId);
     if (paper) {
       setSelected(paper);
       if (isPaperUnlocked(paper.id)) {
         // Paper already paid — jump straight to the reader.
         navigate(paperDestination(paper.id), { replace: true });
-      } else {
-        // Paper not yet purchased — open the checkout modal immediately so the
-        // user sees the purchase flow rather than a bare dashboard.
-        setCheckoutOpen(true);
+        return () => { active = false; };
       }
+      if (loading || restoringPurchases) return () => { active = false; };
+      if (purchaseRestoreError) {
+        setError('We could not restore your purchases. Retry restoration before paying for this paper.');
+        return () => { active = false; };
+      }
+      const key = String(paper.id);
+      if (verifyingPaperIds.current.has(key)) return () => { active = false; };
+      verificationKey = key;
+      verifyingPaperIds.current.add(key);
+      void examPaperBankService.getAccess(paper.id).then((access) => {
+        verifyingPaperIds.current.delete(key);
+        if (!active) return;
+        if (canStudyExamPaper(access)) {
+          markPaperUnlocked(paper.id);
+          navigate(paperDestination(paper.id), { replace: true });
+          return;
+        }
+        setCheckoutOpen(true);
+      }).catch(() => {
+        verifyingPaperIds.current.delete(key);
+        if (!active) return;
+        setError('We could not verify previous access. Select the paper again to retry; no payment has been started.');
+      });
+    } else if (!loading && !loadError) {
+      setError('That paper is not in the published catalogue. Browse the bank to choose an available paper.');
     }
-  }, [isPaperUnlocked, navigate, papers, searchParams, confirmedPaper]);
+    return () => {
+      active = false;
+      if (verificationKey) verifyingPaperIds.current.delete(verificationKey);
+    };
+  }, [isPaperUnlocked, loadError, loading, markPaperUnlocked, navigate, papers, purchaseRestoreError, restoringPurchases, searchParams, confirmedPaper]);
 
 
   React.useEffect(() => {
@@ -177,6 +204,7 @@ export const ExamPaperBankPage: React.FC = () => {
   };
 
   const openPaper = async (paper: ExamPaperBankItem) => {
+    setError('');
     rememberPaperMode(paper.id, 'read');
     setSelected(paper);
     if (isPaperUnlocked(paper.id)) {
@@ -191,13 +219,15 @@ export const ExamPaperBankPage: React.FC = () => {
         return;
       }
     } catch {
-      // A new buyer will continue through checkout.
+      setError('We could not verify previous access. Select the paper again to retry; no payment has been started.');
+      return;
     }
     setSearchParams({ paper: String(paper.id) });
     setCheckoutOpen(true);
   };
 
   const openRevisionMode = async (paper: ExamPaperBankItem) => {
+    setError('');
     rememberPaperMode(paper.id, 'revision');
     setSelected(paper);
     if (isPaperUnlocked(paper.id)) {
@@ -212,7 +242,8 @@ export const ExamPaperBankPage: React.FC = () => {
         return;
       }
     } catch {
-      // Unpaid or unverified buyers should go through the paper checkout.
+      setError('We could not verify previous access. Select the paper again to retry; no payment has been started.');
+      return;
     }
     setSearchParams({ paper: String(paper.id) });
     setCheckoutOpen(true);
@@ -223,12 +254,12 @@ export const ExamPaperBankPage: React.FC = () => {
       <Helmet>
         <html lang="en" />
         <title>KCSE, KPSEA &amp; CBC Exam Paper Bank Kenya | Soma AI Past Papers</title>
-        <meta name="description" content="Download and attempt KCSE, KPSEA, and CBC past papers with official marking schemes for Kenya. Practice online with timed exam revision, step-by-step answers, and instant marking." />
+        <meta name="description" content="Browse KCSE, KPSEA, and CBC exam papers published on Soma AI. Check each paper's stated source and marking-scheme availability, then read or practise online." />
         <meta name="keywords" content="KCSE past papers, KPSEA past papers, CBC exam papers Kenya, KNEC revision papers, KCSE marking schemes, Form 4 revision papers, Grade 6 7 8 9 exam papers, Kenyan mock papers, Soma AI exam paper bank" />
 
         {/* AIO & Search Engine Optimization */}
         <meta name="smart-search-index" content="index" />
-        <meta name="ai-knowledge-base" content="official-exams" />
+        <meta name="ai-knowledge-base" content="Kenyan exam practice papers" />
         <meta name="educational-framework" content="KCSE, KPSEA, CBC, KNEC, 8-4-4" />
         <meta name="target-audience" content="Kenyan KCSE Candidates, KPSEA Grade 6, CBC JSS Grade 7-9, Teachers &amp; Parents" />
         <meta name="robots" content="index, follow, max-image-preview:large" />
@@ -237,7 +268,7 @@ export const ExamPaperBankPage: React.FC = () => {
         <meta property="og:site_name" content="Soma AI" />
         <meta property="og:type" content="website" />
         <meta property="og:title" content="KCSE, KPSEA &amp; CBC Exam Paper Bank Kenya | Soma AI" />
-        <meta property="og:description" content="Access official KCSE, KPSEA &amp; CBC revision papers with complete marking schemes and timed online practice." />
+        <meta property="og:description" content="Browse KCSE, KPSEA, and CBC exam papers published on Soma AI, with source and marking-scheme availability shown per paper." />
         <meta property="og:image" content="https://www.somaai.co.ke/hero_option_a.png" />
         <meta property="og:url" content="https://www.somaai.co.ke/exam-papers" />
 
@@ -245,7 +276,7 @@ export const ExamPaperBankPage: React.FC = () => {
         <meta name="twitter:card" content="summary_large_image" />
         <meta name="twitter:site" content="@somasmart" />
         <meta name="twitter:title" content="KCSE, KPSEA &amp; CBC Exam Paper Bank Kenya" />
-        <meta name="twitter:description" content="Official KCSE, KPSEA &amp; CBC revision papers with marking schemes for Kenyan learners." />
+        <meta name="twitter:description" content="Browse KCSE, KPSEA, and CBC papers published on Soma AI, with source and scheme availability shown for each listing." />
 
         <link rel="canonical" href="https://www.somaai.co.ke/exam-papers" />
 
@@ -255,7 +286,7 @@ export const ExamPaperBankPage: React.FC = () => {
             "@context": "https://schema.org",
             "@type": "ItemList",
             "name": "Soma AI KCSE, KPSEA & CBC Exam Paper Bank",
-            "description": "Comprehensive collection of Kenyan KCSE, KPSEA, and CBC past examination papers with marking schemes.",
+            "description": "KCSE, KPSEA, and CBC exam papers published on Soma AI, with each listing's stated source and marking-scheme availability.",
             "url": "https://www.somaai.co.ke/exam-papers",
             "itemListElement": [
               {
@@ -292,10 +323,10 @@ export const ExamPaperBankPage: React.FC = () => {
             "mainEntity": [
               {
                 "@type": "Question",
-                "name": "Where can I get official KCSE past papers with marking schemes in Kenya?",
+                "name": "Where can I find KCSE past papers with marking schemes in Kenya?",
                 "acceptedAnswer": {
                   "@type": "Answer",
-                  "text": "Soma AI Exam Paper Bank provides official KCSE past papers with complete marking schemes for revision online or download."
+                  "text": "Soma AI's Exam Paper Bank lists KCSE papers and shows the stated source and marking-scheme availability for each listing."
                 }
               },
               {
@@ -369,7 +400,7 @@ export const ExamPaperBankPage: React.FC = () => {
           </div>
         </div>
       ) : null}
-      {error ? <div className="fixed bottom-4 left-1/2 z-[120] w-[min(92vw,620px)] -translate-x-1/2 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm font-bold text-rose-700 shadow-xl">{error}</div> : null}
+      {error ? <div className="fixed bottom-4 left-1/2 z-[120] w-[min(92vw,620px)] -translate-x-1/2 rounded-xl border border-rose-200 bg-white px-4 py-3 text-sm font-bold text-rose-700 shadow-xl" role="alert">{error}</div> : null}
     </div>
   );
 };

@@ -302,6 +302,12 @@ export const LegacyLandingHome: React.FC<Props> = (props) => {
     return `${import.meta.env.VITE_SUPABASE_URL}/storage/v1/object/public/syllabus-docs/${encodedPath}`;
   };
 
+  const paperSourceLabel = (paper: NonNullable<Props['latestPapers']>[number]) => {
+    const source = String(paper.source || '').trim();
+    if (/soma\s*ai\s+original|original mock/i.test(paper.title) || /soma\s*ai\s+original/i.test(source)) return 'Soma AI original';
+    return source && !/structured[_ -]?import/i.test(source) ? source : 'Source not specified';
+  };
+
   const resolveMarkingSchemeUrl = (paper: NonNullable<Props['latestPapers']>[number]) => {
     const directUrl = String(paper.marking_scheme_url || paper.markingSchemeUrl || '').trim();
     if (directUrl) return directUrl;
@@ -521,7 +527,7 @@ export const LegacyLandingHome: React.FC<Props> = (props) => {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <p className="inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-black uppercase tracking-[0.18em] text-emerald-700">
-                <FileText className="h-3.5 w-3.5" /> Latest SomaAI Originals
+                <FileText className="h-3.5 w-3.5" /> Exam papers
               </p>
               <h2
                 id="latest-papers-heading"
@@ -570,25 +576,11 @@ export const LegacyLandingHome: React.FC<Props> = (props) => {
             <div ref={carouselRef} className="no-scrollbar overflow-x-auto pb-3 scroll-smooth">
               <div className="flex min-w-max gap-4 snap-x snap-mandatory pr-10">
                 {carouselPapers.map((paper, index) => {
-                  const isOriginal =
-                    String(paper.source || '')
-                      .toUpperCase()
-                      .includes('STRUCTURED_IMPORT') ||
-                    /somaai\s+original|original mock|originals/i.test(String(paper.title || ''));
                   const featuredCard = index === 0 || Boolean((paper as any).homepage_featured);
                   return (
                     <div
                       key={paper.id}
                       data-paper-card
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => props.onExamPapers(paper.id)}
-                      onKeyDown={(event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault();
-                          props.onExamPapers(paper.id);
-                        }
-                      }}
                       className={`snap-start rounded-2xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md focus-visible:ring-2 focus-visible:ring-blue-500 ${featuredCard ? 'w-[320px] md:w-[340px]' : 'w-[280px]'}` }
                     >
                       <div className="flex items-start justify-between gap-3">
@@ -596,9 +588,9 @@ export const LegacyLandingHome: React.FC<Props> = (props) => {
                           <span className="inline-flex rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-slate-600">
                             {featuredCard ? 'Spotlight paper' : 'Latest paper'}
                           </span>
-                          <h3 className="mt-3 line-clamp-2 text-base font-bold leading-snug text-slate-900">
+                          <button type="button" onClick={() => props.onExamPapers(paper.id)} className="mt-3 line-clamp-2 text-left text-base font-bold leading-snug text-slate-900 hover:text-indigo-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500">
                             {paper.title}
-                          </h3>
+                          </button>
                         </div>
                         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-slate-600">
                           <BookOpen className="h-6 w-6" />
@@ -623,7 +615,7 @@ export const LegacyLandingHome: React.FC<Props> = (props) => {
                       </div>
                       <div className="mt-5 flex items-center justify-between gap-3 border-t border-slate-100 pt-4">
                         <span className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
-                          {isOriginal ? 'SomaAI Original' : 'Published exam'}
+                          {paperSourceLabel(paper)}
                         </span>
                         <span className="inline-flex items-center gap-1 text-xs font-black text-slate-700">
                           Open paper <ArrowRight className="h-4 w-4" />
@@ -862,6 +854,7 @@ const LandingFooter: React.FC<{
 const AskAkiliDemo: React.FC<Props & { compact?: boolean }> = (props) => {
   const [question, setQuestion] = React.useState('');
   const [attachedFile, setAttachedFile] = React.useState<File | null>(null);
+  const [attachmentNotice, setAttachmentNotice] = React.useState<string | null>(null);
   const [isListening, setIsListening] = React.useState(false);
   const [voiceNotice, setVoiceNotice] = React.useState<string | null>(null);
   const [demoView, setDemoView] = React.useState<'answer' | 'steps' | 'quiz' | 'note'>('answer');
@@ -900,12 +893,29 @@ const AskAkiliDemo: React.FC<Props & { compact?: boolean }> = (props) => {
     props.onAskQuestion(cleaned || (attachedFile ? `Explain attached question from ${attachedFile.name}` : ''), attachedFile || undefined);
     setQuestion('');
     setAttachedFile(null);
+    setAttachmentNotice(null);
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const isImage = file.type.startsWith('image/');
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name);
+    if (!isImage && !isPdf) {
+      setAttachmentNotice('Please attach a photo or PDF. Word documents are not supported yet.');
+      setAttachedFile(null);
+      e.target.value = '';
+      return;
+    }
+    if (file.size > 10 * 1024 * 1024) {
+      setAttachmentNotice('This file is larger than 10 MB. Please choose a smaller photo or PDF.');
+      setAttachedFile(null);
+      e.target.value = '';
+      return;
+    }
+    setAttachmentNotice(null);
     setAttachedFile(file);
+    e.target.value = '';
     if (!question.trim()) {
       setQuestion(`Analyze and explain homework problem from ${file.name}`);
     }
@@ -982,7 +992,7 @@ const AskAkiliDemo: React.FC<Props & { compact?: boolean }> = (props) => {
       <input
         type="file"
         ref={fileInputRef}
-        accept="image/*,.pdf,.doc,.docx"
+        accept="image/*,.pdf,application/pdf"
         onChange={handleFileChange}
         className="hidden"
         aria-label="Upload homework document"
@@ -1072,6 +1082,7 @@ const AskAkiliDemo: React.FC<Props & { compact?: boolean }> = (props) => {
         </div>
 
         {/* Attachment preview banner */}
+        {attachmentNotice && <p className="text-xs font-semibold text-rose-700" role="status">{attachmentNotice}</p>}
         {attachedFile && (
           <div className="flex items-center justify-between gap-2 rounded-lg border border-indigo-200 bg-indigo-50/70 px-3 py-1.5 text-xs text-indigo-900">
             <span className="truncate font-semibold">Attached: {attachedFile.name}</span>

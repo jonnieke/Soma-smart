@@ -822,7 +822,8 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
   const [recapData, setRecapData] = useState<any>(null); // Store LessonRecap
 
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<{ title: string; message: string; action?: 'voice_retry' | 'paywall' | 'go_home' | 'menu' } | null>(null);
+  const [error, setError] = useState<{ title: string; message: string; action?: 'voice_retry' | 'paywall' | 'go_home' | 'menu' | 'hero_retry' } | null>(null);
+  const heroQuestionRetryRef = React.useRef<{ question: string; autoStartPractice: boolean } | null>(null);
   const [micPermissionNotice, setMicPermissionNotice] = useState(false);
   const [loadingText, setLoadingText] = useState("Akili is on it...");
   const [audioData, setAudioData] = useState<{ base64: string, mimeType: string } | null>(null);
@@ -2112,6 +2113,7 @@ Stay anchored to this context unless I ask for something broader.`;
     // Faded Solution / Full Solution Modal Check
     if (state?.pendingHeroQuestion) {
       const shouldAutoStartPractice = Boolean(state.autoStartPractice);
+      heroQuestionRetryRef.current = { question: state.pendingHeroQuestion, autoStartPractice: shouldAutoStartPractice };
       setFadedSolutionData({ query: state.pendingHeroQuestion, answer: null, isGenerating: true, show: !shouldAutoStartPractice });
       
       const fetchHeroAnswer = async () => {
@@ -2171,24 +2173,20 @@ Stay anchored to this context unless I ask for something broader.`;
               }
             }
           } catch {
-            // Handled below via curriculum fallback
+            // The failure is surfaced below instead of substituting a generic answer.
           }
 
-          // If proxy returned empty or failed, use deterministic syllabus fallback
           if (!answerText) {
-            const qLower = qText.toLowerCase();
-            if (qLower.includes('erosion')) {
-              answerText = `### Soil Erosion — Step-by-Step Solution\n\n**1. Definition:**\nSoil erosion is the detachment and removal of topsoil by natural physical agents (flowing water, wind) or human and animal activities.\n\n**2. Main Types of Water Erosion:**\n- **Splash Erosion:** Raindrops strike bare soil, dislodging particles.\n- **Sheet Erosion:** Uniform thin layers of topsoil are washed away across gentle slopes.\n- **Rill Erosion:** Small, distinct channels/grooves form on the surface.\n- **Gully Erosion:** Deep, wide trenches cut into slopes during heavy rainfall.\n\n**3. Practical Prevention & Conservation (CBC / KCSE):**\n- **Terracing:** Constructing steps on steep slopes to slow runoff velocity.\n- **Contour Farming & Strip Cropping:** Ploughing and planting across the slope to trap water.\n- **Mulching & Cover Crops:** Shields soil against direct raindrop impact and conserves moisture.\n- **Afforestation & Reforestation:** Tree root networks bind the soil particles together.\n\n**4. KNEC Exam Insight:**\nAlways distinguish water erosion progression (Splash → Sheet → Rill → Gully) and link conservation measures to soil fertility retention.`;
-            } else if (qLower.includes('photosynthesis')) {
-              answerText = `### Photosynthesis — Direct Solution\n\n**1. Meaning:**\nThe biological process where green plants manufacture glucose from carbon dioxide and water using sunlight energy trapped by chlorophyll.\n\n**2. Equations:**\n- **Word:** Carbon Dioxide + Water + Light energy → Glucose + Oxygen\n- **Chemical:** 6CO₂ + 6H₂O + Light → C₆H₁₂O₆ + 6O₂\n\n**3. Stages:**\n- **Light Stage (Grana/Thylakoids):** Photolysis of water splits H₂O into Hydrogen ions and Oxygen gas.\n- **Dark Stage (Stroma / Calvin Cycle):** Carbon dioxide fixation produces glucose.\n\n**4. KNEC Exam Tip:**\nChlorophyll absorbs blue and red wavelengths while reflecting green light, which is why healthy foliage appears green.`;
-            } else if (qLower.includes('biology') || qLower.includes('botany') || qLower.includes('zoology')) {
-              const subject = qLower.includes('botany') ? 'Botany' : qLower.includes('zoology') ? 'Zoology' : 'Biology';
-              answerText = `### What is ${subject}?\n\n**Simple meaning:**\n${subject} is the study of living things and how they grow, work, reproduce, and interact with their environment.\n\n**Examples:**\n- In Biology, we study plants, animals, microorganisms, and their life processes.\n- We learn how living things are adapted to places such as farms, homes, forests, and rivers.\n\n**Remember:**\nBiology means learning about life.\n\n**Quick check:**\nName one living thing and one life process it carries out.`;
-            } else {
-              answerText = `### Step-by-Step Solution: ${qText}\n\n**1. Core Syllabus Concept:**\nUnder the CBC/KCSE syllabus, this topic focuses on understanding the primary definitions, fundamental principles, and real-life Kenyan applications.\n\n**2. Key Revision Points:**\n- State the direct definition clearly.\n- Show step-by-step working and calculations.\n- Relate the concept to everyday community and environmental examples in Kenya.\n\n**3. Next Step:**\nOpen your Notebook below to save these points or take a quick check quiz.`;
-            }
+            setFadedSolutionData({ query: qText, answer: null, isGenerating: false, show: false });
+            setError({
+              title: 'Answer unavailable',
+              message: `Akili could not generate a reliable answer for “${qText}” just now. Your question is saved here; try again when you’re ready.`,
+              action: 'hero_retry'
+            });
+            return;
           }
 
+          heroQuestionRetryRef.current = null;
           setFadedSolutionData({ query: qText, answer: answerText, isGenerating: false, show: !shouldAutoStartPractice });
 
           if (shouldAutoStartPractice && answerText) {
@@ -4456,6 +4454,14 @@ ${explanation.explanation}
             ) : error.action === 'go_home' ? (
               <Button variant="ghost" fullWidth onClick={() => { setError(null); setMode('MENU'); }}>
                 Continue typing instead
+              </Button>
+            ) : error.action === 'hero_retry' ? (
+              <Button variant="ghost" fullWidth onClick={() => {
+                const retry = heroQuestionRetryRef.current;
+                setError(null);
+                if (retry) navigate(location.pathname, { replace: true, state: { pendingHeroQuestion: retry.question, autoStartPractice: retry.autoStartPractice } });
+              }}>
+                Retry this answer
               </Button>
             ) : (
               <Button variant="ghost" fullWidth onClick={() => setError(null)}>

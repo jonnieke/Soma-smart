@@ -79,16 +79,23 @@ export const RevisionPortal: React.FC = () => {
     const [selectedPaperModal, setSelectedPaperModal] = useState<PublishedExam | null>(null);
     const [publishedExams, setPublishedExams] = useState<PublishedExam[]>([]);
     const [loadingExams, setLoadingExams] = useState(true);
+    const [catalogError, setCatalogError] = useState('');
+    const [catalogAttempt, setCatalogAttempt] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
 
     useEffect(() => {
         let active = true;
+        setLoadingExams(true);
+        setCatalogError('');
         examService.listPublishedExams()
             .then(exams => { if (active) setPublishedExams(exams as unknown as PublishedExam[]); })
-            .catch(error => console.error('Could not load public exam catalogue:', error))
+            .catch(error => {
+                console.error('Could not load public exam catalogue:', error);
+                if (active) setCatalogError('We could not load the paper catalogue. Check your connection and try again.');
+            })
             .finally(() => { if (active) setLoadingExams(false); });
         return () => { active = false; };
-    }, []);
+    }, [catalogAttempt]);
 
     const pathwayConfig = PATHWAYS.find(item => item.id === pathway) || PATHWAYS[0];
 
@@ -387,7 +394,7 @@ export const RevisionPortal: React.FC = () => {
                                 Timed Past Papers
                             </h3>
                             <p className="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-2">
-                                Practice real KNEC papers with timer &amp; marking guide.
+                                Attempt published papers with a timer and any available marking guide.
                             </p>
                         </div>
                         <div className="mt-3 flex items-center gap-1 text-[11px] font-black text-indigo-700">
@@ -460,7 +467,7 @@ export const RevisionPortal: React.FC = () => {
                                 <span className="text-xs font-bold text-slate-500">({pathwayExams.length})</span>
                             </h2>
                             <p className="text-xs text-slate-500 font-medium mt-0.5">
-                                Select a paper below to attempt online or review its official marking guide.
+                                Select a published paper below to attempt online or review its available marking guide.
                             </p>
                         </div>
 
@@ -532,6 +539,12 @@ export const RevisionPortal: React.FC = () => {
                         <div className="flex justify-center items-center py-16 gap-3 text-slate-500 text-xs font-bold">
                             <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
                             Loading candidate papers...
+                        </div>
+                    ) : catalogError ? (
+                        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center" role="alert">
+                            <h3 className="text-sm font-black text-rose-900">Paper catalogue unavailable</h3>
+                            <p className="mt-2 text-xs text-rose-800">{catalogError}</p>
+                            <button type="button" onClick={() => setCatalogAttempt(value => value + 1)} className="mt-4 min-h-10 rounded-xl bg-rose-700 px-4 text-xs font-black text-white">Retry</button>
                         </div>
                     ) : pathwayExams.length > 0 ? (
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4">
@@ -737,10 +750,10 @@ export const RevisionPortal: React.FC = () => {
                                         </div>
                                         <div>
                                             <p className="text-sm font-black text-slate-900 leading-tight">
-                                                Preview Paper &amp; Marking Scheme
+                                                Preview Paper &amp; Scheme
                                             </p>
                                             <p className="text-[11px] text-slate-500 font-medium mt-0.5">
-                                                Read full exam questions and check official answer keys.
+                                                Read the paper and check whether a marking scheme is available.
                                             </p>
                                         </div>
                                     </div>
