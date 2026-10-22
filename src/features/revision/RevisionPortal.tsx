@@ -15,6 +15,7 @@ import { LoginModal } from '../../components/LoginModal';
 import { RegistrationModal } from '../../components/RegistrationModal';
 import { LogoutModal } from '../../components/LogoutModal';
 import { examService } from '../../services/examService';
+import { examPaperBankService } from '../../services/examPaperBankService';
 import { TelegramBanner } from '../../components/TelegramBanner';
 import { ExamPaperTickerBelt } from '../../components/ExamPaperTickerBelt';
 import logoImg from '../../assets/images/main_logo.png';
@@ -82,6 +83,20 @@ export const RevisionPortal: React.FC = () => {
     const [catalogError, setCatalogError] = useState('');
     const [catalogAttempt, setCatalogAttempt] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
+    const [purchasedPaperIds, setPurchasedPaperIds] = useState<string[]>([]);
+    const [hasPassForRequested, setHasPassForRequested] = useState(false);
+
+    useEffect(() => {
+        let active = true;
+        examPaperBankService.listPurchasedPaperIds()
+            .then(ids => {
+                if (active && Array.isArray(ids)) {
+                    setPurchasedPaperIds(ids.map(String));
+                }
+            })
+            .catch(() => {});
+        return () => { active = false; };
+    }, []);
 
     useEffect(() => {
         let active = true;
@@ -143,6 +158,45 @@ export const RevisionPortal: React.FC = () => {
             }
         }
     }, [loadingExams, pathway, pathwayCounts, pathwayExams.length, publishedExams.length, studentProfile?.grade]);
+
+    const purchasedPapersList = useMemo(() => {
+        if (purchasedPaperIds.length === 0 || publishedExams.length === 0) return [];
+        return publishedExams.filter(exam => purchasedPaperIds.includes(String(exam.id)));
+    }, [purchasedPaperIds, publishedExams]);
+
+    // Auto-open requested paper from ?paper=... (e.g. from Reader after purchase)
+    useEffect(() => {
+        if (!requestedPaperId || publishedExams.length === 0) return;
+        const match = publishedExams.find(p => String(p.id) === String(requestedPaperId));
+        if (match) {
+            setSelectedPaperModal(match);
+            const pType = inferPathwayFromGrade(match.grade);
+            if (pType) setPathway(pType);
+        }
+    }, [requestedPaperId, publishedExams]);
+
+    // Check pass entitlement for currently selected modal paper
+    useEffect(() => {
+        if (!selectedPaperModal?.id) {
+            setHasPassForRequested(false);
+            return;
+        }
+        const paperIdStr = String(selectedPaperModal.id);
+        if (purchasedPaperIds.includes(paperIdStr)) {
+            setHasPassForRequested(true);
+            return;
+        }
+        let active = true;
+        examPaperBankService.getAccess(selectedPaperModal.id)
+            .then(acc => {
+                if (active && (acc.paid || acc.canStudy)) {
+                    setHasPassForRequested(true);
+                    setPurchasedPaperIds(prev => Array.from(new Set([...prev, paperIdStr])));
+                }
+            })
+            .catch(() => {});
+        return () => { active = false; };
+    }, [selectedPaperModal?.id, purchasedPaperIds]);
 
     const openSubjectTab = (subjectName: string) => {
         setRole(UserRole.LEARNER);
@@ -346,6 +400,55 @@ export const RevisionPortal: React.FC = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* 24-Hour Pass & Purchased Papers Shelf */}
+                {purchasedPapersList.length > 0 && (
+                    <div className="rounded-3xl bg-gradient-to-r from-emerald-950 via-teal-950 to-indigo-950 border border-emerald-500/40 p-5 sm:p-6 text-white shadow-md">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+                            <div>
+                                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-black uppercase tracking-wider mb-1">
+                                    <Sparkles className="w-3 h-3 text-emerald-400" /> Free 24h AI Revision Pass Active
+                                </div>
+                                <h2 className="text-lg sm:text-xl font-black text-white">Your Unlocked Revision Papers</h2>
+                                <p className="text-xs text-emerald-100/80">Interactive timed practice, instant step-by-step Akili marking, and official schemes are ready.</p>
+                            </div>
+                            <span className="text-xs font-bold bg-white/10 px-3 py-1.5 rounded-xl border border-white/15 self-start sm:self-auto text-emerald-200">
+                                {purchasedPapersList.length} {purchasedPapersList.length === 1 ? 'Paper Unlocked' : 'Papers Unlocked'}
+                            </span>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            {purchasedPapersList.map(paper => (
+                                <div key={paper.id} className="bg-white/10 hover:bg-white/15 border border-white/15 rounded-2xl p-4 transition-all flex flex-col justify-between">
+                                    <div>
+                                        <div className="flex items-center justify-between text-[10px] font-black uppercase text-emerald-300 mb-1.5">
+                                            <span>{paper.subject}</span>
+                                            <span className="bg-emerald-500/20 px-2 py-0.5 rounded border border-emerald-400/30">24h Pass Active</span>
+                                        </div>
+                                        <h3 className="text-sm font-black text-white line-clamp-2 leading-snug">{paper.title}</h3>
+                                        <p className="text-[11px] text-slate-300 mt-1">{paper.grade} {paper.year ? `· ${paper.year}` : ''}</p>
+                                    </div>
+                                    <div className="mt-4 pt-3 border-t border-white/10 flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => startRevision(paper)}
+                                            className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-black text-xs py-2 px-3 rounded-xl transition-colors flex items-center justify-center gap-1 shadow-sm"
+                                        >
+                                            <span>Start AI Exam</span>
+                                            <ArrowRight className="w-3.5 h-3.5" />
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => navigate(`/exam-papers/${encodeURIComponent(String(paper.id))}/read?source=scheme`)}
+                                            className="bg-white/15 hover:bg-white/25 text-white font-bold text-xs py-2 px-3 rounded-xl transition-colors"
+                                        >
+                                            Scheme
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
 
                 {/* 4 Compact Revision Launchpads */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -561,9 +664,16 @@ export const RevisionPortal: React.FC = () => {
                                         <div>
                                             {/* Header tags */}
                                             <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                                <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${colors.bg} ${colors.text} ${colors.border}`}>
-                                                    {exam.subject || 'General'}
-                                                </span>
+                                                <div className="flex items-center gap-1.5 flex-wrap">
+                                                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${colors.bg} ${colors.text} ${colors.border}`}>
+                                                        {exam.subject || 'General'}
+                                                    </span>
+                                                    {purchasedPaperIds.includes(String(exam.id)) && (
+                                                        <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                                            24h Pass
+                                                        </span>
+                                                    )}
+                                                </div>
                                                 <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
                                                     {exam.duration_minutes && (
                                                         <span className="flex items-center gap-0.5">
@@ -710,6 +820,18 @@ export const RevisionPortal: React.FC = () => {
 
                             {/* Modal Action Options */}
                             <div className="p-6 space-y-3">
+                                {(hasPassForRequested || purchasedPaperIds.includes(String(selectedPaperModal.id))) && (
+                                    <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-3.5 text-emerald-950 flex items-center gap-3">
+                                        <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold shrink-0">
+                                            <Sparkles className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-black text-emerald-900">24-Hour Free AI Revision Pass Active</p>
+                                            <p className="text-[11px] text-emerald-700">Full exam questions, official marking scheme, and Akili AI method grading are unlocked.</p>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* Option 1: AI Interactive Practice */}
                                 <button
                                     onClick={() => {
@@ -717,7 +839,11 @@ export const RevisionPortal: React.FC = () => {
                                         setSelectedPaperModal(null);
                                         startRevision(paper);
                                     }}
-                                    className="w-full p-4 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white text-left transition-all shadow-md shadow-indigo-600/20 flex items-center justify-between group"
+                                    className={`w-full p-4 rounded-2xl text-white text-left transition-all shadow-md flex items-center justify-between group ${
+                                        hasPassForRequested || purchasedPaperIds.includes(String(selectedPaperModal.id))
+                                            ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
+                                            : 'bg-indigo-600 hover:bg-indigo-700 shadow-indigo-600/20'
+                                    }`}
                                 >
                                     <div className="flex items-center gap-3.5">
                                         <div className="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center font-bold shrink-0">
@@ -725,7 +851,9 @@ export const RevisionPortal: React.FC = () => {
                                         </div>
                                         <div>
                                             <p className="text-sm font-black text-white leading-tight">
-                                                Attempt Online with AI Coach
+                                                {hasPassForRequested || purchasedPaperIds.includes(String(selectedPaperModal.id))
+                                                    ? 'Launch Timed Exam with AI Coach (Pass Active)'
+                                                    : 'Attempt Online with AI Coach'}
                                             </p>
                                             <p className="text-[11px] text-indigo-100 font-medium mt-0.5">
                                                 Timed quiz mode, instant scoring &amp; Akili step-by-step guidance.

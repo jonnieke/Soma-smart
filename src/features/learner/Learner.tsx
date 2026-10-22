@@ -593,18 +593,20 @@ export const LearnerDashboard: React.FC<LearnerProps> = ({ onNavigate, profile }
     listen: { tab: 'TALKBACK', intent: 'listen_and_learn' },
   };
   const publicDestination = publicStart ? publicStartMap[publicStart] : undefined;
-  const initialTab = ((location.state as any)?.targetTab as SidebarTab | undefined) || publicDestination?.tab || 'HOME';
+  const stateTab = (location.state as any)?.targetTab as string | undefined;
+  const initialTab = (stateTab === 'REVISION' ? 'SUBJECTS' : (stateTab as SidebarTab | undefined)) || publicDestination?.tab || 'HOME';
   const initialTargetIntent = ((location.state as any)?.targetIntent as
     | 'ask_akili'
     | 'official_library'
     | 'exam_prep_papers'
     | 'listen_and_learn'
     | undefined) || publicDestination?.intent;
-  const initialMode = initialTab === 'SMART_TUTOR' || initialTab === 'HOMEWORK' ? 'SCAN_EXPLAIN' :
+  const initialMode = (location.state as any)?.targetExam ? 'REVISION_SESSION' :
+    initialTab === 'SMART_TUTOR' || initialTab === 'HOMEWORK' ? 'SCAN_EXPLAIN' :
     initialTab === 'NOTEBOOK' ? 'NOTEBOOK' :
     initialTab === 'RESOURCES' ? 'MARKETPLACE' :
       initialTab === 'PROGRESS' ? 'HISTORY' :
-        initialTab === 'SUBJECTS' ? 'REVISION' :
+        initialTab === 'SUBJECTS' || stateTab === 'REVISION' ? 'REVISION' :
           initialTab === 'QUEST_MAP' ? 'QUEST_MAP' :
             initialTab === 'COMMUNITY' ? 'COMMUNITY' :
               initialTab === 'TALKBACK' ? 'TALKBACK' : 'MENU';
@@ -2108,7 +2110,17 @@ Stay anchored to this context unless I ask for something broader.`;
       openSubscription?: boolean;
       initiatePaymentFor?: SubscriptionPlan;
       materialId?: string;
+      targetExam?: any;
     };
+
+    if ((state as any)?.targetExam) {
+      const exam = (state as any).targetExam;
+      setActiveRevisionSession({ data: exam, mode: RevisionMode.EXAM });
+      setMode('REVISION_SESSION');
+      setSidebarTab('SUBJECTS');
+      navigate(location.pathname, { replace: true, state: {} });
+      return;
+    }
 
     // Faded Solution / Full Solution Modal Check
     if (state?.pendingHeroQuestion) {
