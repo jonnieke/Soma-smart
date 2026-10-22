@@ -604,7 +604,7 @@ export const RevisionPortal: React.FC = () => {
                         <div className="text-center py-12 bg-white rounded-2xl border border-dashed border-slate-300 p-6">
                             <Target className="w-8 h-8 text-slate-400 mx-auto mb-2" />
                             <h3 className="text-sm font-bold text-slate-800">No papers found</h3>
-                            <p className="text-xs text-slate-500 mt-0.5">Try selecting "ALL" subjects or clearing your search term.</p>
+                            <p className="text-xs text-slate-500 mt-0.5">Try selecting &quot;ALL&quot; subjects or clearing your search term.</p>
                         </div>
                     )}
                 </div>

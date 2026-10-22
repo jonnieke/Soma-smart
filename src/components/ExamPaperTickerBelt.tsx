@@ -21,6 +21,8 @@ interface ExamPaperTickerBeltProps {
     onPaperClick?: (paperId: string | number) => void;
 }
 
+export const FALLBACK_LATEST_PAPERS: TickerPaperItem[] = [];
+
 export const ExamPaperTickerBelt: React.FC<ExamPaperTickerBeltProps> = ({
     papers,
     onPaperClick,

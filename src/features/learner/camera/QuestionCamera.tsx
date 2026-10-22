@@ -115,7 +115,7 @@ export function QuestionCamera({ onClose, onUsePhoto, onAudio }: Props) {
     } catch (failure) { if (mounted.current) setError(cameraErrorMessage(failure)); }
     finally { operation.current = false; if (mounted.current) setBusy(false); }
   };
-  const usePhoto = async () => {
+  const handleUsePhoto = async () => {
     if (!photo || !preview || operation.current) return;
     operation.current = true; setBusy(true); setError('');
     try {
@@ -185,7 +185,7 @@ export function QuestionCamera({ onClose, onUsePhoto, onAudio }: Props) {
     </div>
     <footer className="border-t border-white/20 bg-black px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]">
       <div className="mx-auto flex max-w-2xl flex-wrap items-center justify-center gap-3">
-        {photo ? <><button type="button" disabled={busy} onClick={restart} className={`${button} bg-white/15`}>Retake</button><button type="button" disabled={busy || !preview} onClick={() => void usePhoto()} className={`${button} bg-white text-indigo-900`}>{busy ? 'Preparing…' : 'Use photo'}</button></> : <>
+        {photo ? <><button type="button" disabled={busy} onClick={restart} className={`${button} bg-white/15`}>Retake</button><button type="button" disabled={busy || !preview} onClick={() => void handleUsePhoto()} className={`${button} bg-white text-indigo-900`}>{busy ? 'Preparing…' : 'Use photo'}</button></> : <>
           <button type="button" disabled={busy} onClick={() => pick(false)} className={`${button} inline-flex items-center gap-2 bg-white/10`}><ImagePlus className="h-5 w-5" />Gallery</button>
           <button type="button" disabled={!ready || busy || controlBusy} onClick={() => void capture()} className={`${button} inline-flex items-center gap-2 bg-white text-indigo-900`}><Camera className="h-5 w-5" />{busy ? 'Capturing…' : 'Capture'}</button>
           <button type="button" onClick={onAudio} className={`${button} text-white/80`}>Use audio</button>

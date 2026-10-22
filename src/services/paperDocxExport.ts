@@ -132,6 +132,7 @@ export async function downloadPaperDocx(paper: ExamPaper, mode: PaperExportMode)
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
+  // eslint-disable-next-line no-control-regex
   link.download = `${paper.title.replace(/[<>:"/\\|?*\x00-\x1f]/g, '-').slice(0, 100) || 'Exam-paper'}-${mode === 'MARKING_SCHEME' ? 'answer-key' : 'questions'}.docx`;
   document.body.appendChild(link);
   link.click();

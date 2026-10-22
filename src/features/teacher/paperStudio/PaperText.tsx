@@ -17,13 +17,39 @@ function mathRow(nodes: EquationNode[]): React.ReactElement {
 }
 
 export function PaperText({ text }: { text: string }) {
+  let segments: ReturnType<typeof splitPaperEquations> | null = null;
+  let parseError: Error | null = null;
   try {
-    return <span className="whitespace-pre-wrap">{splitPaperEquations(text).map((segment, key) => segment.kind === 'text'
-      ? <React.Fragment key={key}>{segment.value}</React.Fragment>
-      : <span key={key} className={`${segment.display ? 'flex my-2 justify-center' : 'inline-flex'} max-w-full overflow-x-auto overflow-y-hidden py-1 align-middle`}>
-        {React.createElement('math', { display: segment.display ? 'block' : 'inline' }, mathRow(segment.nodes))}
-      </span>)}</span>;
+    segments = splitPaperEquations(text);
   } catch (error) {
-    return <span data-paper-equation-error className="whitespace-pre-wrap"><span>{text}</span><span role="alert" className="block text-sm text-red-700">{error instanceof Error ? error.message : 'Equation preview unavailable.'}</span></span>;
+    parseError = error instanceof Error ? error : new Error('Equation preview unavailable.');
   }
+
+  if (parseError || !segments) {
+    return (
+      <span data-paper-equation-error className="whitespace-pre-wrap">
+        <span>{text}</span>
+        <span role="alert" className="block text-sm text-red-700">
+          {parseError ? parseError.message : 'Equation preview unavailable.'}
+        </span>
+      </span>
+    );
+  }
+
+  return (
+    <span className="whitespace-pre-wrap">
+      {segments.map((segment, key) =>
+        segment.kind === 'text' ? (
+          <React.Fragment key={key}>{segment.value}</React.Fragment>
+        ) : (
+          <span
+            key={key}
+            className={`${segment.display ? 'flex my-2 justify-center' : 'inline-flex'} max-w-full overflow-x-auto overflow-y-hidden py-1 align-middle`}
+          >
+            {React.createElement('math', { display: segment.display ? 'block' : 'inline' }, mathRow(segment.nodes))}
+          </span>
+        )
+      )}
+    </span>
+  );
 }

@@ -194,7 +194,7 @@ function ExamPrepWorkspace({
   const eligiblePapers = papers.filter(
     (p) => p.subject === subject && String(p.grade).toLowerCase() === grade.toLowerCase()
   );
-  const useFile = (file?: File) => {
+  const handleFile = (file?: File) => {
     if (!file) return;
     if (
       !['image/jpeg', 'image/png', 'image/webp', 'application/pdf'].includes(file.type) ||
@@ -591,7 +591,7 @@ function ExamPrepWorkspace({
             type="file"
             accept="image/jpeg,image/png,image/webp,application/pdf"
             onChange={(e) => {
-              useFile(e.target.files?.[0]);
+              handleFile(e.target.files?.[0]);
               e.target.value = '';
             }}
           />
@@ -632,7 +632,7 @@ function ExamPrepWorkspace({
         {cameraOpen && (
           <CameraView
             onClose={() => setCameraOpen(false)}
-            onUsePhoto={useFile}
+            onUsePhoto={handleFile}
             onAudio={() => {
               setCameraOpen(false);
               if (onAudio) onAudio();
