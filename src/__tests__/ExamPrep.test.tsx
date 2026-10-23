@@ -23,6 +23,10 @@ const mocks = vi.hoisted(() => ({
   papers: vi.fn(),
   remoteFetch: vi.fn(),
   remoteSave: vi.fn(),
+  purchasedIds: vi.fn(),
+}));
+vi.mock('../services/examPaperBankService', () => ({
+  examPaperBankService: { listPurchasedPaperIds: mocks.purchasedIds },
 }));
 vi.mock('../features/revision/candidateProgressService', () => ({
   canSync: (id: string) => Boolean(id) && id !== 'guest',
@@ -98,6 +102,7 @@ beforeEach(() => {
   mocks.app.isOnline = true;
   mocks.generate.mockResolvedValue(questions);
   mocks.papers.mockResolvedValue([]);
+  mocks.purchasedIds.mockResolvedValue([]);
   mocks.remoteFetch.mockResolvedValue(null);
   mocks.remoteSave.mockResolvedValue(null);
   HTMLDialogElement.prototype.showModal = function () {
@@ -270,6 +275,12 @@ describe('Candidate study plan', () => {
     setup();
     expect(screen.getByText(/Sign in to keep your progress safe/)).toBeInTheDocument();
     expect(mocks.remoteFetch).not.toHaveBeenCalled();
+  });
+  it('displays the 24-hour free pass banner when the learner has purchased past papers', async () => {
+    mocks.purchasedIds.mockResolvedValue(['paper-101', 'paper-102']);
+    setup();
+    expect(await screen.findByText('24-Hour Free AI Revision Pass Active')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open unlocked papers (2)' })).toBeInTheDocument();
   });  it('lists weak topics from flagged questions and practises one on demand', async () => {
     localStorage.setItem(
       'soma_candidate_progress_v1:learner-one',

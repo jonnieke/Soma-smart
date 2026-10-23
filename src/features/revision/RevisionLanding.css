@@ -830,3 +830,37 @@
   .ep-timetable-list li { flex-direction: column; gap: 2px; }
   .ep-timetable-list li span { text-align: left; }
 }
+.ep-pass-banner {
+  padding: 18px 24px;
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border: 1px solid #a7f3d0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.ep-pass-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #065f46;
+  font-weight: 700;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+}
+.ep-pass-banner h2 {
+  font-size: 20px;
+  color: #064e3b;
+}
+.ep-pass-banner p {
+  color: #047857;
+  font-size: 14px;
+}
+.ep-pass-banner .ep-primary {
+  align-self: flex-start;
+  background: #059669;
+}
+.ep-pass-banner .ep-primary:hover {
+  background: #047857;
+}

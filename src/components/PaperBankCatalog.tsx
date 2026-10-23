@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, CheckCircle2, Clock, FileText, Search, Tag, X } from 'lucide-react';
+import { ArrowRight, CheckCircle2, Clock, FileText, Search, Sparkles, Tag, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import logo from '../assets/images/main_logo.png';
 import type { ExamPaperBankItem } from '../services/examPaperBankService';
@@ -480,6 +480,9 @@ export function PaperBankCatalog({
             <div>
               <p>
                 <CheckCircle2 /> Question paper and marking scheme
+              </p>
+              <p>
+                <Sparkles size={16} /> 24-hour free AI Revision &amp; Practice
               </p>
               {preview.duration_minutes ? (
                 <p>

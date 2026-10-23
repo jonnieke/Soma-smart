@@ -13,6 +13,7 @@ import {
   Leaf,
   Play,
   Send,
+  Sparkles,
   CalendarDays,
   Upload,
 } from 'lucide-react';
@@ -26,6 +27,7 @@ import {
 } from '../../services/geminiService';
 import { PlanLimitError } from '../../services/planLimitService';
 import { examService } from '../../services/examService';
+import { examPaperBankService } from '../../services/examPaperBankService';
 import type { PanelMode } from './ExamGuruPanel';
 import {
   GRADES,
@@ -93,6 +95,7 @@ function ExamPrepWorkspace({
   const { studentProfile, studentCode, userId, isOnline } = useApp();
   const recoveryOwner = studentCode || studentProfile?.id || userId || 'guest';
   const [unfinished] = useState(() => listTimedExams(recoveryOwner));
+  const [purchasedPaperIds, setPurchasedPaperIds] = useState<string[]>([]);
   const [papers, setPapers] = useState<
     Array<{ id: string | number; title: string; subject?: string; grade?: string }>
   >([]);
@@ -136,6 +139,17 @@ function ExamPrepWorkspace({
   useEffect(() => {
     if (topicOpen) topicRef.current?.focus();
   }, [topicOpen]);
+  useEffect(() => {
+    let active = true;
+    examPaperBankService.listPurchasedPaperIds()
+      .then((ids) => {
+        if (active && Array.isArray(ids)) setPurchasedPaperIds(ids.map(String));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
   const adopt = (next: CandidateProgress) => {
     progressRef.current = next;
     setProgress(next);
@@ -345,6 +359,26 @@ function ExamPrepWorkspace({
             Unfinished paper #{item.examId} — {item.submitting || item.deadline <= Date.now() ? 'Finish submission' : 'Resume exam'}
           </button>)}
         </section>}
+        {purchasedPaperIds.length > 0 && (
+          <section className="ep-card ep-pass-banner" style={{ gridColumn: '1 / -1' }} aria-label="Purchased papers free revision">
+            <div className="ep-pass-badge">
+              <Sparkles size={16} />
+              <span>24-Hour Free AI Revision Pass Active</span>
+            </div>
+            <h2>Practise with your unlocked past papers</h2>
+            <p>
+              Your past paper purchases include full online mock practice with Akili AI step-by-step scoring.
+            </p>
+            <div className="ep-actions">
+              <button
+                className="ep-primary"
+                onClick={() => navigate('/exam-papers')}
+              >
+                Open unlocked papers ({purchasedPaperIds.length})
+              </button>
+            </div>
+          </section>
+        )}
         <div className="ep-main">
           <button className="ep-back" onClick={back}>
             <ArrowLeft size={18} /> Back to classroom
