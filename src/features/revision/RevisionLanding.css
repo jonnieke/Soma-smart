@@ -806,3 +806,27 @@
 @media (prefers-reduced-motion: reduce) {
   .exam-prep * { transition: none !important; animation: none !important; }
 }
+.ep-timetable { padding: 18px 24px; margin-bottom: 16px; }
+.ep-timetable h2 { font-size: 19px; margin-bottom: 8px; }
+.ep-paper-dates, .ep-timetable-list { list-style: none; padding: 0; margin: 0 0 8px; display: grid; gap: 6px; }
+.ep-paper-dates li, .ep-timetable-list li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-radius: 9px;
+  background: #f3f5ff;
+}
+.ep-paper-dates strong { font-size: 17px; }
+.ep-paper-dates span { color: #383ace; font-weight: 700; }
+.ep-timetable-list li { background: #f8f8f6; font-size: 14px; }
+.ep-timetable-list li span { text-align: right; color: var(--ep-muted); }
+.ep-timetable details { margin-top: 10px; }
+.ep-timetable summary { cursor: pointer; color: #383ace; font-weight: 600; min-height: 36px; }
+.ep-timetable details p { margin: 8px 0; font-size: 14px; }
+.ep-sync { margin-top: 8px; }
+@media (max-width: 720px) {
+  .ep-timetable { padding: 16px 18px; }
+  .ep-timetable-list li { flex-direction: column; gap: 2px; }
+  .ep-timetable-list li span { text-align: left; }
+}

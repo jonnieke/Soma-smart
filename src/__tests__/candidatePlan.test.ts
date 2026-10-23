@@ -2,10 +2,13 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   daysUntil,
   emptyProgress,
+  mergeProgress,
+  parseProgress,
   phaseFor,
   planFor,
   readProgress,
   recordPractice,
+  sameProgress,
   saveProgress,
   setExamDate,
   streak,
@@ -82,5 +85,36 @@ describe('storage', () => {
     localStorage.setItem('soma_candidate_progress_v1:bad', '{');
     expect(readProgress('bad')).toEqual(emptyProgress());
     expect(setExamDate(emptyProgress(), 'not-a-date').examDate).toBeNull();
+  });
+});
+
+describe('syncing a device with the database', () => {
+  const p = (over = {}) => ({ ...emptyProgress(), ...over });
+  it('lets the newer copy decide the date and weak topics', () => {
+    const local = p({ examDate: '2026-11-02', weak: { 'Mathematics||A': 1 }, updatedAt: 200 });
+    const remote = p({ examDate: '2026-10-26', weak: { 'Mathematics||B': 2 }, updatedAt: 100 });
+    expect(mergeProgress(local, remote)).toMatchObject({ examDate: '2026-11-02', weak: { 'Mathematics||A': 1 }, updatedAt: 200 });
+    expect(mergeProgress(remote, local)).toMatchObject({ examDate: '2026-11-02' });
+  });
+  it('never loses a study day or a completed practice', () => {
+    const merged = mergeProgress(
+      p({ practisedDays: ['2026-10-01', '2026-10-03'], practisedCount: 2, updatedAt: 5 }),
+      p({ practisedDays: ['2026-10-02', '2026-10-03'], practisedCount: 3, updatedAt: 9 })
+    );
+    expect(merged.practisedDays).toEqual(['2026-10-01', '2026-10-02', '2026-10-03']);
+    expect(merged.practisedCount).toBe(3);
+  });
+  it('keeps the device copy when the server has nothing', () => {
+    const local = p({ examDate: '2026-11-02', updatedAt: 1 });
+    expect(mergeProgress(local, null)).toBe(local);
+  });
+  it('sanitises untrusted server data', () => {
+    const clean = parseProgress({ examDate: 'drop table', weak: { a: 500, b: -1, c: 'x' }, practisedDays: ['2026-10-01', 7], practisedCount: -4, updatedAt: 'now' });
+    expect(clean).toMatchObject({ examDate: null, weak: { a: 99 }, practisedDays: ['2026-10-01'], practisedCount: 0, updatedAt: 0 });
+    expect(parseProgress(null)).toBeNull();
+  });
+  it('compares progress regardless of key order', () => {
+    expect(sameProgress(p({ weak: { a: 1, b: 2 } }), p({ weak: { b: 2, a: 1 } }))).toBe(true);
+    expect(sameProgress(p({ examDate: '2026-11-02' }), p())).toBe(false);
   });
 });

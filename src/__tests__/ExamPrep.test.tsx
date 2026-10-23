@@ -21,6 +21,12 @@ const mocks = vi.hoisted(() => ({
   },
   generate: vi.fn(),
   papers: vi.fn(),
+  remoteFetch: vi.fn(),
+  remoteSave: vi.fn(),
+}));
+vi.mock('../features/revision/candidateProgressService', () => ({
+  canSync: (id: string) => Boolean(id) && id !== 'guest',
+  candidateProgressService: { fetch: mocks.remoteFetch, save: mocks.remoteSave },
 }));
 vi.mock('../context/AppContext', () => ({ useApp: () => mocks.app }));
 vi.mock('../services/examService', () => ({ examService: { listPublishedExams: mocks.papers } }));
@@ -92,6 +98,8 @@ beforeEach(() => {
   mocks.app.isOnline = true;
   mocks.generate.mockResolvedValue(questions);
   mocks.papers.mockResolvedValue([]);
+  mocks.remoteFetch.mockResolvedValue(null);
+  mocks.remoteSave.mockResolvedValue(null);
   HTMLDialogElement.prototype.showModal = function () {
     this.setAttribute('open', '');
   };
@@ -99,7 +107,10 @@ beforeEach(() => {
     this.removeAttribute('open');
   };
 });
-afterEach(cleanup);
+afterEach(() => {
+  cleanup();
+  vi.useRealTimers();
+});
 describe('Exam Prep redesign', () => {
   it('makes unfinished timed papers discoverable and links to the existing access-checked paper route', () => {
     saveTimedExam('learner-one', { version: 1, examId: '419', attemptId: 'test-attempt',
@@ -194,19 +205,72 @@ describe('Exam Prep redesign', () => {
   });
 });
 describe('Candidate study plan', () => {
-  it('asks for the exam date instead of guessing one, then shows a countdown', () => {
+  it('asks for a date when there is no official timetable, then shows a countdown', () => {
     setup();
-    expect(screen.getByText(/When is your KJSEA exam/)).toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText('Exam'), { target: { value: 'CBC' } });
+    expect(screen.getByText(/When is your CBC exam/)).toBeInTheDocument();
     expect(screen.getByText(/Set your exam date to get a daily plan/)).toBeInTheDocument();
     const inTwentyDays = new Date(Date.now() + 20 * 86400000);
     const iso = `${inTwentyDays.getFullYear()}-${String(inTwentyDays.getMonth() + 1).padStart(2, '0')}-${String(inTwentyDays.getDate()).padStart(2, '0')}`;
     fireEvent.change(screen.getByLabelText('Exam date'), { target: { value: iso } });
     fireEvent.click(screen.getByRole('button', { name: 'Save date' }));
     expect(screen.getByText('Exam sprint', { selector: '.ep-phase-chip' })).toBeInTheDocument();
-    expect(screen.getByText(/until your KJSEA exam/)).toBeInTheDocument();
+    expect(screen.getByText(/until your CBC exam/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Change date' })).toBeInTheDocument();
   });
-  it('lists weak topics from flagged questions and practises one on demand', async () => {
+  it('counts down to the official KNEC date and shows the learner’s own paper', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 20, 10, 0));
+    setup();
+    expect(screen.getByText('6')).toBeInTheDocument();
+    expect(screen.getByText(/until your KJSEA exam/)).toBeInTheDocument();
+    expect(screen.getByText('Final week', { selector: '.ep-phase-chip' })).toBeInTheDocument();
+    expect(screen.getByText(/Official KNEC date/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Your Mathematics paper' })).toBeInTheDocument();
+    expect(screen.getAllByText(/28 Oct/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText('in 8 days')).toBeInTheDocument();
+    expect(screen.getByText(/Rehearsal day: .*23 Oct/)).toBeInTheDocument();
+  });
+  it('says the exam is on while the official window is running, and lets the learner use their own date', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 27, 9, 0));
+    setup();
+    expect(screen.getByText(/KJSEA 2026 is on now/)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Use my own date' }));
+    expect(screen.getByLabelText('Exam date')).toBeInTheDocument();
+  });
+  it('does not invent a paper date KNEC has not listed', () => {
+    setup();
+    fireEvent.change(screen.getByLabelText('Exam'), { target: { value: 'KCSE' } });
+    expect(screen.getByText(/has not listed a Mathematics paper date for KCSE/)).toBeInTheDocument();
+  });
+  it('stores progress in the database and shows the saved status', async () => {
+    setup();
+    await screen.findByText('Progress saved to your Soma account.');
+    expect(mocks.remoteFetch).toHaveBeenCalledWith('learner-one');
+    expect(mocks.remoteSave).toHaveBeenCalled();
+  });
+  it('restores weak topics saved on another device', async () => {
+    mocks.remoteFetch.mockResolvedValue({
+      version: 1, examDate: null, weak: { 'Mathematics||Algebra': 3 },
+      practisedDays: ['2026-10-01'], practisedCount: 4, updatedAt: Date.now() + 5000,
+    });
+    setup();
+    expect(await screen.findByText('Algebra')).toBeInTheDocument();
+    expect(JSON.parse(localStorage.getItem('soma_candidate_progress_v1:learner-one') || '{}').practisedCount).toBe(4);
+  });
+  it('keeps working and says so when the database is unreachable', async () => {
+    mocks.remoteFetch.mockRejectedValue(new Error('offline'));
+    setup();
+    await screen.findByText(/Saved on this device/);
+    expect(screen.getByRole('button', { name: /Start 10-minute/ })).toBeEnabled();
+  });
+  it('asks guests to sign in instead of storing anything', () => {
+    mocks.app.userId = '';
+    setup();
+    expect(screen.getByText(/Sign in to keep your progress safe/)).toBeInTheDocument();
+    expect(mocks.remoteFetch).not.toHaveBeenCalled();
+  });  it('lists weak topics from flagged questions and practises one on demand', async () => {
     localStorage.setItem(
       'soma_candidate_progress_v1:learner-one',
       JSON.stringify({ version: 1, examDate: null, weak: { 'Mathematics||Fractions': 2 }, practisedDays: [], practisedCount: 1 })

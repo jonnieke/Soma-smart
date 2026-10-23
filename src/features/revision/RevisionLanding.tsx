@@ -39,17 +39,22 @@ import {
 import { ExamPrepPractice } from './ExamPrepPractice';
 import {
   daysUntil,
+  mergeProgress,
   phaseFor,
   PHASE_LABEL,
   planFor,
   readProgress,
   recordPractice,
+  sameProgress,
   saveProgress,
   setExamDate,
   streak,
   todayKey,
   weakTopics,
+  type CandidateProgress,
 } from './candidatePlan';
+import { candidateProgressService, canSync } from './candidateProgressService';
+import { formatDay, officialExam, paperDates } from './knecTimetable';
 import { listTimedExams } from './timedExamRecovery';
 import logo from '../../assets/images/main_logo.png';
 import './RevisionLanding.css';
@@ -114,6 +119,8 @@ function ExamPrepWorkspace({
   const [paperError, setPaperError] = useState('');
   const [paperAttempt, setPaperAttempt] = useState(0);
   const [progress, setProgress] = useState(() => readProgress(owner));
+  const progressRef = useRef(progress);
+  const [syncState, setSyncState] = useState<'idle' | 'syncing' | 'synced' | 'local'>('idle');
   const [dateDraft, setDateDraft] = useState('');
   const [editingDate, setEditingDate] = useState(false);
   const request = useRef(false);
@@ -129,21 +136,68 @@ function ExamPrepWorkspace({
   useEffect(() => {
     if (topicOpen) topicRef.current?.focus();
   }, [topicOpen]);
+  const adopt = (next: CandidateProgress) => {
+    progressRef.current = next;
+    setProgress(next);
+    return saveProgress(owner, next);
+  };
+  const pushProgress = async (next: CandidateProgress) => {
+    if (!canSync(recoveryOwner) || !isOnline) {
+      setSyncState('local');
+      return;
+    }
+    setSyncState('syncing');
+    try {
+      const saved = await candidateProgressService.save(recoveryOwner, next);
+      if (!mounted.current) return;
+      if (saved) {
+        const merged = mergeProgress(progressRef.current, saved);
+        if (!sameProgress(merged, progressRef.current)) adopt(merged);
+      }
+      setSyncState('synced');
+    } catch {
+      if (mounted.current) setSyncState('local');
+    }
+  };
+  const commitProgress = (next: CandidateProgress) => {
+    setStorageError(!adopt(next));
+    void pushProgress(next);
+  };
+  useEffect(() => {
+    if (!canSync(recoveryOwner) || !isOnline) return;
+    let active = true;
+    (async () => {
+      try {
+        const remote = await candidateProgressService.fetch(recoveryOwner);
+        if (!active) return;
+        const merged = mergeProgress(progressRef.current, remote);
+        if (!sameProgress(merged, progressRef.current)) adopt(merged);
+        if (!remote || !sameProgress(merged, remote)) await pushProgress(merged);
+        else setSyncState('synced');
+      } catch {
+        if (active) setSyncState('local');
+      }
+    })();
+    return () => {
+      active = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [recoveryOwner, isOnline]);
   const updateSession = (next: PrepSession) => {
     if (next.completed && !session?.completed) {
-      const updated = recordPractice(progress, next);
-      setProgress(updated);
-      saveProgress(owner, updated);
+      commitProgress(recordPractice(progressRef.current, next));
     }
     setSession(next);
     setStorageError(!savePrepSession(owner, next));
   };
   const saveExamDate = (iso: string) => {
-    const updated = setExamDate(progress, iso);
-    setProgress(updated);
-    setStorageError(!saveProgress(owner, updated));
+    commitProgress(setExamDate(progressRef.current, iso));
     setEditingDate(false);
     setDateDraft('');
+  };
+  const useOfficialDate = () => {
+    commitProgress(setExamDate(progressRef.current, null));
+    setEditingDate(false);
   };
   const back = () => (onBack ? onBack() : navigate('/learner'));
   const openGuru = (prompt: string, mode: PanelMode = 'chat') => {
@@ -238,10 +292,17 @@ function ExamPrepWorkspace({
   const reviewed = session?.reviewed.filter(Boolean).length || 0;
   const choices = Array.from(new Set([...subjectsFor(exam), subject]));
   const today = todayKey();
-  const daysLeft = progress.examDate ? daysUntil(progress.examDate) : null;
+  const official = officialExam(exam);
+  const usingOfficial = !progress.examDate && !!official;
+  const target = progress.examDate || official?.start || null;
+  const daysLeft = target ? daysUntil(target) : null;
+  const inExamWindow =
+    usingOfficial && !!official && daysLeft !== null && daysLeft < 0 && daysUntil(official.end) >= 0;
   const phase = daysLeft !== null && daysLeft >= 0 ? phaseFor(daysLeft) : null;
+  const planPhase = inExamWindow ? 'final' : phase;
+  const myPapers = paperDates(exam, subject);
   const weak = weakTopics(progress, subject);
-  const plan = planFor(phase, exam, weak[0]?.topic);
+  const plan = planFor(planPhase, exam, weak[0]?.topic);
   const streakDays = streak(progress.practisedDays, today);
   return (
     <div className="exam-prep">
@@ -360,10 +421,23 @@ function ExamPrepWorkspace({
             </p>
           )}
           <section
-            className={`ep-card ep-countdown${phase ? ` ep-phase-${phase}` : ''}`}
+            className={`ep-card ep-countdown${planPhase ? ` ep-phase-${planPhase}` : ''}`}
             aria-labelledby="ep-countdown-title"
           >
-            {daysLeft !== null && !editingDate ? (
+            {inExamWindow && official && !editingDate ? (
+              <div className="ep-countdown-text">
+                <h2 id="ep-countdown-title">{official.title} is on now. Good luck!</h2>
+                <span className="ep-phase-chip">
+                  {formatDay(official.start)} to {formatDay(official.end)}
+                </span>
+                <small>
+                  Official KNEC dates.{' '}
+                  <button className="ep-link" onClick={() => setEditingDate(true)}>
+                    Use my own date
+                  </button>
+                </small>
+              </div>
+            ) : daysLeft !== null && !editingDate ? (
               <>
                 <div className="ep-days" aria-live="polite">
                   <strong>{daysLeft >= 0 ? daysLeft : 0}</strong>
@@ -374,15 +448,25 @@ function ExamPrepWorkspace({
                     {daysLeft < 0
                       ? 'Your exam date has passed'
                       : daysLeft === 0
-                        ? 'Your exam is today. You are ready.'
+                        ? 'Your exam starts today. You are ready.'
                         : `until your ${exam} exam`}
                   </h2>
-                  {phase && <span className="ep-phase-chip">{PHASE_LABEL[phase]}</span>}
+                  {planPhase && <span className="ep-phase-chip">{PHASE_LABEL[planPhase]}</span>}
                   <small>
-                    {progress.examDate} · set by you.{' '}
+                    {usingOfficial && official
+                      ? `Official KNEC date: ${formatDay(official.start)}. `
+                      : `${progress.examDate} · set by you. `}
                     <button className="ep-link" onClick={() => setEditingDate(true)}>
-                      Change date
+                      {usingOfficial ? 'Use my own date' : 'Change date'}
                     </button>
+                    {!usingOfficial && official && (
+                      <>
+                        {' · '}
+                        <button className="ep-link" onClick={useOfficialDate}>
+                          Use official date
+                        </button>
+                      </>
+                    )}
                   </small>
                 </div>
               </>
@@ -420,6 +504,54 @@ function ExamPrepWorkspace({
               </form>
             )}
           </section>
+          {official && (
+            <section className="ep-card ep-timetable" aria-labelledby="ep-timetable-title">
+              <h2 id="ep-timetable-title">Your {subject} paper</h2>
+              {myPapers.length ? (
+                <ul className="ep-paper-dates">
+                  {myPapers.map((d) => {
+                    const n = daysUntil(d.date);
+                    return (
+                      <li key={d.date}>
+                        <strong>{formatDay(d.date)}</strong>
+                        <span>
+                          {n > 1 ? `in ${n} days` : n === 1 ? 'tomorrow' : n === 0 ? 'today' : 'done'}
+                        </span>
+                      </li>
+                    );
+                  })}
+                </ul>
+              ) : (
+                <p>
+                  KNEC has not listed a {subject} paper date for {exam} in the timetable we hold.
+                  Check your school’s timetable.
+                </p>
+              )}
+              {official.rehearsal && daysUntil(official.rehearsal) >= 0 && (
+                <small>
+                  Rehearsal day: {formatDay(official.rehearsal)}
+                  {daysUntil(official.rehearsal) === 0 ? ' (today)' : ''}
+                </small>
+              )}
+              <details>
+                <summary>See the full {official.title} timetable</summary>
+                {official.days.length > 0 && (
+                  <ul className="ep-timetable-list">
+                    {official.days.map((d) => (
+                      <li key={d.date}>
+                        <strong>{formatDay(d.date)}</strong>
+                        <span>{d.subjects.join(' · ')}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {official.notes?.map((n) => (
+                  <p key={n}>{n}</p>
+                ))}
+                <small>Source: KNEC. Always confirm with your school or knec.ac.ke.</small>
+              </details>
+            </section>
+          )}
           <section className="ep-card ep-hero ep-today" aria-labelledby="ep-next">
             <div>
               <span className="ep-eyebrow">Today’s study session · about {plan.minutes} min</span>
@@ -516,6 +648,17 @@ function ExamPrepWorkspace({
                 {streakDays > 1 ? ` · ${streakDays}-day study streak` : ''}
               </small>
             )}
+            <small role="status" className="ep-sync">
+              {!canSync(recoveryOwner)
+                ? 'Sign in to keep your progress safe on every device.'
+                : syncState === 'synced'
+                  ? 'Progress saved to your Soma account.'
+                  : syncState === 'syncing'
+                    ? 'Saving your progress…'
+                    : syncState === 'local'
+                      ? 'Saved on this device. It will sync when you are back online.'
+                      : ''}
+            </small>
           </section>
           <h2 className="ep-section-title">Your revision toolkit</h2>
           <div className="ep-lanes">
