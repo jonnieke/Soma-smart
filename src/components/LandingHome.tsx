@@ -172,12 +172,18 @@ const teacherTools = [
 export const LandingHome: React.FC<Props> = (props) => {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const navigation = <>
+    <button onClick={props.onRevision}>Candidates Hub</button>
     <button onClick={() => props.onExamPapers()}>Past papers</button>
     <Link to="/learning-videos">Learning videos</Link>
     <button onClick={props.onTeacher}>For teachers</button>
     <button onClick={props.onPricing}>Pricing</button>
   </>;
   return <div className="soma-landing">
+    <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-indigo-950 text-white text-xs py-2 px-4 text-center font-bold flex flex-wrap items-center justify-center gap-2 border-b border-emerald-500/20">
+      <span className="bg-emerald-500/30 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded text-[10px] uppercase font-black tracking-wider">M-Pesa KES 20</span>
+      <span>KCSE, KPSEA &amp; CBC Past Papers include 24 Hours of Free Interactive AI Marking &amp; Revision!</span>
+      <button type="button" onClick={props.onRevision} className="underline text-emerald-300 hover:text-white font-black ml-1">Open Candidates Hub &rarr;</button>
+    </div>
     <header className="soma-header">
       <Link to="/" className="soma-brand" aria-label="Soma AI homepage"><img src={logoImg} alt="" width="52" height="52" /><span>Soma AI</span></Link>
       <nav className="soma-desktop-nav" aria-label="Main navigation">{navigation}</nav>
@@ -205,6 +211,14 @@ export const LandingHome: React.FC<Props> = (props) => {
           <button onClick={props.onLibrary}><BookOpen /><span>Read notes</span><ArrowRight /></button>
           <button onClick={props.onRevision}><Notebook /><span>Practise a topic</span><ArrowRight /></button>
           <button onClick={() => props.onExamPapers()}><FileText /><span>Find past papers</span><ArrowRight /></button>
+        </div>
+      </section>
+      <section className="soma-trust-strip" aria-label="Curriculum and payment trust" style={{ background: '#f1eee7', borderTop: '1px solid #e4e0d9', borderBottom: '1px solid #e4e0d9', padding: '14px 5%' }}>
+        <div style={{ maxWidth: '1440px', margin: 'auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-around', gap: '14px', fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>
+          <span>🇰🇪 Aligned with KICD CBC &amp; KNEC Syllabus</span>
+          <span>🟢 Instant M-Pesa STK Push (From KES 20)</span>
+          <span>📱 Works on Low Data &amp; Offline PWA</span>
+          <span>🎧 Audio Revision in English &amp; Kiswahili</span>
         </div>
       </section>
       <section aria-label="Latest past papers" className="soma-paper-ribbon"><ExamPaperTickerBelt papers={props.latestPapers} onPaperClick={props.onExamPapers} /></section>
