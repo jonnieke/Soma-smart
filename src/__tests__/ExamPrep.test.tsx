@@ -193,6 +193,42 @@ describe('Exam Prep redesign', () => {
     expect(screen.getByText(/not an exam score/)).toBeInTheDocument();
   });
 });
+describe('Candidate study plan', () => {
+  it('asks for the exam date instead of guessing one, then shows a countdown', () => {
+    setup();
+    expect(screen.getByText(/When is your KJSEA exam/)).toBeInTheDocument();
+    expect(screen.getByText(/Set your exam date to get a daily plan/)).toBeInTheDocument();
+    const inTwentyDays = new Date(Date.now() + 20 * 86400000);
+    const iso = `${inTwentyDays.getFullYear()}-${String(inTwentyDays.getMonth() + 1).padStart(2, '0')}-${String(inTwentyDays.getDate()).padStart(2, '0')}`;
+    fireEvent.change(screen.getByLabelText('Exam date'), { target: { value: iso } });
+    fireEvent.click(screen.getByRole('button', { name: 'Save date' }));
+    expect(screen.getByText('Exam sprint', { selector: '.ep-phase-chip' })).toBeInTheDocument();
+    expect(screen.getByText(/until your KJSEA exam/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Change date' })).toBeInTheDocument();
+  });
+  it('lists weak topics from flagged questions and practises one on demand', async () => {
+    localStorage.setItem(
+      'soma_candidate_progress_v1:learner-one',
+      JSON.stringify({ version: 1, examDate: null, weak: { 'Mathematics||Fractions': 2 }, practisedDays: [], practisedCount: 1 })
+    );
+    setup();
+    expect(screen.getByText('Fractions')).toBeInTheDocument();
+    expect(screen.getByText('Flagged 2 times')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: 'Fix this topic' }));
+    await screen.findByRole('dialog');
+    expect(mocks.generate).toHaveBeenCalledWith('Mathematics', 'Fractions', 'JSS', 3, 'Grade 9');
+  });
+  it('records a finished practice once, even if the learner reopens it', () => {
+    savePrepSession('learner-one', { ...draft(), needsHelp: [true] });
+    setup();
+    fireEvent.click(screen.getByRole('button', { name: 'Continue' }));
+    fireEvent.click(screen.getByText('Compare with answer guidance'));
+    fireEvent.click(screen.getByLabelText('I have reviewed my answer'));
+    const stored = JSON.parse(localStorage.getItem('soma_candidate_progress_v1:learner-one') || '{}');
+    expect(stored.practisedCount).toBe(1);
+    expect(stored.weak).toEqual({ 'Mathematics||Fractions': 1 });
+  });
+});
 describe('practice storage', () => {
   it('rejects corrupted state and isolates owners', () => {
     sessionStorage.setItem('soma_exam_prep_v1:bad', '{');

@@ -37,6 +37,19 @@ import {
   type PrepSession,
 } from './examPrepState';
 import { ExamPrepPractice } from './ExamPrepPractice';
+import {
+  daysUntil,
+  phaseFor,
+  PHASE_LABEL,
+  planFor,
+  readProgress,
+  recordPractice,
+  saveProgress,
+  setExamDate,
+  streak,
+  todayKey,
+  weakTopics,
+} from './candidatePlan';
 import { listTimedExams } from './timedExamRecovery';
 import logo from '../../assets/images/main_logo.png';
 import './RevisionLanding.css';
@@ -100,6 +113,9 @@ function ExamPrepWorkspace({
   const [loadingPapers, setLoadingPapers] = useState(false);
   const [paperError, setPaperError] = useState('');
   const [paperAttempt, setPaperAttempt] = useState(0);
+  const [progress, setProgress] = useState(() => readProgress(owner));
+  const [dateDraft, setDateDraft] = useState('');
+  const [editingDate, setEditingDate] = useState(false);
   const request = useRef(false);
   const mounted = useRef(true);
   const uploadRef = useRef<HTMLInputElement>(null);
@@ -114,8 +130,20 @@ function ExamPrepWorkspace({
     if (topicOpen) topicRef.current?.focus();
   }, [topicOpen]);
   const updateSession = (next: PrepSession) => {
+    if (next.completed && !session?.completed) {
+      const updated = recordPractice(progress, next);
+      setProgress(updated);
+      saveProgress(owner, updated);
+    }
     setSession(next);
     setStorageError(!savePrepSession(owner, next));
+  };
+  const saveExamDate = (iso: string) => {
+    const updated = setExamDate(progress, iso);
+    setProgress(updated);
+    setStorageError(!saveProgress(owner, updated));
+    setEditingDate(false);
+    setDateDraft('');
   };
   const back = () => (onBack ? onBack() : navigate('/learner'));
   const openGuru = (prompt: string, mode: PanelMode = 'chat') => {
@@ -124,7 +152,8 @@ function ExamPrepWorkspace({
       prompt: `Context: ${grade}, ${exam}, ${subject}${topic ? `, ${topic}` : ''}. ${prompt}`,
     });
   };
-  const startPractice = async () => {
+  const startPractice = async (topicOverride?: string) => {
+    const chosenTopic = (topicOverride ?? topic).trim();
     if (request.current) return;
     if (session && !session.completed) {
       setPracticeOpen(true);
@@ -138,7 +167,7 @@ function ExamPrepWorkspace({
     try {
       const questions = await generatePracticeQuestions(
         subject,
-        topic.trim(),
+        chosenTopic,
         exam === 'KJSEA' ? 'JSS' : exam,
         3,
         grade
@@ -150,7 +179,7 @@ function ExamPrepWorkspace({
         grade,
         exam,
         subject,
-        topic: topic.trim() || subject,
+        topic: chosenTopic || subject,
         questions,
         answers: questions.map(() => ''),
         reviewed: questions.map(() => false),
@@ -208,6 +237,12 @@ function ExamPrepWorkspace({
   };
   const reviewed = session?.reviewed.filter(Boolean).length || 0;
   const choices = Array.from(new Set([...subjectsFor(exam), subject]));
+  const today = todayKey();
+  const daysLeft = progress.examDate ? daysUntil(progress.examDate) : null;
+  const phase = daysLeft !== null && daysLeft >= 0 ? phaseFor(daysLeft) : null;
+  const weak = weakTopics(progress, subject);
+  const plan = planFor(phase, exam, weak[0]?.topic);
+  const streakDays = streak(progress.practisedDays, today);
   return (
     <div className="exam-prep">
       <Helmet>
@@ -324,16 +359,86 @@ function ExamPrepWorkspace({
               This browser could not save your progress. Keep this page open until you finish.
             </p>
           )}
-          <section className="ep-hero ep-card" aria-labelledby="ep-next">
+          <section
+            className={`ep-card ep-countdown${phase ? ` ep-phase-${phase}` : ''}`}
+            aria-labelledby="ep-countdown-title"
+          >
+            {daysLeft !== null && !editingDate ? (
+              <>
+                <div className="ep-days" aria-live="polite">
+                  <strong>{daysLeft >= 0 ? daysLeft : 0}</strong>
+                  <span>{daysLeft === 1 ? 'day' : 'days'}</span>
+                </div>
+                <div className="ep-countdown-text">
+                  <h2 id="ep-countdown-title">
+                    {daysLeft < 0
+                      ? 'Your exam date has passed'
+                      : daysLeft === 0
+                        ? 'Your exam is today. You are ready.'
+                        : `until your ${exam} exam`}
+                  </h2>
+                  {phase && <span className="ep-phase-chip">{PHASE_LABEL[phase]}</span>}
+                  <small>
+                    {progress.examDate} · set by you.{' '}
+                    <button className="ep-link" onClick={() => setEditingDate(true)}>
+                      Change date
+                    </button>
+                  </small>
+                </div>
+              </>
+            ) : (
+              <form
+                className="ep-date-form"
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (dateDraft) saveExamDate(dateDraft);
+                }}
+              >
+                <h2 id="ep-countdown-title">When is your {exam} exam?</h2>
+                <p>Enter your own exam date and Soma builds your daily plan around it.</p>
+                <div className="ep-actions">
+                  <label htmlFor="ep-exam-date" className="ep-sr">
+                    Exam date
+                  </label>
+                  <input
+                    id="ep-exam-date"
+                    type="date"
+                    value={dateDraft}
+                    min={today}
+                    onChange={(e) => setDateDraft(e.target.value)}
+                    required
+                  />
+                  <button className="ep-outline" disabled={!dateDraft}>
+                    Save date
+                  </button>
+                  {editingDate && (
+                    <button type="button" className="ep-link" onClick={() => setEditingDate(false)}>
+                      Cancel
+                    </button>
+                  )}
+                </div>
+              </form>
+            )}
+          </section>
+          <section className="ep-card ep-hero ep-today" aria-labelledby="ep-next">
             <div>
-              <span className="ep-eyebrow">Your next step</span>
-              <h2 id="ep-next">Let’s get you exam-ready</h2>
-              <p>Start with a short practice. Akili will help you understand every mistake.</p>
+              <span className="ep-eyebrow">Today’s study session · about {plan.minutes} min</span>
+              <h2 id="ep-next">{plan.headline}</h2>
+              <ol className="ep-steps">
+                {plan.steps.map((step, i) => (
+                  <li key={step}>
+                    <span className="ep-step-no" aria-hidden="true">
+                      {i + 1}
+                    </span>
+                    {step}
+                  </li>
+                ))}
+              </ol>
               <div className="ep-actions">
                 <button
                   className="ep-primary"
                   disabled={busy || (!isOnline && !session)}
-                  onClick={startPractice}
+                  onClick={() => void startPractice()}
                 >
                   <Play size={19} />
                   {busy
@@ -347,19 +452,6 @@ function ExamPrepWorkspace({
                 </button>
               </div>
               <small>Three AI-generated questions · self-review · not an official exam</small>
-            </div>
-            <div className="ep-illustration" aria-hidden="true">
-              <div className="ep-book">
-                <BookOpen size={60} strokeWidth={1.3} />
-                <strong>{exam}</strong>
-                <span>{subject}</span>
-                <i />
-                <i />
-                <i />
-              </div>
-              <span className="ep-clock">
-                <Clock3 size={68} strokeWidth={1.5} />
-              </span>
             </div>
           </section>
           {topicOpen && (
@@ -391,8 +483,53 @@ function ExamPrepWorkspace({
               )}
             </form>
           )}
-          <h2 className="ep-section-title">How would you like to practise?</h2>
+          <section className="ep-card ep-weak" aria-labelledby="ep-weak-title">
+            <h2 id="ep-weak-title">Your weak spots in {subject}</h2>
+            {weak.length ? (
+              <ul>
+                {weak.map((w) => (
+                  <li key={w.topic}>
+                    <span>
+                      <strong>{w.topic}</strong>
+                      <small>Flagged {w.count} {w.count === 1 ? 'time' : 'times'}</small>
+                    </span>
+                    <button
+                      className="ep-outline"
+                      disabled={busy || !isOnline}
+                      onClick={() => void startPractice(w.topic)}
+                    >
+                      Fix this topic
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p>
+                Tick “needs help” on a question during practice and it will be listed here. Nothing
+                is guessed.
+              </p>
+            )}
+            {progress.practisedCount > 0 && (
+              <small>
+                {progress.practisedCount} {progress.practisedCount === 1 ? 'practice' : 'practices'}{' '}
+                completed
+                {streakDays > 1 ? ` · ${streakDays}-day study streak` : ''}
+              </small>
+            )}
+          </section>
+          <h2 className="ep-section-title">Your revision toolkit</h2>
           <div className="ep-lanes">
+            <section className="ep-card">
+              <Leaf className="ep-lane-icon" />
+              <h3>Learn it first</h3>
+              <p>Read your notes, then test yourself.</p>
+              <button
+                className="ep-outline"
+                onClick={onNotes || (() => navigate('/learner', { state: { targetTab: 'NOTEBOOK' } }))}
+              >
+                Open notes <ChevronRight size={17} />
+              </button>
+            </section>
             <section className="ep-card">
               <FileText className="ep-lane-icon" />
               <h3>Past papers</h3>
