@@ -55,8 +55,15 @@ export const ExamPaperTickerBelt: React.FC<ExamPaperTickerBeltProps> = ({
     // Duplicate list for infinite loop animation
     const tickerItems = sortedPapers.length ? [...sortedPapers, ...sortedPapers] : [];
 
+    // Comfortable reading speed: ~7 seconds per paper with a minimum base duration of 75s
+    const animationDuration = `${Math.max(75, Math.max(1, sortedPapers.length) * 7)}s`;
+
     return (
-        <div className="relative w-full border-y border-indigo-900/60 bg-gradient-to-r from-slate-950 via-indigo-950 to-purple-950 text-white shadow-lg overflow-hidden select-none">
+        <div 
+            data-ticker-container="true" 
+            className="group relative w-full border-y border-indigo-900/60 bg-gradient-to-r from-slate-950 via-indigo-950 to-purple-950 text-white shadow-lg overflow-hidden select-none"
+            title="Hover to pause updates"
+        >
             <div className="mx-auto max-w-[1440px] flex items-center h-12">
                 {/* Fixed Ticker Header Badge */}
                 <div className="z-20 flex items-center gap-2 shrink-0 bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 px-3.5 py-1.5 h-full font-black text-xs uppercase tracking-wider text-white shadow-md border-r border-indigo-500/40">
@@ -70,42 +77,49 @@ export const ExamPaperTickerBelt: React.FC<ExamPaperTickerBeltProps> = ({
                     <div className="absolute left-0 top-0 bottom-0 w-8 bg-gradient-to-r from-slate-950 to-transparent z-10 pointer-events-none" />
                     <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-purple-950 to-transparent z-10 pointer-events-none" />
 
-                    {tickerItems.length ? <div className="animate-ticker flex items-center gap-3 pl-4">
-                        {tickerItems.map((paper, idx) => {
-                            const badgeText = paper.exam_body || paper.grade || 'EXAM';
-                            return (
-                                <button
-                                    key={`${paper.id}-${idx}`}
-                                    onClick={() => handleSelect(paper)}
-                                    className="group flex items-center gap-2.5 rounded-full bg-white/10 hover:bg-indigo-600/90 border border-white/15 hover:border-indigo-400 px-3.5 py-1 text-xs font-semibold text-slate-100 hover:text-white transition-all transform hover:scale-[1.02] shrink-0"
-                                >
-                                    {/* Paper Badge */}
-                                    <span className="inline-flex items-center rounded-full bg-amber-400/20 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-300 border border-amber-400/30 group-hover:bg-white group-hover:text-indigo-900 group-hover:border-white">
-                                        {idx % sortedPapers.length === 0 ? 'LATEST' : badgeText}
-                                    </span>
-
-                                    {/* Paper Title */}
-                                    <span className="font-bold truncate max-w-[220px] sm:max-w-[320px] text-slate-100 group-hover:text-white">
-                                        {paper.title}
-                                    </span>
-
-                                    {/* Specs Pill */}
-                                    {paper.duration_minutes && (
-                                        <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-medium text-slate-300 group-hover:text-indigo-100">
-                                            <Clock className="w-3 h-3 text-indigo-300 group-hover:text-white" />
-                                            {paper.duration_minutes}m
+                    {tickerItems.length ? (
+                        <div 
+                            className="animate-ticker flex items-center gap-3 pl-4"
+                            style={{ animationDuration }}
+                        >
+                            {tickerItems.map((paper, idx) => {
+                                const badgeText = paper.exam_body || paper.grade || 'EXAM';
+                                return (
+                                    <button
+                                        key={`${paper.id}-${idx}`}
+                                        onClick={() => handleSelect(paper)}
+                                        className="group/item flex items-center gap-2.5 rounded-full bg-white/10 hover:bg-indigo-600/90 border border-white/15 hover:border-indigo-400 px-3.5 py-1 text-xs font-semibold text-slate-100 hover:text-white transition-all transform hover:scale-[1.02] shrink-0"
+                                    >
+                                        {/* Paper Badge */}
+                                        <span className="inline-flex items-center rounded-full bg-amber-400/20 px-2 py-0.5 text-[9px] font-black uppercase tracking-wider text-amber-300 border border-amber-400/30 group-hover/item:bg-white group-hover/item:text-indigo-900 group-hover/item:border-white">
+                                            {idx % sortedPapers.length === 0 ? 'LATEST' : badgeText}
                                         </span>
-                                    )}
 
-                                    {/* Action Arrow */}
-                                    <span className="flex items-center text-[10px] font-black text-indigo-300 group-hover:text-white transition-transform group-hover:translate-x-0.5">
-                                        <span>Attempt</span>
-                                        <ArrowRight className="w-3 h-3 ml-0.5" />
-                                    </span>
-                                </button>
-                            );
-                        })}
-                    </div> : <span className="px-4 text-xs font-semibold text-slate-200">New papers will appear here when they are published.</span>}
+                                        {/* Paper Title */}
+                                        <span className="font-bold truncate max-w-[220px] sm:max-w-[320px] text-slate-100 group-hover/item:text-white">
+                                            {paper.title}
+                                        </span>
+
+                                        {/* Specs Pill */}
+                                        {paper.duration_minutes && (
+                                            <span className="hidden md:inline-flex items-center gap-1 text-[10px] font-medium text-slate-300 group-hover/item:text-indigo-100">
+                                                <Clock className="w-3 h-3 text-indigo-300 group-hover/item:text-white" />
+                                                {paper.duration_minutes}m
+                                            </span>
+                                        )}
+
+                                        {/* Action Arrow */}
+                                        <span className="flex items-center text-[10px] font-black text-indigo-300 group-hover/item:text-white transition-transform group-hover/item:translate-x-0.5">
+                                            <span>Attempt</span>
+                                            <ArrowRight className="w-3 h-3 ml-0.5" />
+                                        </span>
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    ) : (
+                        <span className="px-4 text-xs font-semibold text-slate-200">New papers will appear here when they are published.</span>
+                    )}
                 </div>
 
                 {/* Right Bank Direct Shortcut */}

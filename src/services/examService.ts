@@ -17,6 +17,8 @@ export interface ExamResponsePayload {
   timeSpentSeconds?: number;
 }
 
+const EXAMS_CACHE_KEY = 'soma_cached_published_exams';
+
 const getLearnerPin = (): string | null => {
   try {
     return localStorage.getItem('soma_active_student_pin') || null;
@@ -25,15 +27,48 @@ const getLearnerPin = (): string | null => {
   }
 };
 
+const getCachedExams = (): Array<ExamAnalysis & { id: string | number }> => {
+  try {
+    const raw = localStorage.getItem(EXAMS_CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+};
+
+const setCachedExams = (exams: unknown) => {
+  try {
+    localStorage.setItem(EXAMS_CACHE_KEY, JSON.stringify(exams));
+  } catch {}
+};
+
 export const examService = {
   async listPublishedExams(grade?: string, subject?: string) {
-    const { data, error } = await supabase.rpc('list_published_exams', {
-      p_grade: grade || null,
-      p_subject: subject || null
-    });
+    const timeoutPromise = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Network timeout fetching exam catalogue')), 8000)
+    );
 
-    if (error) throw error;
-    return (data || []) as Array<ExamAnalysis & { id: string | number }>;
+    try {
+      const fetchPromise = supabase.rpc('list_published_exams', {
+        p_grade: grade || null,
+        p_subject: subject || null
+      });
+
+      const { data, error } = await Promise.race([fetchPromise, timeoutPromise]);
+      if (error) throw error;
+      const exams = (data || []) as Array<ExamAnalysis & { id: string | number }>;
+      if (exams.length > 0 && !grade && !subject) {
+        setCachedExams(exams);
+      }
+      return exams;
+    } catch (err) {
+      const cached = getCachedExams();
+      if (cached.length > 0) {
+        console.warn('Network issue fetching exams; serving cached catalogue:', err);
+        return cached;
+      }
+      throw err;
+    }
   },
 
   async getExamForAttempt(examId: string | number) {

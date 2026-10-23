@@ -155,9 +155,18 @@ body {
 .animate-ticker {
   display: flex;
   width: max-content;
-  animation: tickerScroll 40s linear infinite;
+  animation: tickerScroll 85s linear infinite;
+  will-change: transform;
 }
 
-.animate-ticker:hover {
+/* Smoothly pause whenever hovering anywhere over ticker items or belt */
+.animate-ticker:hover,
+[data-ticker-container]:hover .animate-ticker {
   animation-play-state: paused;
-}
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-ticker {
+    animation: none;
+  }
+}
