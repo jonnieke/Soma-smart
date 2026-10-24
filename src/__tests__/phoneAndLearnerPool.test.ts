@@ -15,6 +15,7 @@ import {
   computeTokenOverlap,
   extractPoolTokens,
   learnerPoolService,
+  splitAnswerForPaywallTeaser,
 } from '../services/learnerPoolService';
 
 describe('Kenyan Phone Number Last-9 Normalization & 24h Revision Pass', () => {
@@ -204,5 +205,36 @@ describe('Shared Learner Knowledge Pool & Relatable Query Deduplication', () => 
     const item = list.find((entry) => entry.topic.includes('Photosynthesis'));
     expect(item).toBeDefined();
     expect(item!.reuseCount).toBeGreaterThanOrEqual(2);
+  });
+
+  it('splits deeper Akili explanations into a 1/3 visible value preview and a covered paywall section', async () => {
+    const result = await learnerPoolService.askAkiliDeeperExplanation({
+      grade: 'Grade 9',
+      subject: 'Mathematics',
+      examPathway: 'KJSEA',
+      topic: 'Linear Equations & Inequalities',
+      question: 'Why do we reverse the inequality sign when dividing by a negative number?',
+    });
+
+    expect(result.fullAnswer.length).toBeGreaterThan(150);
+    expect(result.visiblePart.length).toBeGreaterThan(40);
+    expect(result.coveredPart.length).toBeGreaterThan(80);
+    expect(result.fullAnswer).toContain(result.visiblePart);
+    expect(result.fullAnswer).toContain(result.coveredPart);
+
+    // Asking a relatable follow-up should hit the pool (fromPool = true)
+    const second = await learnerPoolService.askAkiliDeeperExplanation({
+      grade: 'Grade 9',
+      subject: 'Mathematics',
+      examPathway: 'KJSEA',
+      topic: 'Linear Equations & Inequalities',
+      question: 'Explain why we reverse inequality signs when dividing by negative numbers',
+    });
+    expect(second.fromPool).toBe(true);
+    expect(second.visiblePart).toBe(result.visiblePart);
+    expect(second.coveredPart).toBe(result.coveredPart);
+
+    const directSplit = splitAnswerForPaywallTeaser(result.fullAnswer);
+    expect(directSplit.visiblePart).toBe(result.visiblePart);
   });
 });

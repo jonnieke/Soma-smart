@@ -1193,3 +1193,228 @@
   color: var(--ep-ink);
   font-size: 14px;
 }
+
+/* ---- Free Pool Badge, Ask Akili Deeper Window & 1/3 Paywall Teaser ---- */
+.ep-pool-free-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+.ep-pool-free-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+.ep-pool-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.ep-pool-deeper-link {
+  font-size: 12px !important;
+  font-weight: 700;
+  color: #0f766e !important;
+}
+.ep-pool-ask-box {
+  margin-top: 22px;
+  padding: 20px;
+  border-radius: 14px;
+  background: linear-gradient(180deg, #f8fafc 0%, #f0fdfa 100%);
+  border: 1px solid #99f6e4;
+}
+.ep-pool-ask-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.ep-pool-ask-head h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 18px;
+  color: #0f172a;
+}
+.ep-pool-ask-head p {
+  font-size: 13px;
+  margin-top: 4px;
+}
+.ep-pool-topic-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #ccfbf1;
+  color: #115e59;
+  font-size: 12px;
+  font-weight: 700;
+}
+.ep-pool-topic-chip button {
+  border: 0;
+  background: none;
+  color: #115e59;
+  padding: 2px;
+  display: inline-flex;
+}
+.ep-pool-quick-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 12px 0;
+}
+.ep-pool-chip-btn {
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1e293b;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 600;
+}
+.ep-pool-chip-btn:hover {
+  border-color: #0d9488;
+  background: #f0fdfa;
+  color: #0f766e;
+}
+.ep-pool-ask-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: stretch;
+}
+.ep-pool-ask-form textarea {
+  flex: 1 1 320px;
+  border: 1px solid #cbd5e1;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--ep-ink);
+  background: #ffffff;
+  resize: vertical;
+}
+.ep-pool-answer-card {
+  margin-top: 16px;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 18px;
+}
+.ep-pool-answer-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.ep-pool-answer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  color: #047857;
+  font-size: 12px;
+  font-weight: 750;
+}
+.ep-pool-teaser-wrap {
+  display: flex;
+  flex-direction: column;
+}
+.ep-pool-visible-third .ep-pool-note-text {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom: 0;
+  background: #ffffff;
+}
+.ep-pool-paywall-zone {
+  position: relative;
+  border: 1px solid var(--ep-line);
+  border-top: 1px dashed #cbd5e1;
+  border-bottom-left-radius: 12px;
+  border-bottom-right-radius: 12px;
+  overflow: hidden;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, #f8fafc 45%, #eef2ff 100%);
+  padding: 20px;
+}
+.ep-pool-blurred-rest {
+  white-space: pre-wrap;
+  font-size: 14px;
+  line-height: 1.6;
+  color: #334155;
+  filter: blur(5px);
+  user-select: none;
+  pointer-events: none;
+  opacity: 0.55;
+  max-height: 180px;
+  overflow: hidden;
+}
+.ep-pool-paywall-card {
+  position: relative;
+  z-index: 2;
+  margin-top: -95px;
+  background: rgba(255, 255, 255, 0.96);
+  border: 1px solid #c7d2fe;
+  border-radius: 14px;
+  padding: 20px 22px;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
+}
+.ep-pool-paywall-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 11px;
+  border-radius: 999px;
+  background: #eef2ff;
+  color: #3730a3;
+  font-size: 12px;
+  font-weight: 750;
+  margin-bottom: 8px;
+}
+.ep-pool-paywall-card h4 {
+  margin: 0 0 6px;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--ep-ink);
+}
+.ep-pool-paywall-card p {
+  font-size: 13px;
+  color: var(--ep-muted);
+  margin-bottom: 12px;
+}
+.ep-pool-paywall-perks {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 16px;
+  display: grid;
+  gap: 7px;
+}
+.ep-pool-paywall-perks li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--ep-ink);
+}
+.ep-pool-paywall-perks li svg {
+  color: #059669;
+  flex-shrink: 0;
+}
+.ep-pool-paywall-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
