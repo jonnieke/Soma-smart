@@ -8,6 +8,7 @@ import { CustomerCareView } from './views/CustomerCare';
 import { SettingsView } from './views/Settings';
 import { CurriculumView } from './views/Curriculum';
 import { ExamsView } from './views/Exams';
+import { ExamPaperDigitizerView } from './views/ExamPaperDigitizerView';
 import { CreatorMaterialsView } from './views/CreatorMaterials';
 import { AnalyticsView } from './views/Analytics';
 import { StrategyLabView } from './views/StrategyLab';
@@ -70,6 +71,7 @@ export const AdminDashboard: React.FC<AdminProps> = ({ onNavigate, authStatus = 
             {activeTab === 'USERS' && <UsersView />}
             {activeTab === 'FINANCE' && <FinancialsView />}
             {activeTab === 'CUSTOMER_CARE' && <CustomerCareView />}
+            {activeTab === 'DIGITIZER' && <ExamPaperDigitizerView />}
             {activeTab === 'CURRICULUM' && <CurriculumView />}
             {activeTab === 'EXAMS' && <ExamsView />}
             {activeTab === 'CREATOR_MATERIALS' && <CreatorMaterialsView />}
