@@ -16,6 +16,8 @@ import logo from '../../../assets/images/main_logo.png';
 import MarkdownText from '../../../components/LearnerMarkdown';
 import type { ExplanationResult } from '../../../types';
 import { safeLearnerPractice } from '../../../services/learnerPractice';
+import { learnerPoolService } from '../../../services/learnerPoolService';
+import { examPaperBankService } from '../../../services/examPaperBankService';
 import { findLessonIllustration } from '../answer/lessonIllustrations';
 import { PhotosynthesisDiagram, FractionDiagram } from '../answer/LessonVisual';
 import { buildLearnerNotes } from '../answer/LearnerAnswerNotes';
@@ -64,6 +66,56 @@ export function LearnerClassroom(props: LearnerClassroomProps) {
   const saved = props.saved ?? savedLocally;
   const [question, setQuestion] = useState('');
   const [imageFailed, setImageFailed] = useState(false);
+  const [restorePhone, setRestorePhone] = useState(
+    () => examPaperBankService?.readPhoneSession?.()?.last9 || ''
+  );
+  const [restoreLoading, setRestoreLoading] = useState(false);
+  const [restoreStatus, setRestoreStatus] = useState<{
+    type: 'success' | 'error';
+    text: string;
+  } | null>(null);
+  const pooledSuggestions = (
+    learnerPoolService?.listLocalPool?.({
+      subject: props.subject,
+      grade: props.grade,
+      limit: 4,
+    }) || []
+  )
+    .filter((item) => item.topic.toLowerCase() !== answer.topic.toLowerCase())
+    .slice(0, 2);
+
+  const handleRestorePassByPhone = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!restorePhone.trim() || restoreLoading) return;
+    setRestoreLoading(true);
+    setRestoreStatus(null);
+    try {
+      const result = await examPaperBankService.restoreByPhone(restorePhone.trim());
+      if (result.found && result.passActive) {
+        setRestoreStatus({
+          type: 'success',
+          text: `24h Pass active (+254${result.last9} · ${result.hoursRemaining}h left)!`,
+        });
+      } else if (result.found) {
+        setRestoreStatus({
+          type: 'success',
+          text: `Past-paper access restored for +254${result.last9}.`,
+        });
+      } else {
+        setRestoreStatus({
+          type: 'error',
+          text: 'No active pass found for that number.',
+        });
+      }
+    } catch {
+      setRestoreStatus({
+        type: 'error',
+        text: 'Could not verify phone right now.',
+      });
+    } finally {
+      setRestoreLoading(false);
+    }
+  };
   const practiceRef = useRef<HTMLDivElement>(null);
   const radioName = useId();
   const headingId = useId();
@@ -399,6 +451,132 @@ export function LearnerClassroom(props: LearnerClassroomProps) {
               <PlayCircle />
               Explore learning videos ↗
             </button>
+
+            <div
+              className="classroom-pool-box"
+              style={{
+                marginTop: '14px',
+                padding: '12px',
+                borderRadius: '12px',
+                background: '#ecfdf5',
+                border: '1px solid #a7f3d0',
+              }}
+            >
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '8px',
+                  marginBottom: '6px',
+                }}
+              >
+                <strong style={{ fontSize: '12px', color: '#065f46' }}>
+                  Learner’s Revision Pool · 100% Free
+                </strong>
+                <button
+                  type="button"
+                  onClick={props.onPapers}
+                  style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    color: '#047857',
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
+                  }}
+                >
+                  Open Pool ↗
+                </button>
+              </div>
+              {pooledSuggestions.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', marginBottom: '8px' }}>
+                  {pooledSuggestions.map((item) => (
+                    <button
+                      key={item.id}
+                      type="button"
+                      disabled={props.busy}
+                      onClick={() => props.onAsk(item.topic)}
+                      style={{
+                        textAlign: 'left',
+                        fontSize: '12px',
+                        fontWeight: 600,
+                        color: '#064e3b',
+                        background: '#ffffff',
+                        border: '1px solid #6ee7b7',
+                        borderRadius: '8px',
+                        padding: '6px 10px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {item.topic} ({item.subject})
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <p style={{ fontSize: '11px', color: '#047857', margin: '0 0 8px' }}>
+                  Browse fellow learners’ revision notes, drills & past-paper breakdowns for free.
+                </p>
+              )}
+
+              <details style={{ fontSize: '11px', color: '#065f46' }}>
+                <summary style={{ cursor: 'pointer', fontWeight: 700 }}>
+                  Bought a past paper? Restore 24h Pass by phone
+                </summary>
+                <form
+                  onSubmit={handleRestorePassByPhone}
+                  style={{ display: 'flex', gap: '6px', marginTop: '8px', flexWrap: 'wrap' }}
+                >
+                  <input
+                    type="tel"
+                    value={restorePhone}
+                    onChange={(e) => setRestorePhone(e.target.value)}
+                    placeholder="+2547..., 07..., or 712345678"
+                    aria-label="Restore pass with phone number"
+                    style={{
+                      flex: 1,
+                      minWidth: '140px',
+                      padding: '6px 8px',
+                      fontSize: '11px',
+                      borderRadius: '6px',
+                      border: '1px solid #6ee7b7',
+                      background: '#ffffff',
+                      color: '#0f172a',
+                    }}
+                  />
+                  <button
+                    type="submit"
+                    disabled={restoreLoading || !restorePhone.trim()}
+                    style={{
+                      padding: '6px 10px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      borderRadius: '6px',
+                      border: 'none',
+                      background: '#059669',
+                      color: '#ffffff',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    {restoreLoading ? '...' : 'Restore'}
+                  </button>
+                </form>
+                {restoreStatus && (
+                  <p
+                    role="status"
+                    style={{
+                      margin: '6px 0 0',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      color: restoreStatus.type === 'success' ? '#047857' : '#b45309',
+                    }}
+                  >
+                    {restoreStatus.text}
+                  </p>
+                )}
+              </details>
+            </div>
           </aside>
         </div>
       </div>

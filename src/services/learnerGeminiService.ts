@@ -18,6 +18,7 @@ import {
 import { supabase } from "../lib/supabase";
 import { buildGeminiUsagePayload, inferAiFeature, trackUsageCost } from "./usageCostService";
 import { assertPlanLimit, recordPlanUsage } from "./planLimitService";
+import { learnerPoolService } from "./learnerPoolService";
 
 const SchemaType = {
   STRING: "string",
@@ -488,6 +489,50 @@ export const fileToGenerativePart = async (file: File): Promise<string> => {
 
 // --- LEARNER FEATURES ---
 
+const saveExplanationResultToSharedPool = (
+  result: ExplanationResult,
+  meta: { subject?: string; grade?: string; prompt?: string }
+): void => {
+  const explanationText = String(result?.explanation || '').trim();
+  const topicText = String(result?.topic || meta.prompt || '').trim();
+  if (!explanationText || explanationText.length < 40 || !topicText) return;
+  const fullSummaryBlock = Array.isArray(result.summaryPoints) && result.summaryPoints.length > 0
+    ? `\n\n### Key Takeaways\n${result.summaryPoints.map((pt) => `- ${pt}`).join('\n')}`
+    : '';
+  void learnerPoolService.savePooledExplanation(
+    {
+      subject: meta.subject || 'General Studies',
+      grade: meta.grade || 'All Grades',
+      topic: topicText,
+      prompt: meta.prompt || topicText,
+    },
+    `${explanationText}${fullSummaryBlock}`
+  );
+};
+
+const buildExplanationResultFromPooledItem = (
+  pooledExplanation: string,
+  topic: string,
+  level: 'Simple' | 'Exam'
+): ExplanationResult => {
+  const summaryPoints = buildFallbackSummaryPoints(topic, pooledExplanation);
+  return sanitizeExplanationResult({
+    topic,
+    explanation: pooledExplanation,
+    summaryPoints,
+    relatedTopics: [
+      `${topic} worked examples`,
+      `${topic} past paper questions`,
+      `${topic} key definitions`,
+    ],
+    level,
+    grounding: {
+      used: true,
+      sources: ["Learner's Revision Pool (Zero-Regeneration Cache)"],
+    },
+  } as ExplanationResult);
+};
+
 export const explainImage = async (
   base64Image: string,
   mimeType: string,
@@ -552,7 +597,12 @@ export const explainImage = async (
 
     try {
       const json = parseModelJson<ExplanationResult>(text);
-      return sanitizeExplanationResult({ ...json, level } as ExplanationResult);
+      const sanitized = sanitizeExplanationResult({ ...json, level } as ExplanationResult);
+      saveExplanationResultToSharedPool(sanitized, {
+        grade: educationLevel,
+        prompt: sanitized.topic,
+      });
+      return sanitized;
     } catch (parseError) {
       // Salvage partial response — extract what we can from truncated JSON
       console.warn("explainImage JSON was malformed; attempting salvage.", parseError);
@@ -563,13 +613,18 @@ export const explainImage = async (
 
       if (!topicVal && !explanationVal) throw parseError;
 
-      return sanitizeExplanationResult({
+      const sanitized = sanitizeExplanationResult({
         topic: topicVal || 'Image Analysis',
         explanation: explanationVal || 'The image was analyzed but the response was cut short. Please try again.',
         summaryPoints: summaryPoints.length > 0 ? summaryPoints : buildFallbackSummaryPoints(topicVal || '', explanationVal || ''),
         relatedTopics,
         level,
       } as ExplanationResult);
+      saveExplanationResultToSharedPool(sanitized, {
+        grade: educationLevel,
+        prompt: sanitized.topic,
+      });
+      return sanitized;
     }
   } catch (error) {
     console.error("Error explaining image:", error);
@@ -634,12 +689,22 @@ export const explainAudio = async (base64Audio: string, mimeType: string, level:
 
     try {
       const json = parseModelJson<ExplanationResult>(text);
-      return sanitizeExplanationResult({ ...json, level } as ExplanationResult);
+      const sanitized = sanitizeExplanationResult({ ...json, level } as ExplanationResult);
+      saveExplanationResultToSharedPool(sanitized, {
+        grade: educationLevel,
+        prompt: sanitized.topic,
+      });
+      return sanitized;
     } catch (parseError) {
       const salvaged = salvageAudioExplanationResult(text, level);
       if (salvaged) {
         console.warn("Audio explanation JSON was malformed; using salvaged response.", parseError);
-        return sanitizeExplanationResult(salvaged);
+        const sanitized = sanitizeExplanationResult(salvaged);
+        saveExplanationResultToSharedPool(sanitized, {
+          grade: educationLevel,
+          prompt: sanitized.topic,
+        });
+        return sanitized;
       }
       throw parseError;
     }
@@ -736,6 +801,44 @@ Output JSON containing both "note" and "quiz" objects.
     if (!text) throw new Error("No response from AI");
 
     const json = parseModelJson<{ note: TeacherNote, quiz: QuizData }>(text);
+    const rawNote = json?.note as any;
+    if (rawNote?.topic && (rawNote?.explanation || rawNote?.content)) {
+      const noteBody = String(rawNote.explanation || rawNote.content || '');
+      const summaryBlock = Array.isArray(rawNote.summaryPoints) && rawNote.summaryPoints.length > 0
+        ? `\n\n### Key Takeaways\n${rawNote.summaryPoints.map((pt: string) => `- ${pt}`).join('\n')}`
+        : '';
+      void learnerPoolService.savePooledExplanation(
+        {
+          subject: subject || 'General Studies',
+          grade: grade || 'All Grades',
+          topic: String(rawNote.topic),
+          prompt: `Darasa Class Recap: ${rawNote.topic}`,
+        },
+        `${noteBody}${summaryBlock}`
+      );
+    }
+    if (Array.isArray(json?.quiz?.questions) && json.quiz.questions.length > 0) {
+      const practiceTopic = json.quiz.topic || rawNote?.topic || subject || 'Class Revision';
+      const mappedQuestions = json.quiz.questions.map((q: any, idx: number) => ({
+        number: Number(q.number || idx + 1) || idx + 1,
+        text: String(q.text || q.question || ''),
+        marks: Number(q.marks || 1) || 1,
+        topic: String(q.topic || practiceTopic),
+        guidance: Array.isArray(q.options) && q.options.length > 0
+          ? `Options: ${q.options.join(' | ')}`
+          : undefined,
+        modelAnswerOutline: String(q.correctAnswer || q.explanation || 'See class marking notes [1 mk]'),
+      }));
+      void learnerPoolService.savePooledPractice(
+        {
+          subject: subject || 'General Studies',
+          topic: String(practiceTopic),
+          examType: 'KCSE',
+          grade: grade || 'All Grades',
+        },
+        mappedQuestions
+      );
+    }
     return json as { note: TeacherNote, quiz: QuizData };
   } catch (error) {
     console.error("Error processing darasa recording:", error);
@@ -992,7 +1095,13 @@ export const explainTopic = async (
 
     try {
       const json = parseModelJson<ExplanationResult>(text);
-      return sanitizeExplanationResult({ ...json, level, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult);
+      const sanitized = sanitizeExplanationResult({ ...json, level, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult);
+      saveExplanationResultToSharedPool(sanitized, {
+        subject: searchSubject || subject,
+        grade: searchGrade || grade,
+        prompt: topic,
+      });
+      return sanitized;
     } catch (parseError) {
       // Salvage partial response - extract whatever fields we can from the truncated JSON
       console.warn("explainTopic JSON was malformed; attempting salvage.", parseError);
@@ -1011,9 +1120,25 @@ export const explainTopic = async (
       if (!salvaged.topic && !salvaged.explanation) {
         throw parseError; // Nothing was salvageable, re-throw original
       }
-      return sanitizeExplanationResult({ ...salvaged, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult);
+      const sanitized = sanitizeExplanationResult({ ...salvaged, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult);
+      saveExplanationResultToSharedPool(sanitized, {
+        subject: searchSubject || subject,
+        grade: searchGrade || grade,
+        prompt: topic,
+      });
+      return sanitized;
     }
   } catch (error) {
+    if (!multimedia && !documentId) {
+      const pooled = await learnerPoolService.findPooledExplanation({
+        subject: searchSubject || subject || 'General Studies',
+        grade: searchGrade || grade,
+        prompt: topic,
+      });
+      if (pooled) {
+        return buildExplanationResultFromPooledItem(pooled, topic, level);
+      }
+    }
     console.error("Error explaining topic:", error);
     throw error;
   }
@@ -1144,7 +1269,13 @@ export const summarizeDocument = async (title: string, documentId: string, langu
     const text = result.response.text();
     if (!text) throw new Error("No response");
     const json = parseModelJson<ExplanationResult>(text);
-    return validateStudyGuide(sanitizeExplanationResult({ ...json, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult));
+    const validated = validateStudyGuide(sanitizeExplanationResult({ ...json, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult));
+    saveExplanationResultToSharedPool(validated, {
+      subject,
+      grade,
+      prompt: title,
+    });
+    return validated;
   } catch (error) {
     console.error("Error summarizing document:", error);
     throw error;
@@ -1213,7 +1344,13 @@ GUIDELINES:
     const text = result.response.text();
     if (!text) throw new Error("No response");
     const json = parseModelJson<ExplanationResult>(text);
-    return sanitizeExplanationResult({ ...json, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult);
+    const sanitized = sanitizeExplanationResult({ ...json, grounding: { used: !!ragContext.text, sources: ragContext.sources } } as ExplanationResult);
+    saveExplanationResultToSharedPool(sanitized, {
+      subject,
+      grade,
+      prompt: title,
+    });
+    return sanitized;
   } catch (error) {
     console.error("Error generating rich notes:", error);
     throw error;
@@ -1272,8 +1409,19 @@ TASK:
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
     const json = parseModelJson<ExplanationResult>(text);
-    return sanitizeExplanationResult({ ...json, level } as ExplanationResult);
+    const sanitized = sanitizeExplanationResult({ ...json, level } as ExplanationResult);
+    saveExplanationResultToSharedPool(sanitized, {
+      prompt: `${currentTopic}: ${userQuery}`,
+    });
+    return sanitized;
   } catch (error) {
+    const pooled = await learnerPoolService.findPooledExplanation({
+      subject: currentTopic || 'General Studies',
+      prompt: `${currentTopic}: ${userQuery}`,
+    });
+    if (pooled) {
+      return buildExplanationResultFromPooledItem(pooled, currentTopic, level);
+    }
     console.error("Error continuing research:", error);
     throw error;
   }
