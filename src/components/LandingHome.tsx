@@ -41,6 +41,7 @@ import mascotImg from '../assets/images/somo_buddy_avatar.png';
 import type { TeacherComposerDraft, TeacherComposerIntent } from '../types/teacherComposer';
 import { saveTeacherComposerDraft } from '../types/teacherComposerHandoff';
 import { learnerPoolService } from '../services/learnerPoolService';
+import { examPaperBankService } from '../services/examPaperBankService';
 
 type Props = {
   isRegistered: boolean;
@@ -170,144 +171,266 @@ const teacherTools = [
   ['See weak topics', 'Track class progress in real time.', BarChart3],
 ] as const;
 
+const DEFAULT_TRENDING_POOL_CARDS = [
+  {
+    id: 'starter-math-linear-equations',
+    grade: 'Grade 9',
+    subject: 'Mathematics',
+    topic: 'Linear Equations & Inequalities',
+    badgeLabel: 'Practice Drill · Grade 9 Mathematics',
+    summaryPreview: 'Solve for x and reverse inequality signs correctly when dividing by negative numbers [KNEC Marking Steps].',
+    reuseCount: 42,
+    itemType: 'PRACTICE_DRILL' as const,
+  },
+  {
+    id: 'starter-bio-photosynthesis',
+    grade: 'Form 4',
+    subject: 'Biology',
+    topic: 'Photosynthesis Light & Dark Stage [KNEC Marking Points]',
+    badgeLabel: 'Akili Breakdown · Form 4 Biology',
+    summaryPreview: 'Photolysis of water in the grana vs. carbon dioxide fixation in the stroma with full 1-mark point breakdown.',
+    reuseCount: 68,
+    itemType: 'EXPLANATION' as const,
+  },
+  {
+    id: 'starter-chem-paper-pass',
+    grade: 'Form 4',
+    subject: 'Chemistry',
+    topic: 'KCSE Chemistry Paper 1 (KES 20 · Instant M-Pesa)',
+    badgeLabel: 'Past Paper + 24h AI Pass',
+    summaryPreview: 'Download the full question paper + marking scheme and unlock 24 hours of unlimited AI revision across all subjects.',
+    reuseCount: 95,
+    itemType: 'REVISION_PAPER' as const,
+  },
+];
+
 export const LandingHome: React.FC<Props> = (props) => {
   const [menuOpen, setMenuOpen] = React.useState(false);
-  const topPoolItems = React.useMemo(() => learnerPoolService.listLocalPool({ limit: 3 }), []);
+  const [restorePhone, setRestorePhone] = React.useState(
+    () => examPaperBankService?.readPhoneSession?.()?.last9 || ''
+  );
+  const [restoreLoading, setRestoreLoading] = React.useState(false);
+  const [restoreNotice, setRestoreNotice] = React.useState<{
+    tone: 'ok' | 'err';
+    text: string;
+  } | null>(null);
+
+  const topPoolItems = React.useMemo(() => {
+    const local = learnerPoolService.listLocalPool({ limit: 3 });
+    if (local.length >= 3) return local;
+    const merged = [...local];
+    for (const fallback of DEFAULT_TRENDING_POOL_CARDS) {
+      if (merged.length >= 3) break;
+      if (!merged.some((item) => item.topic.toLowerCase() === fallback.topic.toLowerCase())) {
+        merged.push(fallback as any);
+      }
+    }
+    return merged;
+  }, []);
+
+  const handleHeaderPhoneRestore = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!restorePhone.trim() || restoreLoading) return;
+    setRestoreLoading(true);
+    setRestoreNotice(null);
+    try {
+      const res = await examPaperBankService.restoreByPhone(restorePhone.trim());
+      if (res.found && res.passActive) {
+        setRestoreNotice({
+          tone: 'ok',
+          text: `24h Pass active (+254${res.last9} · ${res.hoursRemaining}h left)`,
+        });
+        props.onRevision();
+      } else if (res.found) {
+        setRestoreNotice({
+          tone: 'ok',
+          text: `Past papers restored for +254${res.last9}`,
+        });
+        props.onRevision();
+      } else {
+        setRestoreNotice({
+          tone: 'err',
+          text: 'No pass found for that number yet.',
+        });
+      }
+    } catch {
+      setRestoreNotice({
+        tone: 'err',
+        text: 'Could not verify phone right now.',
+      });
+    } finally {
+      setRestoreLoading(false);
+    }
+  };
+
   const navigation = <>
-    <button onClick={props.onRevision}>Candidates Hub</button>
-    <button onClick={() => props.onExamPapers()}>Past papers</button>
+    <button onClick={props.onRevision}>Learner’s Pool (Free)</button>
+    <button onClick={() => props.onExamPapers()}>Past papers (KES 20)</button>
     <Link to="/learning-videos">Learning videos</Link>
     <button onClick={props.onTeacher}>For teachers</button>
     <button onClick={props.onPricing}>Pricing</button>
   </>;
   return <div className="soma-landing">
-    <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-indigo-950 text-white text-xs py-2 px-4 text-center font-bold flex flex-wrap items-center justify-center gap-2 border-b border-emerald-500/20">
-      <span className="bg-emerald-500/30 text-emerald-300 border border-emerald-400/30 px-2 py-0.5 rounded text-[10px] uppercase font-black tracking-wider">M-Pesa KES 20</span>
-      <span>KCSE, KPSEA &amp; CBC Past Papers include 24 Hours of Free Interactive AI Marking &amp; Revision!</span>
-      <button type="button" onClick={props.onRevision} className="underline text-emerald-300 hover:text-white font-black ml-1">Open Candidates Hub &rarr;</button>
-    </div>
     <header className="soma-header">
-      <Link to="/" className="soma-brand" aria-label="Soma AI homepage"><img src={logoImg} alt="" width="52" height="52" /><span>Soma AI</span></Link>
+      <Link to="/" className="soma-brand" aria-label="Soma AI homepage"><img src={logoImg} alt="" width="48" height="48" /><span>Soma AI</span></Link>
       <nav className="soma-desktop-nav" aria-label="Main navigation">{navigation}</nav>
-      <button className="soma-outline soma-signin" onClick={props.isRegistered ? props.onDashboard : props.onSignIn}>{props.isRegistered ? 'My dashboard' : 'Sign in'}</button>
-      <button className="soma-menu-toggle" aria-label="Toggle menu" aria-expanded={menuOpen} aria-controls="soma-mobile-menu" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button>
+      <div className="soma-header-right">
+        <form className="soma-pass-restore-pill" onSubmit={handleHeaderPhoneRestore} aria-label="Restore 24h Pass by phone">
+          <span className="soma-pass-label">Have a 24h Pass?</span>
+          <input
+            type="tel"
+            value={restorePhone}
+            onChange={(e) => setRestorePhone(e.target.value)}
+            placeholder="Enter phone (07...)"
+            aria-label="Enter phone number to restore 24h pass"
+          />
+          <button type="submit" disabled={restoreLoading || !restorePhone.trim()}>
+            {restoreLoading ? '...' : 'Restore'}
+          </button>
+        </form>
+        <button className="soma-outline soma-signin" onClick={props.isRegistered ? props.onDashboard : props.onSignIn}>{props.isRegistered ? 'My dashboard' : 'Sign in'}</button>
+        <button className="soma-menu-toggle" aria-label="Toggle menu" aria-expanded={menuOpen} aria-controls="soma-mobile-menu" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button>
+      </div>
     </header>
+    {restoreNotice && (
+      <div
+        role="status"
+        style={{
+          background: restoreNotice.tone === 'ok' ? '#ecfdf5' : '#fffbeb',
+          color: restoreNotice.tone === 'ok' ? '#065f46' : '#92400e',
+          borderBottom: '1px solid #d1fae5',
+          padding: '6px 5%',
+          fontSize: '12px',
+          fontWeight: 700,
+          textAlign: 'center',
+        }}
+      >
+        {restoreNotice.text}
+      </div>
+    )}
     {menuOpen && <nav id="soma-mobile-menu" className="soma-mobile-nav" aria-label="Mobile navigation" onClick={() => setMenuOpen(false)}>{navigation}</nav>}
     <div>
       <section className="soma-hero" aria-labelledby="soma-headline">
         <div className="soma-hero-copy">
-          <p className="soma-eyebrow">A little learning, every day.</p>
-          <h1 id="soma-headline">Understand more.<br />Learn at your<br />own pace.</h1>
-          <p className="soma-intro">Simple notes, clear explanations and practice for your next lesson.</p>
-          <button className="soma-primary" onClick={() => { props.onTrack('start_learning_free_clicked', { source: 'landing_hero' }); props.onStartLearning(); }}>Start learning <ArrowRight size={24} /></button>
-          <p className="soma-returning">{props.isRegistered ? 'Welcome back. ' : 'Already learning with us? '}<button onClick={props.isRegistered ? props.onDashboard : props.onSignIn}>{props.isRegistered ? 'Continue learning' : 'Sign in'}</button></p>
+          <div className="soma-eyebrow-pill">
+            <span className="soma-eyebrow-exams">KPSEA · KJSEA · KCSE · CBC</span>
+            <span className="soma-eyebrow-grades">Grades 1–12</span>
+          </div>
+          <h1 id="soma-headline">Understand more.<br />Any homework or past<br />paper—step by step.</h1>
+          <div className="soma-hero-input-wrap">
+            <AskAkiliDemo {...props} compact />
+          </div>
+          <div className="soma-hero-actions-row">
+            <button className="soma-primary" onClick={() => { props.onTrack('start_learning_free_clicked', { source: 'landing_hero' }); props.onStartLearning(); }}>Start learning <ArrowRight size={20} /></button>
+            <button className="soma-secondary-action" onClick={props.onLibrary}><BookOpen size={18} /><span>Read notes</span></button>
+            <button className="soma-secondary-action" onClick={props.onRevision}><Notebook size={18} /><span>Practise a topic</span></button>
+            <button className="soma-secondary-action" onClick={() => props.onExamPapers()}><FileText size={18} /><span>Find past papers</span></button>
+          </div>
+          <p className="soma-hero-trust-line">
+            <span>✨ 100% Free Learner’s Revision Pool</span>
+            <span className="soma-trust-divider">|</span>
+            <span>📄 KES 20 Past Paper = 24h Full AI Revision Pass</span>
+          </p>
         </div>
         <div className="soma-hero-art">
-          <img src={studyIllustration} alt="Two learners studying together with an open book" width="1200" height="800" fetchPriority="high" />
-          <div className="soma-akili"><AskAkiliDemo {...props} compact /></div>
-        </div>
-      </section>
-      <section className="soma-paths" aria-labelledby="soma-paths-title">
-        <h2 id="soma-paths-title">What would you like to do?</h2>
-        <div>
-          <button onClick={props.onLibrary}><BookOpen /><span>Read notes</span><ArrowRight /></button>
-          <button onClick={props.onRevision}><Notebook /><span>Practise a topic</span><ArrowRight /></button>
-          <button onClick={() => props.onExamPapers()}><FileText /><span>Find past papers</span><ArrowRight /></button>
-        </div>
-      </section>
-      <section className="soma-trust-strip" aria-label="Curriculum and payment trust" style={{ background: '#f1eee7', borderTop: '1px solid #e4e0d9', borderBottom: '1px solid #e4e0d9', padding: '14px 5%' }}>
-        <div style={{ maxWidth: '1440px', margin: 'auto', display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-around', gap: '14px', fontSize: '13px', fontWeight: 'bold', color: '#1e293b' }}>
-          <span>🇰🇪 Aligned with KICD CBC &amp; KNEC Syllabus</span>
-          <span>🟢 Instant M-Pesa STK Push (From KES 20)</span>
-          <span>📱 Works on Low Data &amp; Offline PWA</span>
-          <span>🎧 Audio Revision in English &amp; Kiswahili</span>
-        </div>
-      </section>
-      <section aria-label="Latest past papers" className="soma-paper-ribbon"><ExamPaperTickerBelt papers={props.latestPapers} onPaperClick={props.onExamPapers} /></section>
-      {topPoolItems.length > 0 && (
-        <section
-          aria-labelledby="soma-pool-strip-title"
-          style={{
-            background: '#ffffff',
-            borderBottom: '1px solid #e4e0d9',
-            padding: '28px 5%',
-          }}
-        >
-          <div style={{ maxWidth: '1440px', margin: '0 auto' }}>
-            <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '16px' }}>
+          <div className="soma-breakdown-preview-card" aria-label="Akili Step-by-Step Breakdown Preview">
+            <div className="soma-breakdown-header">
               <div>
-                <span style={{ display: 'inline-block', background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', borderRadius: '999px', padding: '3px 10px', fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  100% Free · Zero AI Generation Cost
-                </span>
-                <h2 id="soma-pool-strip-title" style={{ fontSize: '22px', fontWeight: 900, color: '#0f172a', margin: '6px 0 2px' }}>
-                  Trending in the Learner’s Revision Pool
-                </h2>
-                <p style={{ fontSize: '14px', color: '#475569', margin: 0 }}>
-                  Study notes, worked examples, and practice drills generated by fellow candidates across Kenya — free for everyone.
-                </p>
+                <span className="soma-breakdown-kicker">Live Exam Guru Preview · 1/3 Free Value</span>
+                <h2>Akili Step-by-Step Breakdown</h2>
               </div>
-              <Link
-                to="/revision"
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  background: '#065f46',
-                  color: '#ffffff',
-                  padding: '10px 16px',
-                  borderRadius: '999px',
-                  fontSize: '13px',
-                  fontWeight: 800,
-                  textDecoration: 'none',
-                }}
-              >
-                Explore Free Revision Pool <ArrowRight size={16} />
-              </Link>
+              <span className="soma-breakdown-badge">KCSE · KJSEA</span>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '14px' }}>
-              {topPoolItems.map((item) => (
-                <Link
-                  key={item.id}
-                  to={`/revision?grade=${encodeURIComponent(item.grade)}&subject=${encodeURIComponent(item.subject)}&pool=${encodeURIComponent(item.id)}`}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    background: '#f8fafc',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '16px',
-                    padding: '16px',
-                    textDecoration: 'none',
-                    color: '#0f172a',
-                  }}
-                >
-                  <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
-                      <span style={{ fontSize: '11px', fontWeight: 800, color: '#047857', textTransform: 'uppercase' }}>
-                        {item.grade} · {item.subject}
-                      </span>
-                      <span style={{ fontSize: '11px', fontWeight: 700, color: '#64748b' }}>
-                        Studied by {item.reuseCount} learners
-                      </span>
-                    </div>
-                    <h3 style={{ fontSize: '16px', fontWeight: 800, margin: '0 0 6px', color: '#0f172a' }}>
-                      {item.topic}
-                    </h3>
-                    <p style={{ fontSize: '13px', color: '#475569', margin: 0, lineHeight: 1.5 }}>
-                      {item.summaryPreview}
-                    </p>
-                  </div>
-                  <span style={{ marginTop: '12px', display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 800, color: '#047857' }}>
-                    {item.itemType === 'PRACTICE_DRILL' ? 'Practise free drill' : 'Read free study note'} <ArrowRight size={14} />
-                  </span>
-                </Link>
-              ))}
+            <p className="soma-breakdown-problem">
+              <strong>Question:</strong> Find the gradient and y-intercept of the line <code>2y - 6x = 8</code> and sketch its graph [3 mks]
+            </p>
+            <div className="soma-breakdown-visible-step">
+              <span className="soma-step-number">1</span>
+              <div>
+                <strong>Step 1: Rearrange into y = mx + c form [1 mk]</strong>
+                <p>Add <code>6x</code> to both sides: <code>2y = 6x + 8</code>. Divide every term by 2 to get <code>y = 3x + 4</code>. Therefore, gradient <strong>m = 3</strong> and y-intercept <strong>c = (0, 4)</strong>.</p>
+              </div>
+            </div>
+            <div className="soma-breakdown-frosted-wrap">
+              <div className="soma-breakdown-blurred-steps" aria-hidden="true">
+                <div className="soma-blurred-line"><span>2</span> Step 2: Find the x-intercept by setting y = 0 → 3x + 4 = 0 [1 mk]</div>
+                <div className="soma-blurred-line"><span>3</span> Step 3: Plot (0, 4) and (-4/3, 0) and label the line 2y - 6x = 8 [1 mk]</div>
+              </div>
+              <div className="soma-breakdown-paywall-card">
+                <p>
+                  Unlock full KNEC marking scheme + <strong>24h Unlimited AI Revision</strong> — Buy any Past Paper (<strong>KES 20 via M-Pesa</strong>)
+                </p>
+                <div className="soma-breakdown-paywall-actions">
+                  <button type="button" onClick={() => props.onExamPapers()} className="soma-paywall-btn-primary">
+                    Unlock with KES 20 Past Paper <ArrowRight size={15} />
+                  </button>
+                  <button type="button" onClick={props.onRevision} className="soma-paywall-btn-secondary">
+                    Try Free Pool First
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
-        </section>
-      )}
+        </div>
+      </section>
+
+      <section
+        aria-labelledby="soma-pool-strip-title"
+        className="soma-pool-showcase"
+      >
+        <div className="soma-pool-showcase-inner">
+          <div className="soma-pool-showcase-header">
+            <div>
+              <h2 id="soma-pool-strip-title">
+                🔥 Trending in the Learner’s Revision Pool · 100% Free to Practise
+              </h2>
+              <p>
+                Study notes, worked examples, and practice drills generated by fellow candidates across Kenya — free for everyone at zero AI cost.
+              </p>
+            </div>
+            <Link to="/revision" className="soma-pool-explore-btn">
+              Explore Free Revision Pool <ArrowRight size={16} />
+            </Link>
+          </div>
+          <div className="soma-pool-grid">
+            {topPoolItems.map((item) => {
+              const isPaperCard = item.id === 'starter-chem-paper-pass';
+              const targetHref = isPaperCard
+                ? '/exam-papers'
+                : `/revision?grade=${encodeURIComponent(item.grade)}&subject=${encodeURIComponent(item.subject)}&pool=${encodeURIComponent(item.id)}`;
+              return (
+                <Link
+                  key={item.id}
+                  to={targetHref}
+                  className="soma-pool-card"
+                >
+                  <div>
+                    <div className="soma-pool-card-meta">
+                      <span className="soma-pool-card-tag">
+                        {(item as any).badgeLabel || `${item.itemType === 'PRACTICE_DRILL' ? 'Practice Drill' : 'Akili Breakdown'} · ${item.grade} ${item.subject}`}
+                      </span>
+                    </div>
+                    <h3>{item.topic}</h3>
+                    <p>{item.summaryPreview}</p>
+                  </div>
+                  <div className="soma-pool-card-footer">
+                    <span>
+                      {isPaperCard
+                        ? 'KES 20 · Instant M-Pesa · Restore on any device'
+                        : `${item.reuseCount} learners revised · Free`}
+                    </span>
+                    <ArrowRight size={15} />
+                  </div>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section aria-label="Latest past papers" className="soma-paper-ribbon"><ExamPaperTickerBelt papers={props.latestPapers} onPaperClick={props.onExamPapers} /></section>
       <section className="soma-teacher-strip">
-        <Users size={48} aria-hidden="true" /><div><h2>Teaching today?</h2><p>Prepare notes and assessments for your class.</p></div>
+        <Users size={40} aria-hidden="true" /><div><h2>Teaching today?</h2><p>Prepare notes, assessments, or record a live Darasa class into the Learner’s Pool.</p></div>
         <button className="soma-outline" onClick={props.onTeacher}>Open Teacher Studio <ArrowRight size={20} /></button>
       </section>
     </div>
