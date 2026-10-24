@@ -18,6 +18,10 @@ import {
   Upload,
   MessageCircle,
   Share2,
+  Smartphone,
+  Users,
+  Search,
+  X,
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useApp } from '../../context/AppContext';
@@ -29,7 +33,15 @@ import {
 } from '../../services/geminiService';
 import { PlanLimitError } from '../../services/planLimitService';
 import { examService } from '../../services/examService';
-import { examPaperBankService } from '../../services/examPaperBankService';
+import {
+  examPaperBankService,
+  type PhoneRestoreSession,
+} from '../../services/examPaperBankService';
+import {
+  learnerPoolService,
+  type LearnerPoolItem,
+  type PoolItemType,
+} from '../../services/learnerPoolService';
 import { formatCandidateRevisionProgressForWhatsApp, openWhatsAppShare } from '../../services/whatsappService';
 import type { PanelMode } from './ExamGuruPanel';
 import {
@@ -99,6 +111,20 @@ function ExamPrepWorkspace({
   const recoveryOwner = studentCode || studentProfile?.id || userId || 'guest';
   const [unfinished] = useState(() => listTimedExams(recoveryOwner));
   const [purchasedPaperIds, setPurchasedPaperIds] = useState<string[]>([]);
+  const [phoneSession, setPhoneSession] = useState<PhoneRestoreSession | null>(() =>
+    typeof examPaperBankService?.readPhoneSession === 'function'
+      ? examPaperBankService.readPhoneSession()
+      : null
+  );
+  const [phoneInput, setPhoneInput] = useState('');
+  const [phoneLoginOpen, setPhoneLoginOpen] = useState(false);
+  const [phoneRestoring, setPhoneRestoring] = useState(false);
+  const [phoneMessage, setPhoneMessage] = useState('');
+  const [phoneError, setPhoneError] = useState('');
+  const [poolFilter, setPoolFilter] = useState<PoolItemType | 'ALL'>('ALL');
+  const [poolSearch, setPoolSearch] = useState('');
+  const [selectedPoolNote, setSelectedPoolNote] = useState<LearnerPoolItem | null>(null);
+  const [poolVersion, setPoolVersion] = useState(0);
   const [papers, setPapers] = useState<
     Array<{ id: string | number; title: string; subject?: string; grade?: string }>
   >([]);
@@ -153,6 +179,107 @@ function ExamPrepWorkspace({
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (phoneSession?.found && phoneSession.paperIds?.length) {
+      setPurchasedPaperIds((prev) =>
+        Array.from(new Set([...prev, ...phoneSession.paperIds.map(String)]))
+      );
+    }
+  }, [phoneSession]);
+
+  const poolItems = React.useMemo(
+    () =>
+      learnerPoolService.listLocalPool({
+        grade,
+        subject,
+        itemType: poolFilter,
+        search: poolSearch,
+      }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [grade, subject, poolFilter, poolSearch, poolVersion]
+  );
+
+  const handlePhoneLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const raw = phoneInput.trim();
+    if (!raw) return;
+    setPhoneError('');
+    setPhoneMessage('');
+    setPhoneRestoring(true);
+    try {
+      let restored: PhoneRestoreSession | null = null;
+      if (typeof examPaperBankService?.restoreByPhone === 'function') {
+        restored = await examPaperBankService.restoreByPhone(raw);
+      } else {
+        const digits = raw.replace(/\D/g, '');
+        const last9 =
+          digits.length === 9
+            ? digits
+            : digits.length === 10 && digits.startsWith('0')
+              ? digits.slice(1)
+              : digits.length >= 12 && digits.startsWith('254')
+                ? digits.slice(-9)
+                : null;
+        if (!last9) {
+          throw new Error('Enter a valid phone number (+254..., 07..., or last 9 digits).');
+        }
+        restored = {
+          found: purchasedPaperIds.length > 0,
+          normalizedPhone: `254${last9}`,
+          last9,
+          paperIds: purchasedPaperIds,
+          passActive: true,
+          hoursRemaining: 24,
+        };
+      }
+      if (restored && restored.found && restored.paperIds.length > 0) {
+        setPhoneSession(restored);
+        setPurchasedPaperIds((prev) =>
+          Array.from(new Set([...prev, ...restored!.paperIds.map(String)]))
+        );
+        setPhoneLoginOpen(false);
+        setPhoneInput('');
+        setPhoneMessage(
+          restored.passActive
+            ? `Welcome back${restored.buyerName ? `, ${restored.buyerName}` : ''}! Your ${restored.paperIds.length} past ${restored.paperIds.length === 1 ? 'paper is' : 'papers are'} unlocked and your 24h AI Revision Pass is active (${restored.hoursRemaining}h left).`
+            : `Welcome back! Your ${restored.paperIds.length} past ${restored.paperIds.length === 1 ? 'paper is' : 'papers are'} restored. Your 24-hour free AI revision window has ended — pay KES 20 to continue or buy another paper for free 24h access.`
+        );
+      } else {
+        setPhoneError(
+          'No past paper purchase was found for that number. Enter the M-Pesa number used when buying your paper (+254..., 07..., or last 9 digits).'
+        );
+      }
+    } catch (err: any) {
+      setPhoneError(
+        err instanceof Error ? err.message : 'Could not verify your phone number. Please try again.'
+      );
+    } finally {
+      setPhoneRestoring(false);
+    }
+  };
+
+  const startPracticeFromPoolItem = (item: LearnerPoolItem) => {
+    if (item.itemType !== 'PRACTICE_DRILL' || !Array.isArray(item.contentJson) || !item.contentJson.length) {
+      setSelectedPoolNote(item);
+      return;
+    }
+    const questions = item.contentJson;
+    updateSession({
+      version: 1,
+      grade: item.grade && item.grade !== 'All Grades' ? item.grade : grade,
+      exam,
+      subject: item.subject || subject,
+      topic: item.topic || subject,
+      questions,
+      answers: questions.map(() => ''),
+      reviewed: questions.map(() => false),
+      needsHelp: questions.map(() => false),
+      deadline: Date.now() + 600000,
+      completed: false,
+    });
+    setPracticeOpen(true);
+  };
   const adopt = (next: CandidateProgress) => {
     progressRef.current = next;
     setProgress(next);
@@ -245,6 +372,20 @@ function ExamPrepWorkspace({
       );
       if (!mounted.current) return;
       if (!questions.length) throw new Error('No questions returned');
+      void learnerPoolService
+        .savePooledPractice(
+          {
+            subject,
+            topic: chosenTopic || subject,
+            examType: exam,
+            grade,
+          },
+          questions
+        )
+        .then(() => {
+          if (mounted.current) setPoolVersion((v) => v + 1);
+        })
+        .catch(() => {});
       updateSession({
         version: 1,
         grade,
@@ -393,25 +534,139 @@ function ExamPrepWorkspace({
             Unfinished paper #{item.examId} — {item.submitting || item.deadline <= Date.now() ? 'Finish submission' : 'Resume exam'}
           </button>)}
         </section>}
-        {purchasedPaperIds.length > 0 && (
-          <section className="ep-card ep-pass-banner" style={{ gridColumn: '1 / -1' }} aria-label="Purchased papers free revision">
-            <div className="ep-pass-badge">
-              <Sparkles size={16} />
-              <span>24-Hour Free AI Revision Pass Active</span>
-            </div>
-            <h2>Practise with your unlocked past papers</h2>
-            <p>
-              Your past paper purchases include full online mock practice with Akili AI step-by-step scoring.
-            </p>
-            <div className="ep-actions">
+        {purchasedPaperIds.length > 0 ? (
+          phoneSession && !phoneSession.passActive ? (
+            <section
+              className="ep-card ep-pass-banner ep-pass-expired"
+              style={{ gridColumn: '1 / -1' }}
+              aria-label="Purchased papers revision pass expired"
+            >
+              <div className="ep-pass-badge ep-pass-badge-expired">
+                <Clock3 size={16} />
+                <span>24-Hour Free AI Revision Window Ended</span>
+              </div>
+              <h2>Continue your revision from where you left off</h2>
+              <p>
+                Your 24-hour complimentary AI revision session for your past paper purchase has elapsed. Pay{' '}
+                <strong>KES 20</strong> to unlock another 24 hours of full AI revision, or buy another past paper for free 24-hour access.
+              </p>
+              {phoneMessage && <p role="status" className="ep-phone-msg">{phoneMessage}</p>}
+              <div className="ep-actions">
+                <button
+                  className="ep-primary"
+                  onClick={() =>
+                    navigate(
+                      `/exam-papers?renew=1&paper=${encodeURIComponent(
+                        phoneSession.paperIds[0] || purchasedPaperIds[0] || ''
+                      )}&phone=${encodeURIComponent(phoneSession.normalizedPhone || '')}`
+                    )
+                  }
+                >
+                  Pay KES 20 to continue revision (24h Pass)
+                </button>
+                <button
+                  className="ep-outline"
+                  onClick={() => navigate('/exam-papers')}
+                >
+                  Buy another paper for free 24h access
+                </button>
+                <button
+                  className="ep-link"
+                  onClick={() => navigate('/exam-papers')}
+                >
+                  Open unlocked papers ({purchasedPaperIds.length})
+                </button>
+              </div>
+            </section>
+          ) : (
+            <section className="ep-card ep-pass-banner" style={{ gridColumn: '1 / -1' }} aria-label="Purchased papers free revision">
+              <div className="ep-pass-badge">
+                <Sparkles size={16} />
+                <span>24-Hour Free AI Revision Pass Active</span>
+                {phoneSession?.hoursRemaining ? (
+                  <small className="ep-pass-hours">· {phoneSession.hoursRemaining}h left</small>
+                ) : null}
+              </div>
+              <h2>Practise with your unlocked past papers</h2>
+              <p>
+                Your past paper purchases include full online mock practice with Akili AI step-by-step scoring.
+              </p>
+              {phoneMessage && <p role="status" className="ep-phone-msg">{phoneMessage}</p>}
+              <div className="ep-actions">
+                <button
+                  className="ep-primary"
+                  onClick={() => navigate('/exam-papers')}
+                >
+                  Open unlocked papers ({purchasedPaperIds.length})
+                </button>
+                {!phoneSession?.found && (
+                  <button
+                    type="button"
+                    className="ep-outline"
+                    onClick={() => setPhoneLoginOpen((prev) => !prev)}
+                  >
+                    <Smartphone size={16} /> Link phone number for 24h return login
+                  </button>
+                )}
+              </div>
+            </section>
+          )
+        ) : (
+          <section className="ep-card ep-phone-restore-bar" style={{ gridColumn: '1 / -1' }} aria-label="Return with phone number">
+            <div className="ep-phone-restore-head">
+              <div>
+                <strong>Bought a past paper earlier?</strong>
+                <span> Enter your M-Pesa phone number (`+254...`, `07...`, or last 9 digits) to log in and continue your revision.</span>
+              </div>
               <button
-                className="ep-primary"
-                onClick={() => navigate('/exam-papers')}
+                type="button"
+                className="ep-outline"
+                onClick={() => setPhoneLoginOpen((prev) => !prev)}
               >
-                Open unlocked papers ({purchasedPaperIds.length})
+                <Smartphone size={16} />
+                {phoneLoginOpen ? 'Hide phone login' : 'Login with phone number'}
               </button>
             </div>
+            {phoneMessage && <p role="status" className="ep-phone-msg">{phoneMessage}</p>}
           </section>
+        )}
+
+        {phoneLoginOpen && (
+          <form
+            className="ep-card ep-phone-login-form"
+            style={{ gridColumn: '1 / -1' }}
+            onSubmit={handlePhoneLogin}
+            aria-label="Phone number login form"
+          >
+            <label htmlFor="ep-phone-login-input">
+              Enter the phone number used to purchase your past paper
+            </label>
+            <p className="ep-phone-hint">
+              Accepts <code>+2547XXXXXXXX</code>, <code>2547XXXXXXXX</code>, <code>07XXXXXXXX</code>, or <code>7XXXXXXXX</code> (last 9 digits). Within 24 hours your revision continues free; after 24 hours you can renew for KES 20 or buy another paper.
+            </p>
+            <div className="ep-phone-input-row">
+              <input
+                id="ep-phone-login-input"
+                type="tel"
+                inputMode="tel"
+                value={phoneInput}
+                onChange={(e) => setPhoneInput(e.target.value)}
+                placeholder="e.g. 0712 345 678 or +254712345678"
+                required
+              />
+              <button type="submit" className="ep-primary" disabled={phoneRestoring || !phoneInput.trim()}>
+                {phoneRestoring ? 'Checking…' : 'Continue revision'}
+              </button>
+              <button type="button" className="ep-outline" onClick={() => setPhoneLoginOpen(false)}>
+                Cancel
+              </button>
+            </div>
+            {phoneError && (
+              <p role="alert" className="ep-error">
+                {phoneError}
+              </p>
+            )}
+          </form>
         )}
         <div className="ep-main">
           <button className="ep-back" onClick={back}>
@@ -865,6 +1120,96 @@ function ExamPrepWorkspace({
               </button>
             )}
           </section>
+          <section className="ep-card ep-pool-section" aria-labelledby="ep-pool-title">
+            <div className="ep-pool-header">
+              <div>
+                <span className="ep-eyebrow">Shared Syllabus Knowledge Base · Instant &amp; Low Cost</span>
+                <h2 id="ep-pool-title">
+                  <Users size={22} /> Learner’s Revision Pool ({subject})
+                </h2>
+                <p>
+                  Read notes, worked examples, and practice drills generated by fellow {exam} candidates across Kenya. Similar syllabus queries load straight from this shared pool — saving time and AI generations.
+                </p>
+              </div>
+            </div>
+            <div className="ep-pool-controls">
+              <div className="ep-pool-tabs" role="group" aria-label="Filter pooled materials">
+                <button
+                  type="button"
+                  className={poolFilter === 'ALL' ? 'active' : ''}
+                  onClick={() => setPoolFilter('ALL')}
+                >
+                  All materials
+                </button>
+                <button
+                  type="button"
+                  className={poolFilter === 'PRACTICE_DRILL' ? 'active' : ''}
+                  onClick={() => setPoolFilter('PRACTICE_DRILL')}
+                >
+                  Practice drills
+                </button>
+                <button
+                  type="button"
+                  className={poolFilter === 'TOPIC_EXPLANATION' ? 'active' : ''}
+                  onClick={() => setPoolFilter('TOPIC_EXPLANATION')}
+                >
+                  Study notes &amp; answers
+                </button>
+              </div>
+              <div className="ep-pool-search">
+                <Search size={16} />
+                <input
+                  type="search"
+                  aria-label="Search learner revision pool"
+                  placeholder={`Search shared ${subject} topics…`}
+                  value={poolSearch}
+                  onChange={(e) => setPoolSearch(e.target.value)}
+                />
+              </div>
+            </div>
+            {poolItems.length > 0 ? (
+              <div className="ep-pool-grid">
+                {poolItems.slice(0, 6).map((item) => (
+                  <article key={item.id} className="ep-pool-card">
+                    <div className="ep-pool-card-top">
+                      <span className={`ep-pool-badge ${item.itemType === 'PRACTICE_DRILL' ? 'drill' : 'note'}`}>
+                        {item.itemType === 'PRACTICE_DRILL' ? 'Practice Drill' : 'Study Note'}
+                      </span>
+                      <small className="ep-pool-reuse">
+                        Studied by {item.reuseCount} {item.reuseCount === 1 ? 'learner' : 'learners'}
+                      </small>
+                    </div>
+                    <h3>{item.topic}</h3>
+                    <p>{item.summaryPreview}</p>
+                    <div className="ep-pool-card-footer">
+                      <span>{item.grade} · {item.subject}</span>
+                      {item.itemType === 'PRACTICE_DRILL' ? (
+                        <button
+                          type="button"
+                          className="ep-outline"
+                          onClick={() => startPracticeFromPoolItem(item)}
+                        >
+                          Practise from Pool <ArrowRight size={15} />
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          className="ep-outline"
+                          onClick={() => setSelectedPoolNote(item)}
+                        >
+                          Read Material <BookOpen size={15} />
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="ep-pool-empty">
+                No pooled materials match that search yet. Start a topic practice or ask Akili a question above — your generation will be added to help the next learner!
+              </p>
+            )}
+          </section>
           <div className="ep-tip">
             <Leaf size={24} /> Understanding your mistakes is part of getting better.
           </div>
@@ -971,6 +1316,74 @@ function ExamPrepWorkspace({
           </div>
         </aside>
       </main>
+      {selectedPoolNote && (
+        <div
+          className="ep-pool-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ep-pool-modal-title"
+        >
+          <div className="ep-card ep-pool-modal">
+            <div className="ep-pool-modal-head">
+              <div>
+                <span className="ep-eyebrow">
+                  Learner’s Revision Pool · {selectedPoolNote.grade} · {selectedPoolNote.subject}
+                </span>
+                <h2 id="ep-pool-modal-title">{selectedPoolNote.topic}</h2>
+              </div>
+              <button
+                type="button"
+                className="ep-outline"
+                aria-label="Close study material"
+                onClick={() => setSelectedPoolNote(null)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="ep-pool-modal-body">
+              {typeof selectedPoolNote.contentJson === 'string' ? (
+                <pre className="ep-pool-note-text">{selectedPoolNote.contentJson}</pre>
+              ) : typeof selectedPoolNote.contentJson?.content === 'string' ? (
+                <pre className="ep-pool-note-text">{selectedPoolNote.contentJson.content}</pre>
+              ) : selectedPoolNote.contentJson?.whatItTests ? (
+                <div className="ep-pool-walkthrough">
+                  <p><strong>What it tests:</strong> {selectedPoolNote.contentJson.whatItTests}</p>
+                  <p><strong>Approach strategy:</strong> {selectedPoolNote.contentJson.approachStrategy}</p>
+                  {Array.isArray(selectedPoolNote.contentJson.keyConcepts) && (
+                    <p><strong>Key concepts:</strong> {selectedPoolNote.contentJson.keyConcepts.join(', ')}</p>
+                  )}
+                  {Array.isArray(selectedPoolNote.contentJson.commonPitfalls) && (
+                    <p><strong>Common pitfalls:</strong> {selectedPoolNote.contentJson.commonPitfalls.join(' · ')}</p>
+                  )}
+                </div>
+              ) : (
+                <p>{selectedPoolNote.summaryPreview}</p>
+              )}
+            </div>
+            <div className="ep-actions">
+              <button
+                type="button"
+                className="ep-primary"
+                onClick={() => {
+                  const chosen = selectedPoolNote.topic;
+                  setSelectedPoolNote(null);
+                  setTopic(chosen);
+                  void startPractice(chosen);
+                }}
+              >
+                Practise questions on this topic
+              </button>
+              <button
+                type="button"
+                className="ep-outline"
+                onClick={() => setSelectedPoolNote(null)}
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {practiceOpen && session && (
         <ExamPrepPractice
           session={session}

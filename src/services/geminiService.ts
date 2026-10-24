@@ -6,6 +6,7 @@ import { buildPersonaInstruction, recommendPersona } from "./adminAgentService";
 import { parseModelJson } from "./jsonResponse";
 import { parseClassroomFollowUp } from './classroomFollowUp';
 import { parseAiAllowance, type AiAllowance } from './aiAllowance';
+import { learnerPoolService } from './learnerPoolService';
 
 // --- PROXY CONFIG ---
 // We no longer use VITE_GEMINI_API_KEY on the client.
@@ -108,6 +109,20 @@ export const getPredictedTopics = async (
   subject: string,
   examType: 'KCSE' | 'KPSEA' | 'JSS' = 'KCSE'
 ): Promise<PredictedTopic[]> => {
+  try {
+    const pooled = await learnerPoolService.findPooledMaterial({
+      itemType: 'REVISION_PAPER',
+      grade: examType,
+      subject,
+      query: `predicted hot topics ${examType} ${subject}`,
+    });
+    if (pooled && Array.isArray(pooled.contentJson) && pooled.contentJson.length > 0) {
+      return pooled.contentJson as PredictedTopic[];
+    }
+  } catch {
+    // Fallback to fresh generation if pool lookup fails
+  }
+
   const systemInstruction = {
     parts: [{
       text: `You are a KNEC examiner analyst. Based on ${examType} past paper patterns from 2015–2024, predict the most likely topics for the upcoming ${examType} ${subject} exam.
@@ -141,7 +156,20 @@ Return 6 topics max. Be specific to ${subject} content — not generic exam advi
     // Strip any markdown code fences if present
     const text = result.response.text();
     const cleaned = (text || '[]').replace(/```json|```/g, '').trim();
-    return JSON.parse(cleaned) as PredictedTopic[];
+    const predicted = JSON.parse(cleaned) as PredictedTopic[];
+    if (Array.isArray(predicted) && predicted.length > 0) {
+      void learnerPoolService.savePooledMaterial({
+        itemType: 'REVISION_PAPER',
+        examPathway: examType,
+        grade: examType,
+        subject,
+        topic: `${examType} ${subject} Predicted Hot Topics`,
+        promptText: `predicted hot topics ${examType} ${subject}`,
+        summaryPreview: predicted.map((p) => p.topic).join(' · ').slice(0, 220),
+        contentJson: predicted,
+      });
+    }
+    return predicted;
   } catch (error: any) {
     console.error('Predicted topics error:', error);
     return [];
@@ -165,6 +193,21 @@ export const generatePracticeQuestions = async (
   count: number = 3,
   grade?: string
 ): Promise<PracticeQuestion[]> => {
+  try {
+    const pooledQuestions = await learnerPoolService.findPooledPractice({
+      subject,
+      topic,
+      examType,
+      grade,
+      count,
+    });
+    if (pooledQuestions && pooledQuestions.length >= count) {
+      return pooledQuestions.slice(0, count);
+    }
+  } catch {
+    // Proceed to fresh generation if pool lookup fails
+  }
+
   const topicClause = topic ? `focused on the topic: "${topic}"` : 'covering the most commonly tested topics';
   const systemInstruction = {
     parts: [{
@@ -219,7 +262,12 @@ Rules:
       if (import.meta.env.DEV) console.warn('Practice response shape', { array: Array.isArray(parsed), keys: parsed && typeof parsed === 'object' ? Object.keys(parsed).slice(0, 8) : [], count: questions?.length, fields: questions?.[0] ? Object.keys(questions[0]) : [] });
       throw new Error('Practice questions were incomplete. Please try again.');
     }
-    return questions.slice(0, count);
+    const finalQuestions = questions.slice(0, count);
+    void learnerPoolService.savePooledPractice(
+      { subject, topic, examType, grade },
+      finalQuestions
+    );
+    return finalQuestions;
   } catch (error: any) {
     console.error('Generate practice questions error:', error);
     throw error;
@@ -2617,6 +2665,16 @@ export const explainQuestion = async (
   question: ExamQuestion,
   language: 'EN' | 'SW' = 'EN'
 ): Promise<QuestionExplanation> => {
+  // Check Learner Pool first to avoid regenerating walkthroughs for identical/relatable questions
+  const pooledWalkthrough = await learnerPoolService.findPooledQuestionWalkthrough({
+    topic: question.topic,
+    questionText: question.text,
+    language,
+  });
+  if (pooledWalkthrough) {
+    return pooledWalkthrough;
+  }
+
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -2665,7 +2723,12 @@ Output as QuestionExplanation JSON.
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
-    return JSON.parse(text) as QuestionExplanation;
+    const parsed = JSON.parse(text) as QuestionExplanation;
+    void learnerPoolService.savePooledQuestionWalkthrough(
+      { topic: question.topic, questionText: question.text, language },
+      parsed
+    );
+    return parsed;
   } catch (error) {
     console.error("Error explaining question:", error);
     throw error;
@@ -3292,6 +3355,18 @@ export const getExamGuruResponse = async (
     .map(m => `${m.role === 'guru' ? 'Guru' : 'Candidate'}: ${m.content}`)
     .join('\n');
   const inferredSubject = inferGuruSubject(`${userQuery}\n${history}`);
+
+  // If this is a standalone / opening query, check the shared Learner Pool first so relatable syllabus queries do not trigger redundant AI calls
+  if (chatHistory.length <= 1 && userQuery.trim().length >= 8) {
+    const pooledGuru = await learnerPoolService.findPooledExplanation({
+      subject: inferredSubject || 'General',
+      prompt: userQuery,
+    });
+    if (pooledGuru) {
+      return pooledGuru;
+    }
+  }
+
   const paperTypeHint = /\bpast\s*paper|kcse|kpsea|knec|paper\s*[12]|mock|marking scheme/i.test(userQuery)
     ? 'PAST_PAPER'
     : undefined;
@@ -3376,9 +3451,19 @@ Continue with 8 to 12 useful topics, then add "Tonight's drill" with 5 practice 
       .replace(/\*\*/g, '')
       .replace(/^\s*[-*]\s+/gm, '- ')
       .trim();
-    if (asksForLikelyTopics) return cleaned;
-    if (/Guru Tip:|Tonight's drill|Ask me for a drill/i.test(cleaned)) return cleaned;
-    return `${cleaned}\n\nGuru Tip: Pick one topic above and ask me for a 5-question drill.`;
+    const finalGuruResponse = asksForLikelyTopics || /Guru Tip:|Tonight's drill|Ask me for a drill/i.test(cleaned)
+      ? cleaned
+      : `${cleaned}\n\nGuru Tip: Pick one topic above and ask me for a 5-question drill.`;
+    if (chatHistory.length <= 1 && userQuery.trim().length >= 8) {
+      void learnerPoolService.savePooledExplanation(
+        {
+          subject: inferredSubject || 'General',
+          prompt: userQuery,
+        },
+        finalGuruResponse
+      );
+    }
+    return finalGuruResponse;
   } catch (error: any) {
     console.error("Exam Guru error:", error);
     if (error instanceof RateLimitError) throw error;

@@ -38,6 +38,118 @@ export type PaperAccess = {
 };
 
 const TOKEN_KEY = 'soma_exam_paper_buyer_token';
+const PHONE_SESSION_KEY = 'soma_candidate_phone_session';
+export const REVISION_PASS_DURATION_MS = 24 * 60 * 60 * 1000;
+
+export type PhoneRestoreSession = {
+  found: boolean;
+  buyerToken?: string;
+  buyerName?: string;
+  normalizedPhone: string;
+  last9: string;
+  paperIds: string[];
+  latestPaidAt?: string | null;
+  passExpiresAt?: string | null;
+  passActive: boolean;
+  hoursRemaining: number;
+};
+
+/**
+ * Extracts the canonical last 9 digits of a Kenyan phone number from formats:
+ * +254xxx..., 254xxx..., 0xxxx..., or 9-digit xxx...
+ */
+export const normalizeKenyanPhoneLast9 = (raw: string | null | undefined): string | null => {
+  const digits = String(raw || '').replace(/\D/g, '');
+  if (digits.length === 9) return digits;
+  if (digits.length === 10 && digits.startsWith('0')) return digits.slice(1);
+  if (digits.length === 12 && digits.startsWith('254')) return digits.slice(3);
+  if (digits.length === 13 && digits.startsWith('2540')) return digits.slice(4);
+  if (digits.length > 9 && (digits.startsWith('254') || digits.startsWith('0'))) return digits.slice(-9);
+  return null;
+};
+
+export const normalizeKenyanPhone = (raw: string | null | undefined): string | null => {
+  const last9 = normalizeKenyanPhoneLast9(raw);
+  return last9 ? `254${last9}` : null;
+};
+
+export const computePassStatus = (latestPaidAt?: string | null, passExpiresAt?: string | null, now = Date.now()) => {
+  const expiresMs = passExpiresAt
+    ? Date.parse(passExpiresAt)
+    : latestPaidAt
+      ? Date.parse(latestPaidAt) + REVISION_PASS_DURATION_MS
+      : NaN;
+  if (!Number.isFinite(expiresMs)) {
+    return { passActive: false, hoursRemaining: 0, passExpiresAt: null };
+  }
+  const remainingMs = expiresMs - now;
+  const passActive = remainingMs > 0;
+  const hoursRemaining = passActive ? Math.max(0.1, Math.round((remainingMs / 3600000) * 10) / 10) : 0;
+  return {
+    passActive,
+    hoursRemaining,
+    passExpiresAt: new Date(expiresMs).toISOString(),
+  };
+};
+
+export const readPhoneRestoreSession = (now = Date.now()): PhoneRestoreSession | null => {
+  try {
+    const raw = localStorage.getItem(PHONE_SESSION_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as PhoneRestoreSession;
+    if (!parsed || typeof parsed.normalizedPhone !== 'string' || !Array.isArray(parsed.paperIds)) {
+      return null;
+    }
+    const status = computePassStatus(parsed.latestPaidAt, parsed.passExpiresAt, now);
+    return {
+      ...parsed,
+      ...status,
+    };
+  } catch {
+    return null;
+  }
+};
+
+export const savePhoneRestoreSession = (session: PhoneRestoreSession) => {
+  try {
+    localStorage.setItem(PHONE_SESSION_KEY, JSON.stringify(session));
+    if (session.buyerToken && /^[0-9a-f-]{36}$/i.test(session.buyerToken)) {
+      localStorage.setItem(TOKEN_KEY, session.buyerToken);
+    }
+  } catch {
+    // Ignore storage quota errors
+  }
+};
+
+export const clearPhoneRestoreSession = () => {
+  try {
+    localStorage.removeItem(PHONE_SESSION_KEY);
+  } catch {
+    // Ignore storage errors
+  }
+};
+
+export const recordLocalPaperPurchaseSession = (examId: string | number, buyer?: Partial<PaperBuyer>) => {
+  const existing = readPhoneRestoreSession();
+  const last9 = normalizeKenyanPhoneLast9(buyer?.phone) || existing?.last9 || '';
+  const nowIso = new Date().toISOString();
+  const expiresIso = new Date(Date.now() + REVISION_PASS_DURATION_MS).toISOString();
+  const nextPaperIds = Array.from(new Set([...(existing?.paperIds || []), String(examId)]));
+  const session: PhoneRestoreSession = {
+    found: true,
+    buyerToken: localStorage.getItem(TOKEN_KEY) || undefined,
+    buyerName: buyer?.name?.trim() || existing?.buyerName || 'Candidate',
+    normalizedPhone: last9 ? `254${last9}` : existing?.normalizedPhone || '',
+    last9,
+    paperIds: nextPaperIds,
+    latestPaidAt: nowIso,
+    passExpiresAt: expiresIso,
+    passActive: true,
+    hoursRemaining: 24,
+  };
+  savePhoneRestoreSession(session);
+  return session;
+};
 
 export const getPaperBuyerToken = () => {
   try {
@@ -99,10 +211,77 @@ export const examPaperBankService = {
     }));
   },
 
-  async initiatePurchase(examId: string | number, buyer: PaperBuyer) {
+  readPhoneSession: readPhoneRestoreSession,
+  clearPhoneSession: clearPhoneRestoreSession,
+  recordLocalPaperPurchase: recordLocalPaperPurchaseSession,
+
+  async restoreByPhone(rawPhone: string): Promise<PhoneRestoreSession> {
+    const last9 = normalizeKenyanPhoneLast9(rawPhone);
+    if (!last9) {
+      throw new Error('Please enter a valid Kenyan phone number (last 9 digits required).');
+    }
+    const normalizedPhone = `254${last9}`;
+
+    let rawResult: Record<string, any> | null = null;
+    const { data: rpcData, error: rpcError } = await supabase.rpc('restore_candidate_by_phone', {
+      p_phone: normalizedPhone,
+    });
+
+    if (!rpcError && rpcData && typeof rpcData === 'object') {
+      rawResult = rpcData as Record<string, any>;
+    } else {
+      const { data: fnData, error: fnError } = await supabase.functions.invoke('exam-paper-bank/restore-phone', {
+        body: { phone: normalizedPhone },
+      });
+      if (fnError) throw fnError;
+      rawResult = (fnData || null) as Record<string, any> | null;
+    }
+
+    if (!rawResult || !rawResult.found) {
+      return {
+        found: false,
+        normalizedPhone,
+        last9,
+        paperIds: [],
+        passActive: false,
+        hoursRemaining: 0,
+      };
+    }
+
+    const paperIds = Array.isArray(rawResult.paperIds)
+      ? rawResult.paperIds.map((id: unknown) => String(id)).filter((id: string) => Boolean(id))
+      : [];
+    const status = computePassStatus(
+      rawResult.latestPaidAt ? String(rawResult.latestPaidAt) : null,
+      rawResult.passExpiresAt ? String(rawResult.passExpiresAt) : null
+    );
+    const session: PhoneRestoreSession = {
+      found: true,
+      buyerToken: typeof rawResult.buyerToken === 'string' ? rawResult.buyerToken : undefined,
+      buyerName: typeof rawResult.buyerName === 'string' ? rawResult.buyerName : 'Candidate',
+      normalizedPhone,
+      last9,
+      paperIds,
+      latestPaidAt: rawResult.latestPaidAt ? String(rawResult.latestPaidAt) : null,
+      passExpiresAt: status.passExpiresAt,
+      passActive: typeof rawResult.passActive === 'boolean' ? rawResult.passActive : status.passActive,
+      hoursRemaining: typeof rawResult.hoursRemaining === 'number' ? rawResult.hoursRemaining : status.hoursRemaining,
+    };
+
+    savePhoneRestoreSession(session);
+    return session;
+  },
+
+  async initiatePurchase(examId: string | number, buyer: PaperBuyer, options?: { renewPass?: boolean }) {
     const buyerToken = getPaperBuyerToken();
+    const normalizedPhone = normalizeKenyanPhone(buyer.phone) || buyer.phone;
     const { data, error } = await supabase.functions.invoke('exam-paper-bank/initiate', {
-      body: { examId, buyerToken, buyer },
+      body: {
+        examId,
+        buyerToken,
+        buyer: { ...buyer, phone: normalizedPhone },
+        ...(options?.renewPass ? { renewPass: true } : {}),
+      },
     });
     if (error) throw error;
     return data as { redirect_url?: string; order_tracking_id?: string; reference: string; already_paid?: boolean };

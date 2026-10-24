@@ -13,6 +13,8 @@ import {
   EXAM_PAPER_PRICE_KES,
   ExamPaperBankItem,
   examPaperBankService,
+  readPhoneRestoreSession,
+  recordLocalPaperPurchaseSession,
 } from '../services/examPaperBankService';
 import { PaperBankCatalog } from '../components/PaperBankCatalog';
 import { paperDestination, rememberPaperMode } from '../services/paperCheckoutIntent';
@@ -34,15 +36,65 @@ export const ExamPaperBankPage: React.FC = () => {
   const [checkoutUrl, setCheckoutUrl] = React.useState('');
   const [checkoutReference, setCheckoutReference] = React.useState('');
   const [buying, setBuying] = React.useState(false);
-  const [buyer, setBuyer] = React.useState({ name: '', phone: '', email: '' });
+  const [buyer, setBuyer] = React.useState(() => {
+    const savedSession = readPhoneRestoreSession();
+    return {
+      name: savedSession?.buyerName || '',
+      phone: savedSession?.normalizedPhone || '',
+      email: '',
+    };
+  });
   const [confirmedPaper, setConfirmedPaper] = React.useState<{ id: string; title: string } | null>(null);
+  const isRenewingPass = searchParams.get('renew') === '1';
 
   const [unlockedPaperIds, setUnlockedPaperIds] = React.useState<Set<string>>(new Set());
   const [purchasedPaperIds, setPurchasedPaperIds] = React.useState<Set<string>>(new Set());
   const [restoringPurchases, setRestoringPurchases] = React.useState(true);
   const [purchaseRestoreError, setPurchaseRestoreError] = React.useState('');
   const [restoreAttempt, setRestoreAttempt] = React.useState(0);
+  const [phoneRestoreMessage, setPhoneRestoreMessage] = React.useState('');
+  const [phoneRestoring, setPhoneRestoring] = React.useState(false);
   const verifyingPaperIds = React.useRef(new Set<string>());
+
+  React.useEffect(() => {
+    const prefilledPhone = searchParams.get('phone');
+    if (prefilledPhone) {
+      setBuyer((prev) => ({ ...prev, phone: prefilledPhone }));
+    }
+  }, [searchParams]);
+
+  const handleRestoreByPhone = React.useCallback(async (rawPhone: string) => {
+    setPhoneRestoring(true);
+    setPhoneRestoreMessage('');
+    setPurchaseRestoreError('');
+    try {
+      const session = await examPaperBankService.restoreByPhone(rawPhone);
+      if (session.found && session.paperIds.length > 0) {
+        setPurchasedPaperIds((prev) => new Set([...prev, ...session.paperIds.map(String)]));
+        setUnlockedPaperIds((prev) => new Set([...prev, ...session.paperIds.map(String)]));
+        setBuyer((prev) => ({
+          ...prev,
+          name: session.buyerName || prev.name,
+          phone: session.normalizedPhone || prev.phone,
+        }));
+        setPhoneRestoreMessage(
+          session.passActive
+            ? `Welcome back${session.buyerName ? `, ${session.buyerName}` : ''}! Restored ${session.paperIds.length} ${session.paperIds.length === 1 ? 'paper' : 'papers'} and your 24-hour AI Revision Pass (${session.hoursRemaining}h left).`
+            : `Welcome back! Restored ${session.paperIds.length} ${session.paperIds.length === 1 ? 'paper' : 'papers'}. Your 24h AI Revision Pass expired — renew for KES 20 or buy another paper for free 24h revision access.`
+        );
+      } else {
+        setPurchaseRestoreError(
+          'No paid papers were found for that phone number. Try the exact M-Pesa number used at checkout (+254..., 07..., or last 9 digits).'
+        );
+      }
+    } catch (err: any) {
+      setPurchaseRestoreError(
+        err instanceof Error ? err.message : 'Could not verify that phone number right now. Please try again.'
+      );
+    } finally {
+      setPhoneRestoring(false);
+    }
+  }, []);
 
   React.useEffect(() => {
     let active = true;
@@ -92,9 +144,14 @@ export const ExamPaperBankPage: React.FC = () => {
     if (!paperId) return () => { active = false; };
     // Let the verification flow finish and retain its thank-you until Continue.
     if (searchParams.get('status') === 'verifying' || confirmedPaper) return () => { active = false; };
-    const paper = papers.find((item) => String(item.id) === paperId);
+    const paper = papers.find((item) => String(item.id) === paperId) || (isRenewingPass && papers[0] ? papers[0] : undefined);
     if (paper) {
       setSelected(paper);
+      if (isRenewingPass) {
+        rememberPaperMode(paper.id, 'revision');
+        setCheckoutOpen(true);
+        return () => { active = false; };
+      }
       if (isPaperUnlocked(paper.id)) {
         // Paper already paid — jump straight to the reader.
         navigate(paperDestination(paper.id), { replace: true });
@@ -146,6 +203,7 @@ export const ExamPaperBankPage: React.FC = () => {
       try {
         const access = await examPaperBankService.getAccess(examId, reference);
         if (!cancelled && access.paid) {
+          recordLocalPaperPurchaseSession(examId, buyer);
           markPaperUnlocked(examId);
           setCheckoutOpen(false);
           setConfirmedPaper({ id: examId, title: access.title || 'Your exam paper' });
@@ -168,6 +226,7 @@ export const ExamPaperBankPage: React.FC = () => {
       try {
         const access = await examPaperBankService.getAccess(selected.id, checkoutReference);
         if (!cancelled && access.paid) {
+          recordLocalPaperPurchaseSession(selected.id, buyer);
           markPaperUnlocked(selected.id);
           window.clearInterval(interval);
           setCheckoutOpen(false);
@@ -187,8 +246,11 @@ export const ExamPaperBankPage: React.FC = () => {
     setBuying(true);
     setError('');
     try {
-      const result = await examPaperBankService.initiatePurchase(selected.id, buyer);
-      if (result.already_paid) {
+      const result = await examPaperBankService.initiatePurchase(selected.id, buyer, {
+        renewPass: isRenewingPass,
+      });
+      if (result.already_paid && !isRenewingPass) {
+        recordLocalPaperPurchaseSession(selected.id, buyer);
         markPaperUnlocked(selected.id);
         navigate(paperDestination(selected.id));
         return;
@@ -361,6 +423,9 @@ export const ExamPaperBankPage: React.FC = () => {
       <PaperBankCatalog papers={papers} loading={loading} loadError={loadError}
         restoringPurchases={restoringPurchases} purchaseRestoreError={purchaseRestoreError}
         onRestorePurchases={() => setRestoreAttempt(value => value + 1)}
+        onRestoreByPhone={handleRestoreByPhone}
+        phoneRestoring={phoneRestoring}
+        phoneRestoreMessage={phoneRestoreMessage}
         initialGrade={searchParams.get('grade') || undefined} initialSubject={searchParams.get('subject') || undefined}
         isUnlocked={isPaperUnlocked} onOpen={paper => { void openPaper(paper); }}
         onRevision={paper => { void openRevisionMode(paper); }}
@@ -370,8 +435,8 @@ export const ExamPaperBankPage: React.FC = () => {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4" role="dialog" aria-modal="true" aria-label="Buy exam paper">
           <div className="max-h-[92vh] w-full max-w-3xl overflow-auto rounded-3xl bg-white shadow-2xl">
             <div className="sticky top-0 z-10 flex items-start justify-between border-b border-slate-200 bg-white px-5 py-4">
-              <div><p className="text-xs font-black uppercase tracking-wider text-indigo-600">Exam paper package</p><h2 className="mt-1 font-black text-slate-950">{selected.title}</h2></div>
-              <button onClick={() => { setCheckoutOpen(false); setCheckoutUrl(''); setCheckoutReference(''); setSelected(null); const params = new URLSearchParams(searchParams); ['paper', 'ref', 'status'].forEach(key => params.delete(key)); setSearchParams(params, { replace: true }); }} className="rounded-full p-2 text-slate-500 hover:bg-slate-100" aria-label="Close checkout"><X className="h-5 w-5" /></button>
+              <div><p className="text-xs font-black uppercase tracking-wider text-indigo-600">{isRenewingPass ? '24-Hour AI Revision Pass Renewal' : 'Exam paper package'}</p><h2 className="mt-1 font-black text-slate-950">{isRenewingPass ? `Continue 24h Revision · ${selected.title}` : selected.title}</h2></div>
+              <button onClick={() => { setCheckoutOpen(false); setCheckoutUrl(''); setCheckoutReference(''); setSelected(null); const params = new URLSearchParams(searchParams); ['paper', 'ref', 'status', 'renew', 'phone'].forEach(key => params.delete(key)); setSearchParams(params, { replace: true }); }} className="rounded-full p-2 text-slate-500 hover:bg-slate-100" aria-label="Close checkout"><X className="h-5 w-5" /></button>
             </div>
             {checkoutUrl ? (
               <div className="p-4"><iframe title="M-Pesa checkout" src={checkoutUrl} className="h-[620px] w-full rounded-2xl border border-slate-200" allow="payment" /></div>

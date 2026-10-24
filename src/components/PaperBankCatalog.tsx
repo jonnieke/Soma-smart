@@ -43,6 +43,9 @@ type Props = {
   restoringPurchases: boolean;
   purchaseRestoreError: string;
   onRestorePurchases: () => void;
+  onRestoreByPhone?: (phone: string) => void | Promise<void>;
+  phoneRestoring?: boolean;
+  phoneRestoreMessage?: string;
   initialGrade?: string;
   initialSubject?: string;
   isUnlocked: (id: string | number) => boolean;
@@ -72,6 +75,9 @@ export function PaperBankCatalog({
   restoringPurchases,
   purchaseRestoreError,
   onRestorePurchases,
+  onRestoreByPhone,
+  phoneRestoring,
+  phoneRestoreMessage,
   initialGrade,
   initialSubject,
   isUnlocked,
@@ -82,6 +88,7 @@ export function PaperBankCatalog({
 }: Props) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const [phoneInput, setPhoneInput] = useState('');
   const [grade, setGrade] = useState(initialGrade ? paperLevel(initialGrade) : '');
   const [subject, setSubject] = useState(initialSubject ? paperSubject(initialSubject) : '');
   const [category, setCategory] = useState('All papers');
@@ -272,10 +279,45 @@ export function PaperBankCatalog({
             {category === 'My papers' && (
               <div className="pb-notice">
                 <p>
-                  Paid papers are restored securely for this browser. Active Pro access is also
-                  shown. Purchases made on another device or before clearing browser data need
-                  support to recover.
+                  Paid papers are restored securely for this browser, or you can enter the M-Pesa phone number you used (`+254...`, `07...`, or last 9 digits) to restore your papers and 24-hour AI Revision Pass on any device.
                 </p>
+                {onRestoreByPhone && (
+                  <form
+                    style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', margin: '10px 0' }}
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      if (phoneInput.trim()) void onRestoreByPhone(phoneInput.trim());
+                    }}
+                  >
+                    <input
+                      type="tel"
+                      aria-label="Enter phone number to restore papers"
+                      placeholder="Enter phone (+2547..., 07..., or last 9 digits)"
+                      value={phoneInput}
+                      onChange={(e) => setPhoneInput(e.target.value)}
+                      style={{
+                        flex: '1 1 220px',
+                        minHeight: '40px',
+                        padding: '8px 12px',
+                        borderRadius: '10px',
+                        border: '1px solid #cbd5e1',
+                        fontSize: '14px',
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      className="pb-primary"
+                      disabled={phoneRestoring || !phoneInput.trim()}
+                    >
+                      {phoneRestoring ? 'Restoring…' : 'Login with phone'}
+                    </button>
+                  </form>
+                )}
+                {phoneRestoreMessage && (
+                  <p role="status" style={{ color: '#047857', fontWeight: 700, marginBottom: '6px' }}>
+                    {phoneRestoreMessage}
+                  </p>
+                )}
                 <button
                   className="pb-text-button"
                   disabled={restoringPurchases}

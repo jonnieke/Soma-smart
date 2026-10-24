@@ -17,12 +17,20 @@ const json = (body: unknown, status = 200) => new Response(JSON.stringify(body),
   headers: { ...corsHeaders, 'Content-Type': 'application/json' },
 });
 
-const cleanPhone = (value: unknown) => {
+const extractLast9Digits = (value: unknown): string | null => {
   const digits = String(value || '').replace(/\D/g, '');
-  if (digits.startsWith('254')) return digits;
-  if (digits.startsWith('0')) return `254${digits.slice(1)}`;
-  if (digits.length === 9) return `254${digits}`;
-  return digits;
+  if (digits.length === 9) return digits;
+  if (digits.length === 10 && digits.startsWith('0')) return digits.slice(1);
+  if (digits.length === 12 && digits.startsWith('254')) return digits.slice(3);
+  if (digits.length === 13 && digits.startsWith('2540')) return digits.slice(4);
+  if (digits.length > 9 && (digits.startsWith('254') || digits.startsWith('0'))) return digits.slice(-9);
+  return null;
+};
+
+const cleanPhone = (value: unknown) => {
+  const last9 = extractLast9Digits(value);
+  if (last9) return `254${last9}`;
+  return String(value || '').replace(/\D/g, '');
 };
 
 serve(async (req) => {
@@ -69,8 +77,57 @@ serve(async (req) => {
   };
 
   try {
+    if (path.endsWith('/restore-phone')) {
+      const { phone } = await req.json();
+      const last9 = extractLast9Digits(phone);
+      if (!last9) {
+        return json({ error: 'Please enter a valid Kenyan phone number (last 9 digits).' }, 400);
+      }
+      const { data: rpcResult, error: rpcError } = await supabase.rpc('restore_candidate_by_phone', {
+        p_phone: phone,
+      });
+      if (!rpcError && rpcResult) {
+        return json(rpcResult);
+      }
+
+      // Direct table fallback if RPC has not yet been applied
+      const { data: orders, error: ordersError } = await supabase
+        .from('exam_paper_orders')
+        .select('*')
+        .eq('status', 'SUCCESS')
+        .ilike('buyer_phone', `%${last9}`)
+        .order('paid_at', { ascending: false });
+      if (ordersError) throw ordersError;
+      if (!orders || orders.length === 0) {
+        return json({
+          found: false,
+          normalizedPhone: `254${last9}`,
+          last9,
+          paperIds: [],
+          passActive: false,
+          hoursRemaining: 0,
+        });
+      }
+      const latest = orders[0];
+      const latestPaidMs = Date.parse(latest.paid_at || latest.created_at || new Date().toISOString());
+      const expiresAtMs = latestPaidMs + 24 * 60 * 60 * 1000;
+      const paperIds = Array.from(new Set(orders.map((o: any) => String(o.exam_id))));
+      return json({
+        found: true,
+        buyerToken: latest.buyer_token,
+        buyerName: latest.buyer_name,
+        normalizedPhone: `254${last9}`,
+        last9,
+        paperIds,
+        latestPaidAt: new Date(latestPaidMs).toISOString(),
+        passExpiresAt: new Date(expiresAtMs).toISOString(),
+        passActive: expiresAtMs > Date.now(),
+        hoursRemaining: Math.max(0, Math.round(((expiresAtMs - Date.now()) / 3600000) * 10) / 10),
+      });
+    }
+
     if (path.endsWith('/initiate')) {
-      const { examId, buyerToken, buyer } = await req.json();
+      const { examId, buyerToken, buyer, renewPass } = await req.json();
       const name = String(buyer?.name || '').trim();
       const phone = cleanPhone(buyer?.phone);
       const email = String(buyer?.email || '').trim();
@@ -87,14 +144,18 @@ serve(async (req) => {
         .maybeSingle();
       if (examError || !exam || (!exam.file_url && !exam.file_path)) return json({ error: 'Paper is not available for sale.' }, 404);
 
-      const { data: existing } = await supabase
-        .from('exam_paper_orders')
-        .select('*')
-        .eq('exam_id', examId)
-        .eq('buyer_token', buyerToken)
-        .eq('status', 'SUCCESS')
-        .maybeSingle();
-      if (existing) return json({ already_paid: true, reference: existing.reference_code });
+      if (!renewPass) {
+        const { data: existing } = await supabase
+          .from('exam_paper_orders')
+          .select('*')
+          .eq('exam_id', examId)
+          .eq('buyer_token', buyerToken)
+          .eq('status', 'SUCCESS')
+          .order('paid_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (existing) return json({ already_paid: true, reference: existing.reference_code });
+      }
 
       const reference = `PAPER_${examId}_${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`;
       const { data: order, error: orderError } = await supabase.from('exam_paper_orders').insert({
