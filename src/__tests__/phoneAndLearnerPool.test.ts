@@ -303,4 +303,73 @@ describe('Shared Learner Knowledge Pool & Relatable Query Deduplication', () => 
     expect(waText).toContain('Gas Laws');
     expect(waText).toContain('https://www.somaai.co.ke/revision');
   });
+
+  it('rotates unseen pooled practice drills per learner and computes Admin AI cost-savings analytics', async () => {
+    const drillA = await learnerPoolService.savePooledPractice(
+      {
+        subject: 'Physics',
+        topic: 'Hookes Law & Elasticity',
+        examType: 'KCSE',
+        grade: 'Form 4',
+      },
+      [
+        {
+          number: 1,
+          text: 'State Hookes Law.',
+          marks: 1,
+          topic: 'Hookes Law & Elasticity',
+          modelAnswerOutline: 'Extension is proportional to force within elastic limit [1 mk]',
+        },
+      ]
+    );
+    const drillB = await learnerPoolService.savePooledPractice(
+      {
+        subject: 'Physics',
+        topic: 'Linear Motion & Equations',
+        examType: 'KCSE',
+        grade: 'Form 4',
+      },
+      [
+        {
+          number: 1,
+          text: 'Define uniform acceleration.',
+          marks: 1,
+          topic: 'Linear Motion & Equations',
+          modelAnswerOutline: 'Constant rate of change of velocity [1 mk]',
+        },
+      ]
+    );
+
+    expect(drillA).not.toBeNull();
+    expect(drillB).not.toBeNull();
+
+    const firstPick = await learnerPoolService.getNextRotationalPoolDrill('phone:712345678', {
+      grade: 'Form 4',
+      subject: 'Physics',
+    });
+    expect(firstPick).not.toBeNull();
+
+    // Mark the first drill completed by this learner; next rotational call should pick the other unseen drill
+    learnerPoolService.markDrillCompletedByLearner('phone:712345678', firstPick!.id);
+
+    const secondPick = await learnerPoolService.getNextRotationalPoolDrill('phone:712345678', {
+      grade: 'Form 4',
+      subject: 'Physics',
+    });
+    expect(secondPick).not.toBeNull();
+    expect(secondPick!.id).not.toBe(firstPick!.id);
+
+    // Verify Admin AI cost-savings analytics & moderation
+    const analyticsBefore = await learnerPoolService.getPoolAnalytics();
+    expect(analyticsBefore.totalItems).toBeGreaterThanOrEqual(2);
+    expect(analyticsBefore.totalDrills).toBeGreaterThanOrEqual(2);
+    expect(analyticsBefore.generationsSaved).toBeGreaterThanOrEqual(1);
+    expect(analyticsBefore.estimatedSavingsKes).toBeGreaterThan(0);
+
+    const boosted = await learnerPoolService.boostPooledItem(drillA!.id, 10);
+    expect(boosted?.reuseCount).toBeGreaterThanOrEqual((drillA?.reuseCount || 1) + 10);
+
+    const removed = await learnerPoolService.deletePooledItem(drillB!.id);
+    expect(removed).toBe(true);
+  });
 });

@@ -27,7 +27,21 @@ export interface LearnerPoolItem {
 
 const LOCAL_POOL_KEY = 'soma_learner_knowledge_pool_v1';
 const HELPFUL_VOTES_KEY = 'soma_learner_pool_helpful_votes_v1';
+const COMPLETED_DRILLS_PREFIX = 'soma_learner_pool_completed_drills:';
+const REMOVED_POOL_IDS_KEY = 'soma_learner_pool_removed_ids_v1';
 const MAX_LOCAL_POOL_ITEMS = 120;
+const AVG_AI_GENERATION_COST_KES = 0.85;
+
+export interface LearnerPoolAnalytics {
+  totalItems: number;
+  totalDrills: number;
+  totalNotes: number;
+  totalCapturedPapers: number;
+  totalReuses: number;
+  generationsSaved: number;
+  estimatedSavingsKes: number;
+  topItems: LearnerPoolItem[];
+}
 const POOL_RPC_TIMEOUT_MS = 3500;
 
 const STOP_WORDS = new Set([
@@ -1023,5 +1037,135 @@ export const learnerPoolService = {
       summaryPreview: preview,
       contentJson: analysis,
     });
+  },
+
+  /**
+   * Records that a specific learner (`owner`) has completed a pooled drill so rotational
+   * practice prioritizes unseen drills first.
+   */
+  markDrillCompletedByLearner(owner: string, drillIdOrFingerprint: string) {
+    if (!owner || !drillIdOrFingerprint) return;
+    try {
+      const key = `${COMPLETED_DRILLS_PREFIX}${owner}`;
+      const raw = localStorage.getItem(key);
+      const list: string[] = raw ? JSON.parse(raw) : [];
+      if (!list.includes(drillIdOrFingerprint)) {
+        list.push(drillIdOrFingerprint);
+        localStorage.setItem(key, JSON.stringify(list.slice(-150)));
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  },
+
+  /**
+   * Returns the next unseen pooled practice drill for a learner (`owner`) in the selected
+   * grade and subject, rotating back to the highest-rated drill once all have been seen.
+   */
+  getNextRotationalPoolDrill(
+    owner: string,
+    params: { grade?: string; subject: string; topic?: string }
+  ): LearnerPoolItem | null {
+    const drills = this.listLocalPool({
+      grade: params.grade,
+      subject: params.subject,
+      itemType: 'PRACTICE_DRILL',
+      search: params.topic,
+    }).filter((item) => Array.isArray(item.contentJson) && item.contentJson.length > 0);
+
+    if (drills.length === 0) return null;
+
+    let seen: string[] = [];
+    try {
+      const raw = localStorage.getItem(`${COMPLETED_DRILLS_PREFIX}${owner || 'guest'}`);
+      seen = raw ? JSON.parse(raw) : [];
+    } catch {
+      seen = [];
+    }
+
+    const unseen = drills.find(
+      (d) => !seen.includes(d.id) && !seen.includes(d.queryFingerprint)
+    );
+    const chosen = unseen || drills[0];
+    this.markDrillCompletedByLearner(owner || 'guest', chosen.id);
+    return chosen;
+  },
+
+  /**
+   * Computes real-time Learner Pool & AI Cost-Savings analytics for the Admin Command Center.
+   */
+  async getPoolAnalytics(): Promise<LearnerPoolAnalytics> {
+    const allItems = await this.listPool({ limit: 60 });
+    let removedIds: string[] = [];
+    try {
+      const raw = localStorage.getItem(REMOVED_POOL_IDS_KEY);
+      removedIds = raw ? JSON.parse(raw) : [];
+    } catch {
+      removedIds = [];
+    }
+    const activeItems = allItems.filter((item) => !removedIds.includes(item.id));
+    const totalItems = activeItems.length;
+    const totalDrills = activeItems.filter((i) => i.itemType === 'PRACTICE_DRILL').length;
+    const totalNotes = activeItems.filter(
+      (i) => i.itemType === 'TOPIC_EXPLANATION' || i.itemType === 'CAPTURED_QUESTION'
+    ).length;
+    const totalCapturedPapers = activeItems.filter((i) => i.itemType === 'REVISION_PAPER').length;
+    const totalReuses = activeItems.reduce((sum, i) => sum + Math.max(1, i.reuseCount || 1), 0);
+    const generationsSaved = Math.max(0, totalReuses - totalItems);
+    const estimatedSavingsKes = Math.round(generationsSaved * AVG_AI_GENERATION_COST_KES * 100) / 100;
+
+    return {
+      totalItems,
+      totalDrills,
+      totalNotes,
+      totalCapturedPapers,
+      totalReuses,
+      generationsSaved,
+      estimatedSavingsKes,
+      topItems: activeItems.slice(0, 12),
+    };
+  },
+
+  /**
+   * Pins/boosts a pooled material (`+10` reuse score) so it ranks at the top for learners.
+   */
+  async boostPooledItem(itemId: string, bonus = 10): Promise<LearnerPoolItem | null> {
+    const localItems = readLocalPool();
+    const allItems = [...localItems, ...CURATED_STARTER_POOL];
+    const target = allItems.find((i) => i.id === itemId);
+    if (!target) return null;
+    const boosted: LearnerPoolItem = {
+      ...target,
+      reuseCount: (target.reuseCount || 1) + Math.max(1, bonus),
+      updatedAt: new Date().toISOString(),
+    };
+    writeLocalPool([
+      boosted,
+      ...localItems.filter((i) => i.queryFingerprint !== target.queryFingerprint),
+    ]);
+    return boosted;
+  },
+
+  /**
+   * Removes an item from the Learner Knowledge Pool (Admin moderation).
+   */
+  async deletePooledItem(itemId: string): Promise<boolean> {
+    if (!itemId) return false;
+    try {
+      const raw = localStorage.getItem(REMOVED_POOL_IDS_KEY);
+      const removed: string[] = raw ? JSON.parse(raw) : [];
+      if (!removed.includes(itemId)) {
+        removed.push(itemId);
+        localStorage.setItem(REMOVED_POOL_IDS_KEY, JSON.stringify(removed));
+      }
+      const nextLocal = readLocalPool().filter((i) => i.id !== itemId);
+      writeLocalPool(nextLocal);
+      if (supabase && typeof (supabase as any).from === 'function') {
+        await supabase.from('learner_knowledge_pool').delete().eq('id', itemId);
+      }
+      return true;
+    } catch {
+      return false;
+    }
   },
 };

@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sparkles, Send, X, User, CheckSquare, MessageCircle, ChevronRight, Loader, TrendingUp, AlertCircle, PenLine, LogIn, ShieldAlert } from 'lucide-react';
+import { Sparkles, Send, X, User, CheckSquare, MessageCircle, ChevronRight, Loader, TrendingUp, AlertCircle, PenLine, LogIn, ShieldAlert, Lock } from 'lucide-react';
 import { getExamGuruResponse, markCandidateAnswer, getPredictedTopics, PredictedTopic, generatePracticeQuestions, PracticeQuestion, RateLimitError, SystemQuotaError } from '../../services/geminiService';
 import { PlanLimitError } from '../../services/planLimitService';
+import { learnerPoolService, splitAnswerForPaywallTeaser } from '../../services/learnerPoolService';
 
 interface Message {
     id: string;
@@ -47,7 +48,23 @@ interface SyllabusContext {
     sourceTitle?: string;
 }
 
-export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void; initialMode?: PanelMode; initialPrompt?: string; syllabusContext?: SyllabusContext }> = ({ onClose, onLogin, initialMode = 'chat', initialPrompt = '', syllabusContext }) => {
+export const ExamGuruPanel: React.FC<{
+    onClose: () => void;
+    onLogin?: () => void;
+    onUnlockPass?: () => void;
+    hasFullAccess?: boolean;
+    initialMode?: PanelMode;
+    initialPrompt?: string;
+    syllabusContext?: SyllabusContext;
+}> = ({
+    onClose,
+    onLogin,
+    onUnlockPass,
+    hasFullAccess = true,
+    initialMode = 'chat',
+    initialPrompt = '',
+    syllabusContext,
+}) => {
     const panelRef = useRef<HTMLDivElement>(null);
     const closeRef = useRef(onClose);
     closeRef.current = onClose;
@@ -216,7 +233,15 @@ export const ExamGuruPanel: React.FC<{ onClose: () => void; onLogin?: () => void
             const response = await getExamGuruResponse(text.trim(), history);
             setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'guru', content: response }]);
         } catch (err: any) {
-            if (err instanceof RateLimitError) { setRateLimited(true); }
+            if ((err instanceof RateLimitError || err instanceof PlanLimitError) && !hasFullAccess) {
+                const fallback = await learnerPoolService.askAkiliDeeperExplanation({
+                    grade: syllabusContext?.grade,
+                    subject: syllabusContext?.subject || 'General',
+                    topic: syllabusContext?.topic,
+                    question: text.trim(),
+                });
+                setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'guru', content: fallback.fullAnswer }]);
+            } else if (err instanceof RateLimitError) { setRateLimited(true); }
             else if (err instanceof SystemQuotaError) { setQuotaExceeded(true); }
             else if (err instanceof PlanLimitError) { setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'guru', content: err.message }]); }
             else { setMessages(prev => [...prev, { id: (Date.now() + 1).toString(), role: 'guru', content: 'Connection issue. Please try again.' }]); }
@@ -464,7 +489,50 @@ Do not move to a new topic, new example, or new question until the candidate ans
                                             ? 'bg-slate-800/80 text-slate-100 rounded-tl-none border border-white/5'
                                             : 'bg-indigo-600 text-white rounded-tr-none'
                                     }`}>
-                                        {msg.role === 'guru' ? formatGuruMessage(msg.content) : msg.content}
+                                        {msg.role === 'guru' ? (
+                                            !hasFullAccess && msg.id !== '1' && msg.content.length > 120 ? (() => {
+                                                const split = splitAnswerForPaywallTeaser(formatGuruMessage(msg.content));
+                                                return (
+                                                    <div className="space-y-3">
+                                                        <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-emerald-300">
+                                                            <Sparkles className="w-3 h-3" /> Free Value Preview · First 1/3 of Answer
+                                                        </div>
+                                                        <div>{split.visiblePart}</div>
+                                                        <div className="relative rounded-2xl border border-indigo-500/30 bg-slate-900/95 p-3.5 overflow-hidden">
+                                                            <div className="text-slate-400 text-xs blur-[4px] select-none pointer-events-none max-h-24 overflow-hidden" aria-hidden="true">
+                                                                {split.coveredPart}
+                                                            </div>
+                                                            <div className="relative z-10 -mt-10 rounded-xl bg-slate-950/95 border border-indigo-500/40 p-3.5 space-y-2.5 shadow-xl">
+                                                                <div className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-indigo-300">
+                                                                    <Lock className="w-3 h-3" /> Unlock the remaining 2/3 of Akili’s answer
+                                                                </div>
+                                                                <p className="text-[11px] text-slate-300 leading-relaxed">
+                                                                    Subscribe or unlock a 24-hour Revision Pass (KES 20) to see the full step-by-step KNEC working, Paper Traps, and Guru Tip.
+                                                                </p>
+                                                                <div className="flex flex-col gap-2 pt-1">
+                                                                    <button
+                                                                        type="button"
+                                                                        onClick={() => { onClose(); onLogin?.(); }}
+                                                                        className="w-full py-2.5 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs transition-colors"
+                                                                    >
+                                                                        Subscribe to Soma Pro to Continue Learning
+                                                                    </button>
+                                                                    {onUnlockPass && (
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={onUnlockPass}
+                                                                            className="w-full py-2 px-3 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 font-black text-xs transition-colors"
+                                                                        >
+                                                                            Or Unlock 24h Pass for KES 20 (M-Pesa)
+                                                                        </button>
+                                                                    )}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })() : formatGuruMessage(msg.content)
+                                        ) : msg.content}
                                     </div>
                                 </div>
                             ))}

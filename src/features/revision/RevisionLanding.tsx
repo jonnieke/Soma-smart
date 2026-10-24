@@ -293,6 +293,10 @@ function ExamPrepWorkspace({
       setSelectedPoolNote(item);
       return;
     }
+    learnerPoolService.markDrillCompletedByLearner(
+      recoveryOwner,
+      item.id || item.queryFingerprint || item.topic
+    );
     const questions = item.contentJson;
     updateSession({
       version: 1,
@@ -307,7 +311,26 @@ function ExamPrepWorkspace({
       deadline: Date.now() + 600000,
       completed: false,
     });
+    setError('');
+    setLimited(false);
+    setTopicOpen(false);
     setPracticeOpen(true);
+    if (mounted.current) setPoolVersion((v) => v + 1);
+  };
+
+  const startRotationalPoolPractice = async (topicOverride?: string) => {
+    const chosenTopic = (topicOverride ?? topic).trim();
+    const nextDrill = await learnerPoolService.getNextRotationalPoolDrill(recoveryOwner, {
+      grade,
+      subject,
+      topic: chosenTopic || undefined,
+    });
+    if (!mounted.current) return;
+    if (nextDrill) {
+      startPracticeFromPoolItem(nextDrill);
+    } else {
+      setError('No pooled practice drills found for that selection yet.');
+    }
   };
 
   const hasFullExplanationAccess = Boolean(
@@ -908,7 +931,12 @@ function ExamPrepWorkspace({
             <div role="alert" className="ep-error">
               {error}{' '}
               {limited && (
-                <button onClick={() => navigate('/pricing?segment=STUDENT')}>View plans</button>
+                <>
+                  <button onClick={() => navigate('/pricing?segment=STUDENT')}>View plans</button>{' '}
+                  <button type="button" onClick={() => void startRotationalPoolPractice()}>
+                    Practise free from Pool
+                  </button>
+                </>
               )}
             </div>
           )}
@@ -1079,8 +1107,18 @@ function ExamPrepWorkspace({
                 <button className="ep-outline" onClick={() => setTopicOpen(true)}>
                   <BookOpen size={19} /> Choose a topic
                 </button>
+                <button
+                  type="button"
+                  className="ep-outline"
+                  disabled={busy}
+                  onClick={() => void startRotationalPoolPractice()}
+                >
+                  <Users size={18} /> Practise free from Pool
+                </button>
               </div>
-              <small>Three AI-generated questions · self-review · not an official exam</small>
+              <small>
+                Three AI-generated questions or 100% free rotational drills from the Learner’s Pool · self-review · not an official exam
+              </small>
             </div>
           </section>
           {topicOpen && (
@@ -1887,6 +1925,11 @@ function ExamPrepWorkspace({
             initialMode={guru.mode}
             initialPrompt={guru.prompt}
             syllabusContext={{ grade, subject, topic }}
+            hasFullAccess={hasFullExplanationAccess}
+            onUnlockPass={() => {
+              setGuru(null);
+              openInlinePassCheckout();
+            }}
             onClose={() => setGuru(null)}
             onLogin={() => navigate('/pricing?segment=STUDENT')}
           />

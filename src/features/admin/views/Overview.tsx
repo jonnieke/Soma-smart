@@ -18,9 +18,12 @@ import {
     Users2,
     Wallet,
     Clock3,
-    Zap
+    Zap,
+    ThumbsUp,
+    Trash2
 } from 'lucide-react';
 import { fetchAllUsers, fetchDashboardStats, fetchFinanceSummary, fetchTodayPilotStats, DashboardStats, SchoolCognitiveHealth, fetchSchoolWideMastery, FinanceSummary, AdminUser, TodayPilotStats } from '../../../services/adminService';
+import { learnerPoolService, type LearnerPoolAnalytics } from '../../../services/learnerPoolService';
 
 type OverviewCardProps = {
     label: string;
@@ -60,6 +63,13 @@ export const Overview: React.FC = () => {
     const [users, setUsers] = useState<AdminUser[]>([]);
     const [pilotStats, setPilotStats] = useState<TodayPilotStats | null>(null);
     const [pilotRefreshing, setPilotRefreshing] = useState(false);
+    const [poolAnalytics, setPoolAnalytics] = useState<LearnerPoolAnalytics | null>(null);
+    const [poolBusyId, setPoolBusyId] = useState<string | null>(null);
+
+    const refreshPoolAnalytics = async () => {
+        const analytics = await learnerPoolService.getPoolAnalytics();
+        setPoolAnalytics(analytics);
+    };
 
     useEffect(() => {
         Promise.all([
@@ -68,14 +78,30 @@ export const Overview: React.FC = () => {
             fetchFinanceSummary(),
             fetchAllUsers(),
             fetchTodayPilotStats(),
-        ]).then(([dashboardStats, schoolHealth, financeSummary, allUsers, todayStats]) => {
+            learnerPoolService.getPoolAnalytics(),
+        ]).then(([dashboardStats, schoolHealth, financeSummary, allUsers, todayStats, poolData]) => {
             setStats(dashboardStats);
             setCognitiveHealth(schoolHealth);
             setFinance(financeSummary);
             setUsers(allUsers);
             setPilotStats(todayStats);
+            setPoolAnalytics(poolData);
         });
     }, []);
+
+    const handleBoostPoolItem = async (id: string) => {
+        setPoolBusyId(id);
+        await learnerPoolService.boostPooledItem(id, 10);
+        await refreshPoolAnalytics();
+        setPoolBusyId(null);
+    };
+
+    const handleDeletePoolItem = async (id: string) => {
+        setPoolBusyId(id);
+        await learnerPoolService.deletePooledItem(id);
+        await refreshPoolAnalytics();
+        setPoolBusyId(null);
+    };
 
     const refreshPilot = async () => {
         setPilotRefreshing(true);
@@ -402,6 +428,107 @@ export const Overview: React.FC = () => {
                     <p className="text-sm text-slate-500 font-medium text-center py-4">No AI calls yet today — data updates as students use the platform.</p>
                 )}
             </div>
+
+            {/* Learner's Revision Pool & AI Cost-Savings Monitor */}
+            {poolAnalytics && (
+                <div className="rounded-2xl border border-emerald-200 bg-white p-6 shadow-sm">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-5">
+                        <div>
+                            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-[10px] font-black uppercase tracking-[0.18em] text-emerald-700 mb-2">
+                                <Sparkles className="h-3.5 w-3.5" />
+                                Shared Syllabus Pool · Zero Regeneration Engine
+                            </div>
+                            <h3 className="text-lg font-black text-slate-900">Learner&apos;s Revision Pool &amp; AI Cost-Savings Monitor</h3>
+                            <p className="text-sm text-slate-500">
+                                Every time a candidate studies a pooled practice drill, topic note, or scanned paper, Soma serves it at zero AI regeneration cost.
+                            </p>
+                        </div>
+                        <button
+                            type="button"
+                            onClick={() => void refreshPoolAnalytics()}
+                            className="inline-flex items-center gap-2 self-start rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-black uppercase tracking-wider text-slate-700 hover:bg-slate-100"
+                        >
+                            <RefreshCw className="h-3.5 w-3.5" />
+                            Refresh Pool
+                        </button>
+                    </div>
+
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+                        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Pooled Materials</p>
+                            <p className="text-2xl font-black text-slate-900">{poolAnalytics.totalItems.toLocaleString()}</p>
+                        </div>
+                        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Practice Drills</p>
+                            <p className="text-2xl font-black text-indigo-600">{poolAnalytics.totalDrills.toLocaleString()}</p>
+                        </div>
+                        <div className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-1">Notes &amp; Scanned Papers</p>
+                            <p className="text-2xl font-black text-sky-600">
+                                {(poolAnalytics.totalNotes + poolAnalytics.totalCapturedPapers).toLocaleString()}
+                            </p>
+                        </div>
+                        <div className="rounded-2xl border border-emerald-100 bg-emerald-50/60 p-4">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-700 mb-1">AI Generations Saved</p>
+                            <p className="text-2xl font-black text-emerald-700">{poolAnalytics.generationsSaved.toLocaleString()}</p>
+                        </div>
+                        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                            <p className="text-[10px] font-black uppercase tracking-widest text-emerald-800 mb-1">Est. AI Cost Saved</p>
+                            <p className="text-2xl font-black text-emerald-900">
+                                KES {poolAnalytics.estimatedSavingsKes.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="space-y-2.5">
+                        <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">
+                            Top Shared Syllabus Materials (Pin / Boost or Moderate)
+                        </p>
+                        {poolAnalytics.topItems.slice(0, 6).map((item) => (
+                            <div
+                                key={item.id}
+                                className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50/70 px-4 py-3"
+                            >
+                                <div className="min-w-0">
+                                    <div className="flex flex-wrap items-center gap-2 mb-1">
+                                        <span className="rounded-full bg-indigo-100 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-indigo-700">
+                                            {item.itemType.replace(/_/g, ' ')}
+                                        </span>
+                                        <span className="text-xs font-bold text-slate-500">
+                                            {item.grade} · {item.subject}
+                                        </span>
+                                        <span className="text-xs font-black text-emerald-700">
+                                            {item.reuseCount} learner reuses
+                                        </span>
+                                    </div>
+                                    <p className="font-bold text-slate-900 truncate">{item.topic}</p>
+                                    <p className="text-xs text-slate-500 truncate">{item.summaryPreview}</p>
+                                </div>
+                                <div className="flex items-center gap-2 shrink-0">
+                                    <button
+                                        type="button"
+                                        disabled={poolBusyId === item.id}
+                                        onClick={() => void handleBoostPoolItem(item.id)}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
+                                    >
+                                        <ThumbsUp className="h-3.5 w-3.5" />
+                                        Boost +10
+                                    </button>
+                                    <button
+                                        type="button"
+                                        disabled={poolBusyId === item.id}
+                                        onClick={() => void handleDeletePoolItem(item.id)}
+                                        className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-rose-50 px-3 py-1.5 text-xs font-black text-rose-700 hover:bg-rose-100 disabled:opacity-50"
+                                    >
+                                        <Trash2 className="h-3.5 w-3.5" />
+                                        Remove
+                                    </button>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
 
             <div className="bg-gradient-to-r from-indigo-50 via-white to-emerald-50 border border-slate-200 rounded-2xl p-6">
                 <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
