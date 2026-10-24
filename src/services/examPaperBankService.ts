@@ -1,6 +1,8 @@
 import { supabase } from '../lib/supabase';
 
 export const EXAM_PAPER_PRICE_KES = 20;
+export const EXAM_BUNDLE_PRICE_KES = 100;
+export const MAX_SUBJECTS_PER_BUNDLE = 7;
 
 export type ExamPaperBankItem = {
   id: string | number;
@@ -48,10 +50,135 @@ export type PhoneRestoreSession = {
   normalizedPhone: string;
   last9: string;
   paperIds: string[];
+  bundleCodes?: string[];
   latestPaidAt?: string | null;
   passExpiresAt?: string | null;
   passActive: boolean;
   hoursRemaining: number;
+};
+
+export type ExamPaperBundle = {
+  bundleCode: string;
+  bundleNumber: number;
+  examFamily: 'KPSEA' | 'KJSEA' | 'KCSE' | 'CBC';
+  gradeLabel: string;
+  title: string;
+  priceKes: number;
+  papers: ExamPaperBankItem[];
+  paperIds: string[];
+  subjects: string[];
+};
+
+const normalizeBundleSubject = (raw: string | null | undefined): string => {
+  const s = String(raw || '').trim().replace(/\s+/g, ' ');
+  if (/^english(?:\s+language)?$/i.test(s)) return 'English';
+  if (/^kiswahili/i.test(s)) return 'Kiswahili';
+  if (/^(?:math|mathematics)$/i.test(s)) return 'Mathematics';
+  if (/^(?:cre|ire|hre)$/i.test(s)) return s.toUpperCase();
+  return s ? s.toLowerCase().replace(/\b\w/g, (l) => l.toUpperCase()) : 'General';
+};
+
+const resolveExamFamily = (paper: ExamPaperBankItem): { family: 'KPSEA' | 'KJSEA' | 'KCSE' | 'CBC'; gradeLabel: string } => {
+  const combined = `${paper.grade || ''} ${paper.exam_body || ''} ${paper.exam_type || ''} ${paper.title || ''}`.toLowerCase();
+  if (combined.includes('kpsea') || /\bgrade\s*6\b/.test(combined)) {
+    return { family: 'KPSEA', gradeLabel: 'Grade 6' };
+  }
+  if (combined.includes('kjsea') || /\bgrade\s*[789]\b/.test(combined)) {
+    const gradeMatch = String(paper.grade || '').match(/grade\s*([789])/i);
+    return { family: 'KJSEA', gradeLabel: gradeMatch ? `Grade ${gradeMatch[1]}` : 'Grade 9' };
+  }
+  if (combined.includes('kcse') || /\bform\s*[1-4]\b/.test(combined)) {
+    const formMatch = String(paper.grade || '').match(/form\s*([1-4])/i);
+    return { family: 'KCSE', gradeLabel: formMatch ? `Form ${formMatch[1]}` : 'Form 4' };
+  }
+  return { family: 'CBC', gradeLabel: String(paper.grade || 'CBC').trim() || 'CBC' };
+};
+
+/**
+ * Partitions published papers into sequential exam bundles (e.g. KPSEA BDL001, KPSEA BDL002,
+ * KJSEA BDL001, KCSE BDL001).
+ * Rule:
+ * - Each bundle contains strictly NOT MORE THAN ONE paper per subject (max 7 subjects per bundle).
+ * - When a second paper for the same subject is encountered, it is placed into the next bundle set
+ *   (BDL002, BDL003, etc.).
+ * - Purchasing a bundle unlocks ONLY the paperIds in that specific bundle set.
+ */
+export const buildExamPaperBundles = (papers: ExamPaperBankItem[]): ExamPaperBundle[] => {
+  const validPapers = (papers || []).filter((p) => p && p.has_exam_paper !== false);
+  const byFamily: Record<
+    'KPSEA' | 'KJSEA' | 'KCSE' | 'CBC',
+    Array<{
+      bundleNumber: number;
+      gradeLabel: string;
+      subjectMap: Map<string, ExamPaperBankItem>;
+    }>
+  > = {
+    KPSEA: [],
+    KJSEA: [],
+    KCSE: [],
+    CBC: [],
+  };
+
+  for (const paper of validPapers) {
+    const { family, gradeLabel } = resolveExamFamily(paper);
+    const subject = normalizeBundleSubject(paper.subject);
+    const familySlots = byFamily[family];
+
+    let placed = false;
+    for (const slot of familySlots) {
+      if (!slot.subjectMap.has(subject) && slot.subjectMap.size < MAX_SUBJECTS_PER_BUNDLE) {
+        slot.subjectMap.set(subject, paper);
+        placed = true;
+        break;
+      }
+    }
+
+    if (!placed) {
+      const nextNumber = familySlots.length + 1;
+      const subjectMap = new Map<string, ExamPaperBankItem>();
+      subjectMap.set(subject, paper);
+      familySlots.push({
+        bundleNumber: nextNumber,
+        gradeLabel,
+        subjectMap,
+      });
+    }
+  }
+
+  const bundles: ExamPaperBundle[] = [];
+  const familyOrder: Array<'KPSEA' | 'KJSEA' | 'KCSE' | 'CBC'> = ['KPSEA', 'KJSEA', 'KCSE', 'CBC'];
+
+  for (const family of familyOrder) {
+    for (const slot of byFamily[family]) {
+      const slotPapers = Array.from(slot.subjectMap.values());
+      // A bundle set should have at least 2 distinct subject papers to be offered as a multi-subject bundle
+      if (slotPapers.length < 2) continue;
+      const paddedNum = String(slot.bundleNumber).padStart(3, '0');
+      const bundleCode = `${family} BDL${paddedNum}`;
+      const subjects = Array.from(slot.subjectMap.keys());
+      bundles.push({
+        bundleCode,
+        bundleNumber: slot.bundleNumber,
+        examFamily: family,
+        gradeLabel: slot.gradeLabel,
+        title: `${bundleCode} (${slotPapers.length} Subjects · 1 Paper Each)`,
+        priceKes: EXAM_BUNDLE_PRICE_KES,
+        papers: slotPapers,
+        paperIds: slotPapers.map((p) => String(p.id)),
+        subjects,
+      });
+    }
+  }
+
+  return bundles;
+};
+
+export const findBundleForPaper = (
+  paperId: string | number,
+  bundles: ExamPaperBundle[]
+): ExamPaperBundle | undefined => {
+  const idStr = String(paperId);
+  return bundles.find((b) => b.paperIds.includes(idStr));
 };
 
 /**
@@ -142,6 +269,41 @@ export const recordLocalPaperPurchaseSession = (examId: string | number, buyer?:
     normalizedPhone: last9 ? `254${last9}` : existing?.normalizedPhone || '',
     last9,
     paperIds: nextPaperIds,
+    bundleCodes: existing?.bundleCodes || [],
+    latestPaidAt: nowIso,
+    passExpiresAt: expiresIso,
+    passActive: true,
+    hoursRemaining: 24,
+  };
+  savePhoneRestoreSession(session);
+  return session;
+};
+
+/**
+ * Records a bundle purchase locally and unlocks ONLY the paperIds in that specific bundle set.
+ */
+export const recordLocalBundlePurchaseSession = (
+  bundle: Pick<ExamPaperBundle, 'bundleCode' | 'paperIds'>,
+  buyer?: Partial<PaperBuyer>
+) => {
+  const existing = readPhoneRestoreSession();
+  const last9 = normalizeKenyanPhoneLast9(buyer?.phone) || existing?.last9 || '';
+  const nowIso = new Date().toISOString();
+  const expiresIso = new Date(Date.now() + REVISION_PASS_DURATION_MS).toISOString();
+  const nextPaperIds = Array.from(
+    new Set([...(existing?.paperIds || []), ...bundle.paperIds.map(String)])
+  );
+  const nextBundleCodes = Array.from(
+    new Set([...(existing?.bundleCodes || []), bundle.bundleCode])
+  );
+  const session: PhoneRestoreSession = {
+    found: true,
+    buyerToken: localStorage.getItem(TOKEN_KEY) || undefined,
+    buyerName: buyer?.name?.trim() || existing?.buyerName || 'Candidate',
+    normalizedPhone: last9 ? `254${last9}` : existing?.normalizedPhone || '',
+    last9,
+    paperIds: nextPaperIds,
+    bundleCodes: nextBundleCodes,
     latestPaidAt: nowIso,
     passExpiresAt: expiresIso,
     passActive: true,
@@ -214,7 +376,10 @@ export const examPaperBankService = {
   readPhoneSession: readPhoneRestoreSession,
   clearPhoneSession: clearPhoneRestoreSession,
   recordLocalPaperPurchase: recordLocalPaperPurchaseSession,
+  recordLocalBundlePurchase: recordLocalBundlePurchaseSession,
   recordPurchaseSession: recordLocalPaperPurchaseSession,
+  buildBundles: buildExamPaperBundles,
+  findBundleForPaper,
 
   async restoreByPhone(rawPhone: string): Promise<PhoneRestoreSession> {
     const last9 = normalizeKenyanPhoneLast9(rawPhone);
@@ -273,15 +438,33 @@ export const examPaperBankService = {
     return session;
   },
 
-  async initiatePurchase(examId: string | number, buyer: PaperBuyer, options?: { renewPass?: boolean }) {
+  async initiatePurchase(
+    examId: string | number,
+    buyer: PaperBuyer,
+    options?: {
+      renewPass?: boolean;
+      bundleCode?: string;
+      bundlePaperIds?: Array<string | number>;
+      amountKes?: number;
+    }
+  ) {
     let buyerToken = getPaperBuyerToken();
     const normalizedPhone = normalizeKenyanPhone(buyer.phone) || buyer.phone;
+    const bundlePayload =
+      options?.bundleCode && Array.isArray(options.bundlePaperIds) && options.bundlePaperIds.length >= 2
+        ? {
+            bundleCode: options.bundleCode,
+            bundlePaperIds: options.bundlePaperIds.map(String),
+            amountKes: options.amountKes || EXAM_BUNDLE_PRICE_KES,
+          }
+        : {};
     const { data, error } = await supabase.functions.invoke('exam-paper-bank/initiate', {
       body: {
         examId,
         buyerToken,
         buyer: { ...buyer, phone: normalizedPhone },
         ...(options?.renewPass ? { renewPass: true } : {}),
+        ...bundlePayload,
       },
     });
     if (error) throw error;
@@ -290,11 +473,13 @@ export const examPaperBankService = {
       order_tracking_id?: string;
       reference: string;
       already_paid?: boolean;
+      bundleCode?: string;
+      bundlePaperIds?: string[];
     };
 
-    // Compatibility fallback if the deployed edge function has not yet picked up `renewPass`:
-    // rotate a fresh buyerToken so Pesapal creates a new KES 20 renewal order tied to the buyer's phone.
-    if (options?.renewPass && response?.already_paid && !response?.redirect_url) {
+    // Compatibility fallback if the deployed edge function has not yet picked up `renewPass` or `bundleCode`:
+    // rotate a fresh buyerToken so Pesapal creates a new order tied to the buyer's phone.
+    if ((options?.renewPass || options?.bundleCode) && response?.already_paid && !response?.redirect_url) {
       buyerToken = crypto.randomUUID();
       try {
         localStorage.setItem(TOKEN_KEY, buyerToken);
@@ -306,7 +491,8 @@ export const examPaperBankService = {
           examId,
           buyerToken,
           buyer: { ...buyer, phone: normalizedPhone },
-          renewPass: true,
+          ...(options?.renewPass ? { renewPass: true } : {}),
+          ...bundlePayload,
         },
       });
       if (retry.error) throw retry.error;
@@ -315,6 +501,8 @@ export const examPaperBankService = {
         order_tracking_id?: string;
         reference: string;
         already_paid?: boolean;
+        bundleCode?: string;
+        bundlePaperIds?: string[];
       };
     }
 

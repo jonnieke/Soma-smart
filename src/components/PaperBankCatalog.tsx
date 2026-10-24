@@ -2,8 +2,13 @@ import React, { useEffect, useRef, useState } from 'react';
 import { ArrowRight, CheckCircle2, Clock, FileText, Search, Sparkles, Tag, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import logo from '../assets/images/main_logo.png';
-import type { ExamPaperBankItem } from '../services/examPaperBankService';
-import { EXAM_PAPER_PRICE_KES } from '../services/examPaperBankService';
+import type { ExamPaperBankItem, ExamPaperBundle } from '../services/examPaperBankService';
+import {
+  buildExamPaperBundles,
+  EXAM_BUNDLE_PRICE_KES,
+  EXAM_PAPER_PRICE_KES,
+  findBundleForPaper,
+} from '../services/examPaperBankService';
 import { learnerPoolService } from '../services/learnerPoolService';
 import './PaperBankCatalog.css';
 
@@ -52,6 +57,7 @@ type Props = {
   isUnlocked: (id: string | number) => boolean;
   onOpen: (paper: ExamPaperBankItem) => void;
   onRevision: (paper: ExamPaperBankItem) => void;
+  onBuyBundle?: (bundle: ExamPaperBundle) => void;
   onRetry: () => void;
   onClearFilters: () => void;
 };
@@ -84,6 +90,7 @@ export function PaperBankCatalog({
   isUnlocked,
   onOpen,
   onRevision,
+  onBuyBundle,
   onRetry,
   onClearFilters,
 }: Props) {
@@ -113,6 +120,17 @@ export function PaperBankCatalog({
   const examTypes = Array.from(
     new Set(papers.map((paper) => clean(paper.exam_type)).filter(Boolean))
   ).sort();
+  const allBundles = React.useMemo(() => buildExamPaperBundles(papers), [papers]);
+  const visibleBundles = React.useMemo(() => {
+    return allBundles.filter((bundle) => {
+      if (category === 'KPSEA' && bundle.examFamily !== 'KPSEA') return false;
+      if (category === 'KCSE' && bundle.examFamily !== 'KCSE') return false;
+      if (category === 'CBC assessments' && bundle.examFamily !== 'KJSEA' && bundle.examFamily !== 'CBC') return false;
+      if (category === 'My papers' && !bundle.paperIds.some((id) => isUnlocked(id))) return false;
+      if (grade && bundle.gradeLabel !== grade && !bundle.papers.some((p) => paperLevel(p.grade) === grade)) return false;
+      return true;
+    });
+  }, [allBundles, category, grade, isUnlocked]);
   const filtered = papers.filter(
     (paper) =>
       (!grade || paperLevel(paper.grade) === grade) &&
@@ -256,6 +274,150 @@ export function PaperBankCatalog({
         </div>
         <div className="pb-content">
           <section aria-labelledby="pb-results">
+            {!loading && !loadError && visibleBundles.length > 0 && (
+              <div
+                aria-label="Exam paper bundles"
+                style={{
+                  background: '#ffffff',
+                  border: '1px solid #c7d2fe',
+                  borderRadius: '18px',
+                  padding: '18px',
+                  marginBottom: '22px',
+                  boxShadow: '0 8px 24px -16px rgba(37, 99, 235, 0.2)',
+                }}
+              >
+                <div
+                  style={{
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '10px',
+                    marginBottom: '12px',
+                  }}
+                >
+                  <div>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        background: '#eef2ff',
+                        color: '#3730a3',
+                        border: '1px solid #c7d2fe',
+                        borderRadius: '999px',
+                        padding: '3px 10px',
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      Parent &amp; Candidate Exam Set Bundles · KES {EXAM_BUNDLE_PRICE_KES} Once-Off
+                    </span>
+                    <h3 style={{ margin: '6px 0 2px', fontSize: '17px', fontWeight: 900, color: '#0f172a' }}>
+                      Buy a Complete Subject Set in One M-Pesa Prompt (1 Paper per Subject)
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '13px', color: '#475569' }}>
+                      Each bundle (`BDL001`, `BDL002`, …) contains strictly 1 paper per subject (up to 7 subjects) for that sitting and unlocks only the papers in that bundle set + 24h AI Revision Pass.
+                    </p>
+                  </div>
+                </div>
+                <div
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                    gap: '12px',
+                  }}
+                >
+                  {visibleBundles.slice(0, 6).map((bundle) => {
+                    const unlockedInBundle = bundle.paperIds.filter((id) => isUnlocked(id)).length;
+                    const fullyUnlocked = unlockedInBundle === bundle.paperIds.length;
+                    return (
+                      <div
+                        key={bundle.bundleCode}
+                        style={{
+                          border: fullyUnlocked ? '1.5px solid #6ee7b7' : '1.5px solid #e2e8f0',
+                          background: fullyUnlocked ? '#ecfdf5' : '#f8fafc',
+                          borderRadius: '14px',
+                          padding: '14px',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          justifyContent: 'space-between',
+                          gap: '10px',
+                        }}
+                      >
+                        <div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+                            <strong
+                              style={{
+                                fontSize: '14px',
+                                fontWeight: 900,
+                                color: '#1e1b4b',
+                                background: '#e0e7ff',
+                                padding: '3px 9px',
+                                borderRadius: '8px',
+                              }}
+                            >
+                              {bundle.bundleCode}
+                            </strong>
+                            <span style={{ fontSize: '13px', fontWeight: 900, color: fullyUnlocked ? '#047857' : '#2563eb' }}>
+                              {fullyUnlocked ? 'Unlocked Set' : `KES ${bundle.priceKes}`}
+                            </span>
+                          </div>
+                          <p style={{ margin: '8px 0 4px', fontSize: '12px', fontWeight: 700, color: '#334155' }}>
+                            {bundle.gradeLabel} · {bundle.papers.length} Subject Papers (1 per subject):
+                          </p>
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px' }}>
+                            {bundle.subjects.map((subj) => (
+                              <span
+                                key={subj}
+                                style={{
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  background: '#ffffff',
+                                  border: '1px solid #cbd5e1',
+                                  borderRadius: '6px',
+                                  padding: '2px 7px',
+                                  color: '#334155',
+                                }}
+                              >
+                                {subj}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginTop: '4px' }}>
+                          <small style={{ fontSize: '11px', fontWeight: 700, color: '#64748b' }}>
+                            {unlockedInBundle}/{bundle.papers.length} unlocked in set
+                          </small>
+                          {fullyUnlocked ? (
+                            <button
+                              type="button"
+                              className="pb-outline"
+                              style={{ padding: '6px 12px', fontSize: '12px' }}
+                              onClick={() => onOpen(bundle.papers[0])}
+                            >
+                              Open Set →
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              className="pb-primary"
+                              style={{ padding: '7px 12px', fontSize: '12px' }}
+                              onClick={() => {
+                                if (onBuyBundle) onBuyBundle(bundle);
+                                else onOpen(bundle.papers[0]);
+                              }}
+                            >
+                              Buy {bundle.bundleCode} (KES {bundle.priceKes})
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             <div className="pb-results-heading">
               <h2 ref={results} tabIndex={-1} id="pb-results">
                 {category === 'My papers' ? 'Your available papers' : 'Explore available papers'}
@@ -405,9 +567,18 @@ export function PaperBankCatalog({
                         <p>
                           <Tag />
                           <strong>
-                            {isUnlocked(paper.id) ? 'Unlocked' : `KES ${EXAM_PAPER_PRICE_KES}`}
+                            {isUnlocked(paper.id) ? 'Unlocked' : `KES ${EXAM_PAPER_PRICE_KES} (1 paper)`}
                           </strong>
                         </p>
+                        {(() => {
+                          const paperBundle = findBundleForPaper(paper.id, allBundles);
+                          if (!paperBundle) return null;
+                          return (
+                            <p style={{ fontSize: '11px', color: '#4338ca', fontWeight: 700 }}>
+                              <span>In set: {paperBundle.bundleCode} (KES {paperBundle.priceKes})</span>
+                            </p>
+                          );
+                        })()}
                       </div>
                     </div>
                     <button
@@ -420,6 +591,20 @@ export function PaperBankCatalog({
                       {isUnlocked(paper.id) ? 'Practise now' : 'Unlock & practise'}
                       <ArrowRight size={16} />
                     </button>
+                    {!isUnlocked(paper.id) && (() => {
+                      const paperBundle = findBundleForPaper(paper.id, allBundles);
+                      if (!paperBundle || !onBuyBundle) return null;
+                      return (
+                        <button
+                          type="button"
+                          className="pb-text-button"
+                          style={{ fontSize: '11px', fontWeight: 800, color: '#3730a3', marginTop: '4px' }}
+                          onClick={() => onBuyBundle(paperBundle)}
+                        >
+                          Or buy {paperBundle.bundleCode} ({paperBundle.papers.length} subjects) · KES {paperBundle.priceKes}
+                        </button>
+                      );
+                    })()}
                   </article>
                 ))}
               </div>
@@ -627,6 +812,23 @@ export function PaperBankCatalog({
           >
             Continue to practice <ArrowRight size={16} />
           </button>
+          {!isUnlocked(preview.id) && (() => {
+            const paperBundle = findBundleForPaper(preview.id, allBundles);
+            if (!paperBundle || !onBuyBundle) return null;
+            return (
+              <button
+                type="button"
+                className="pb-outline"
+                style={{ width: '100%', marginTop: '10px', fontSize: '13px', fontWeight: 800 }}
+                onClick={() => {
+                  setPreview(null);
+                  onBuyBundle(paperBundle);
+                }}
+              >
+                Buy {paperBundle.bundleCode} Set ({paperBundle.papers.length} Subject Papers) · KES {paperBundle.priceKes}
+              </button>
+            );
+          })()}
         </dialog>
       )}
     </div>

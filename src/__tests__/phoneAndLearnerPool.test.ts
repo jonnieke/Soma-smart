@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  buildExamPaperBundles,
   clearPhoneRestoreSession,
   computePassStatus,
+  EXAM_BUNDLE_PRICE_KES,
+  findBundleForPaper,
   normalizeKenyanPhone,
   normalizeKenyanPhoneLast9,
   readPhoneRestoreSession,
+  recordLocalBundlePurchaseSession,
   recordLocalPaperPurchaseSession,
   REVISION_PASS_DURATION_MS,
   savePhoneRestoreSession,
@@ -111,6 +115,47 @@ describe('Kenyan Phone Number Last-9 Normalization & 24h Revision Pass', () => {
     expect(getPlanLimit('exam_guru')).toBe(Infinity);
     expect(getPlanLimit('exam_marking')).toBe(Infinity);
     expect(assertPlanLimit('ai_generation', 100)).toBe(true);
+  });
+
+  it('partitions papers into BDL001, BDL002 sets with strictly 1 paper per subject and unlocks only the purchased bundle set', () => {
+    const samplePapers = [
+      { id: 'kp-math-1', title: 'KPSEA Mathematics Set 1', subject: 'Mathematics', grade: 'Grade 6', exam_type: 'KPSEA' },
+      { id: 'kp-eng-1', title: 'KPSEA English Set 1', subject: 'English', grade: 'Grade 6', exam_type: 'KPSEA' },
+      { id: 'kp-kis-1', title: 'KPSEA Kiswahili Set 1', subject: 'Kiswahili', grade: 'Grade 6', exam_type: 'KPSEA' },
+      { id: 'kp-sci-1', title: 'KPSEA Integrated Science Set 1', subject: 'Integrated Science', grade: 'Grade 6', exam_type: 'KPSEA' },
+      // Second papers for the same subjects -> must go into KPSEA BDL002!
+      { id: 'kp-math-2', title: 'KPSEA Mathematics Set 2', subject: 'Mathematics', grade: 'Grade 6', exam_type: 'KPSEA' },
+      { id: 'kp-eng-2', title: 'KPSEA English Set 2', subject: 'English', grade: 'Grade 6', exam_type: 'KPSEA' },
+      { id: 'kp-kis-2', title: 'KPSEA Kiswahili Set 2', subject: 'Kiswahili', grade: 'Grade 6', exam_type: 'KPSEA' },
+    ];
+
+    const bundles = buildExamPaperBundles(samplePapers);
+    expect(bundles).toHaveLength(2);
+
+    const bdl1 = bundles[0];
+    const bdl2 = bundles[1];
+
+    expect(bdl1.bundleCode).toBe('KPSEA BDL001');
+    expect(bdl1.priceKes).toBe(EXAM_BUNDLE_PRICE_KES);
+    expect(bdl1.paperIds).toEqual(['kp-math-1', 'kp-eng-1', 'kp-kis-1', 'kp-sci-1']);
+    expect(new Set(bdl1.subjects).size).toBe(bdl1.papers.length);
+
+    expect(bdl2.bundleCode).toBe('KPSEA BDL002');
+    expect(bdl2.paperIds).toEqual(['kp-math-2', 'kp-eng-2', 'kp-kis-2']);
+    expect(new Set(bdl2.subjects).size).toBe(bdl2.papers.length);
+
+    expect(findBundleForPaper('kp-math-1', bundles)?.bundleCode).toBe('KPSEA BDL001');
+    expect(findBundleForPaper('kp-math-2', bundles)?.bundleCode).toBe('KPSEA BDL002');
+
+    // Buying KPSEA BDL001 unlocks ONLY BDL001 papers and does NOT unlock BDL002 papers
+    const session = recordLocalBundlePurchaseSession(bdl1, {
+      name: 'Grace Njeri',
+      phone: '0722333444',
+    });
+    expect(session.bundleCodes).toContain('KPSEA BDL001');
+    expect(session.paperIds).toEqual(['kp-math-1', 'kp-eng-1', 'kp-kis-1', 'kp-sci-1']);
+    expect(session.paperIds).not.toContain('kp-math-2');
+    expect(session.paperIds).not.toContain('kp-eng-2');
   });
 });
 

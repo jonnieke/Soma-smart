@@ -11,6 +11,7 @@ const pesapalBase = isSandbox
   ? 'https://cybqa.pesapal.com/pesapalv3'
   : 'https://pay.pesapal.com/v3';
 const paperPrice = 20;
+const bundlePrice = 100;
 
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), {
   status,
@@ -67,11 +68,12 @@ serve(async (req) => {
     const status = await response.json();
     const completed = String(status.payment_status_description || '').toLowerCase() === 'completed';
     if (completed) {
+      const nowIso = new Date().toISOString();
       await supabase.from('exam_paper_orders').update({
         status: 'SUCCESS',
-        paid_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }).eq('id', order.id);
+        paid_at: nowIso,
+        updated_at: nowIso,
+      }).eq('order_tracking_id', order.order_tracking_id);
     }
     return completed;
   };
@@ -127,13 +129,23 @@ serve(async (req) => {
     }
 
     if (path.endsWith('/initiate')) {
-      const { examId, buyerToken, buyer, renewPass } = await req.json();
+      const { examId, buyerToken, buyer, renewPass, bundleCode, bundlePaperIds } = await req.json();
       const name = String(buyer?.name || '').trim();
       const phone = cleanPhone(buyer?.phone);
       const email = String(buyer?.email || '').trim();
       if (!examId || !/^[0-9a-f-]{36}$/i.test(String(buyerToken || '')) || !name || phone.length < 12) {
         return json({ error: 'Valid paper, name and Kenyan phone number are required.' }, 400);
       }
+
+      const isBundleOrder = Boolean(
+        bundleCode &&
+        Array.isArray(bundlePaperIds) &&
+        bundlePaperIds.length >= 2 &&
+        bundlePaperIds.length <= 7
+      );
+      const cleanBundlePaperIds = isBundleOrder
+        ? Array.from(new Set([String(examId), ...bundlePaperIds.map((id: unknown) => String(id))])).slice(0, 7)
+        : [String(examId)];
 
       const { data: exam, error: examError } = await supabase
         .from('knowledge_base')
@@ -144,7 +156,7 @@ serve(async (req) => {
         .maybeSingle();
       if (examError || !exam || (!exam.file_url && !exam.file_path)) return json({ error: 'Paper is not available for sale.' }, 404);
 
-      if (!renewPass) {
+      if (!renewPass && !isBundleOrder) {
         const { data: existing } = await supabase
           .from('exam_paper_orders')
           .select('*')
@@ -157,29 +169,39 @@ serve(async (req) => {
         if (existing) return json({ already_paid: true, reference: existing.reference_code });
       }
 
-      const reference = `PAPER_${examId}_${crypto.randomUUID().replaceAll('-', '').slice(0, 12)}`;
+      const orderAmount = isBundleOrder ? bundlePrice : paperPrice;
+      const safeBundleSlug = isBundleOrder
+        ? String(bundleCode).replace(/[^A-Z0-9]/gi, '').toUpperCase().slice(0, 14)
+        : '';
+      const shortUuid = crypto.randomUUID().replaceAll('-', '').slice(0, 10);
+      const reference = isBundleOrder
+        ? `BDL_${safeBundleSlug}_${examId}_${shortUuid}`
+        : `PAPER_${examId}_${shortUuid}`;
       const { data: order, error: orderError } = await supabase.from('exam_paper_orders').insert({
         exam_id: examId,
         buyer_token: buyerToken,
         buyer_name: name,
         buyer_phone: phone,
         buyer_email: email || null,
-        amount: paperPrice,
+        amount: orderAmount,
         reference_code: reference,
       }).select('id').single();
       if (orderError) throw orderError;
 
       const token = await getToken();
       const origin = String(req.headers.get('origin') || 'https://www.somaai.co.ke').replace(/\/$/, '');
-      const callback = `${origin}/exam-papers?status=verifying&paper=${encodeURIComponent(examId)}&ref=${encodeURIComponent(reference)}`;
+      const callback = `${origin}/exam-papers?status=verifying&paper=${encodeURIComponent(examId)}&ref=${encodeURIComponent(reference)}${isBundleOrder ? `&bundle=${encodeURIComponent(String(bundleCode))}` : ''}`;
+      const description = isBundleOrder
+        ? `SomaAI Exam Bundle ${String(bundleCode).slice(0, 24)} (${cleanBundlePaperIds.length} Subject Papers)`
+        : `SomaAI Exam Paper: ${String(exam.title).slice(0, 70)}`;
       const response = await fetch(`${pesapalBase}/api/Transactions/SubmitOrderRequest`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           id: reference,
           currency: 'KES',
-          amount: paperPrice,
-          description: `SomaAI Exam Paper: ${String(exam.title).slice(0, 70)}`,
+          amount: orderAmount,
+          description,
           callback_url: callback,
           notification_id: Deno.env.get('PESAPAL_IPN_ID'),
           billing_address: {
@@ -200,7 +222,31 @@ serve(async (req) => {
         order_tracking_id: payment.order_tracking_id,
         updated_at: new Date().toISOString(),
       }).eq('id', order.id);
-      return json({ ...payment, reference });
+
+      // For a bundle order, create companion order rows ONLY for the exact remaining papers in this bundle set
+      if (isBundleOrder && cleanBundlePaperIds.length > 1) {
+        const companionRows = cleanBundlePaperIds
+          .filter((pid) => String(pid) !== String(examId))
+          .map((pid) => ({
+            exam_id: pid,
+            buyer_token: buyerToken,
+            buyer_name: name,
+            buyer_phone: phone,
+            buyer_email: email || null,
+            amount: 0,
+            reference_code: `${reference}_P${pid}`,
+            order_tracking_id: payment.order_tracking_id,
+          }));
+        if (companionRows.length > 0) {
+          await supabase.from('exam_paper_orders').insert(companionRows);
+        }
+      }
+
+      return json({
+        ...payment,
+        reference,
+        ...(isBundleOrder ? { bundleCode: String(bundleCode), bundlePaperIds: cleanBundlePaperIds } : {}),
+      });
     }
 
     if (path.endsWith('/access')) {

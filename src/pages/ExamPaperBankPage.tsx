@@ -10,10 +10,15 @@ import {
 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import {
+  buildExamPaperBundles,
+  EXAM_BUNDLE_PRICE_KES,
   EXAM_PAPER_PRICE_KES,
   ExamPaperBankItem,
+  ExamPaperBundle,
   examPaperBankService,
+  findBundleForPaper,
   readPhoneRestoreSession,
+  recordLocalBundlePurchaseSession,
   recordLocalPaperPurchaseSession,
 } from '../services/examPaperBankService';
 import { PaperBankCatalog } from '../components/PaperBankCatalog';
@@ -32,6 +37,8 @@ export const ExamPaperBankPage: React.FC = () => {
   const [loadError, setLoadError] = React.useState('');
   const [loadAttempt, setLoadAttempt] = React.useState(0);
   const [selected, setSelected] = React.useState<ExamPaperBankItem | null>(null);
+  const [selectedBundle, setSelectedBundle] = React.useState<ExamPaperBundle | null>(null);
+  const [purchaseOption, setPurchaseOption] = React.useState<'SINGLE' | 'BUNDLE'>('SINGLE');
   const [checkoutOpen, setCheckoutOpen] = React.useState(false);
   const [checkoutUrl, setCheckoutUrl] = React.useState('');
   const [checkoutReference, setCheckoutReference] = React.useState('');
@@ -44,8 +51,14 @@ export const ExamPaperBankPage: React.FC = () => {
       email: '',
     };
   });
-  const [confirmedPaper, setConfirmedPaper] = React.useState<{ id: string; title: string } | null>(null);
+  const [confirmedPaper, setConfirmedPaper] = React.useState<{
+    id: string;
+    title: string;
+    bundleCode?: string;
+    bundlePapers?: ExamPaperBankItem[];
+  } | null>(null);
   const isRenewingPass = searchParams.get('renew') === '1';
+  const allBundles = React.useMemo(() => buildExamPaperBundles(papers), [papers]);
 
   const [unlockedPaperIds, setUnlockedPaperIds] = React.useState<Set<string>>(new Set());
   const [purchasedPaperIds, setPurchasedPaperIds] = React.useState<Set<string>>(new Set());
@@ -113,6 +126,11 @@ export const ExamPaperBankPage: React.FC = () => {
 
   const markPaperUnlocked = React.useCallback((id: string | number) => {
     setUnlockedPaperIds((prev) => new Set([...prev, String(id)]));
+  }, []);
+
+  const markBundleUnlocked = React.useCallback((bundle: ExamPaperBundle) => {
+    setUnlockedPaperIds((prev) => new Set([...prev, ...bundle.paperIds.map(String)]));
+    setPurchasedPaperIds((prev) => new Set([...prev, ...bundle.paperIds.map(String)]));
   }, []);
 
   const isPaperUnlocked = React.useCallback((id: string | number) => {
@@ -194,6 +212,7 @@ export const ExamPaperBankPage: React.FC = () => {
     if (searchParams.get('status') !== 'verifying') return;
     const examId = searchParams.get('paper');
     const reference = searchParams.get('ref');
+    const bundleCodeParam = searchParams.get('bundle');
     if (!examId || !reference || confirmedPaper) return;
 
     let cancelled = false;
@@ -203,10 +222,25 @@ export const ExamPaperBankPage: React.FC = () => {
       try {
         const access = await examPaperBankService.getAccess(examId, reference);
         if (!cancelled && access.paid) {
-          recordLocalPaperPurchaseSession(examId, buyer);
-          markPaperUnlocked(examId);
-          setCheckoutOpen(false);
-          setConfirmedPaper({ id: examId, title: access.title || 'Your exam paper' });
+          const matchedBundle = bundleCodeParam
+            ? allBundles.find((b) => b.bundleCode === bundleCodeParam) || findBundleForPaper(examId, allBundles)
+            : undefined;
+          if (matchedBundle) {
+            recordLocalBundlePurchaseSession(matchedBundle, buyer);
+            markBundleUnlocked(matchedBundle);
+            setCheckoutOpen(false);
+            setConfirmedPaper({
+              id: examId,
+              title: `${matchedBundle.bundleCode} (${matchedBundle.papers.length} Subject Papers)`,
+              bundleCode: matchedBundle.bundleCode,
+              bundlePapers: matchedBundle.papers,
+            });
+          } else {
+            recordLocalPaperPurchaseSession(examId, buyer);
+            markPaperUnlocked(examId);
+            setCheckoutOpen(false);
+            setConfirmedPaper({ id: examId, title: access.title || 'Your exam paper' });
+          }
           return;
         }
       } catch {
@@ -217,7 +251,7 @@ export const ExamPaperBankPage: React.FC = () => {
     };
     void check();
     return () => { cancelled = true; };
-  }, [markPaperUnlocked, searchParams, confirmedPaper]);
+  }, [allBundles, buyer, markBundleUnlocked, markPaperUnlocked, searchParams, confirmedPaper]);
 
   React.useEffect(() => {
     if (!checkoutReference || !selected || confirmedPaper) return;
@@ -226,18 +260,29 @@ export const ExamPaperBankPage: React.FC = () => {
       try {
         const access = await examPaperBankService.getAccess(selected.id, checkoutReference);
         if (!cancelled && access.paid) {
-          recordLocalPaperPurchaseSession(selected.id, buyer);
-          markPaperUnlocked(selected.id);
           window.clearInterval(interval);
           setCheckoutOpen(false);
-          setConfirmedPaper({ id: String(selected.id), title: access.title || selected.title });
+          if (purchaseOption === 'BUNDLE' && selectedBundle) {
+            recordLocalBundlePurchaseSession(selectedBundle, buyer);
+            markBundleUnlocked(selectedBundle);
+            setConfirmedPaper({
+              id: String(selected.id),
+              title: `${selectedBundle.bundleCode} (${selectedBundle.papers.length} Subject Papers)`,
+              bundleCode: selectedBundle.bundleCode,
+              bundlePapers: selectedBundle.papers,
+            });
+          } else {
+            recordLocalPaperPurchaseSession(selected.id, buyer);
+            markPaperUnlocked(selected.id);
+            setConfirmedPaper({ id: String(selected.id), title: access.title || selected.title });
+          }
         }
       } catch {
         // PesaPal confirmation is asynchronous; keep polling while checkout is open.
       }
     }, 3000);
     return () => { cancelled = true; window.clearInterval(interval); };
-  }, [checkoutReference, markPaperUnlocked, selected, confirmedPaper]);
+  }, [buyer, checkoutReference, markBundleUnlocked, markPaperUnlocked, purchaseOption, selected, selectedBundle, confirmedPaper]);
 
 
   const beginPurchase = async (event: React.FormEvent) => {
@@ -246,10 +291,18 @@ export const ExamPaperBankPage: React.FC = () => {
     setBuying(true);
     setError('');
     try {
+      const isBuyingBundle = purchaseOption === 'BUNDLE' && selectedBundle && selectedBundle.papers.length >= 2;
       const result = await examPaperBankService.initiatePurchase(selected.id, buyer, {
         renewPass: isRenewingPass,
+        ...(isBuyingBundle
+          ? {
+              bundleCode: selectedBundle.bundleCode,
+              bundlePaperIds: selectedBundle.paperIds,
+              amountKes: selectedBundle.priceKes,
+            }
+          : {}),
       });
-      if (result.already_paid && !isRenewingPass) {
+      if (result.already_paid && !isRenewingPass && !isBuyingBundle) {
         recordLocalPaperPurchaseSession(selected.id, buyer);
         markPaperUnlocked(selected.id);
         navigate(paperDestination(selected.id));
@@ -265,10 +318,23 @@ export const ExamPaperBankPage: React.FC = () => {
     }
   };
 
+  const openBundleCheckout = (bundle: ExamPaperBundle) => {
+    const primaryPaper = bundle.papers[0];
+    if (!primaryPaper) return;
+    setError('');
+    rememberPaperMode(primaryPaper.id, 'read');
+    setSelected(primaryPaper);
+    setSelectedBundle(bundle);
+    setPurchaseOption('BUNDLE');
+    setCheckoutOpen(true);
+  };
+
   const openPaper = async (paper: ExamPaperBankItem) => {
     setError('');
     rememberPaperMode(paper.id, 'read');
     setSelected(paper);
+    setSelectedBundle(findBundleForPaper(paper.id, allBundles) || null);
+    setPurchaseOption('SINGLE');
     if (isPaperUnlocked(paper.id)) {
       navigate(`/exam-papers/${encodeURIComponent(String(paper.id))}/read`);
       return;
@@ -292,6 +358,8 @@ export const ExamPaperBankPage: React.FC = () => {
     setError('');
     rememberPaperMode(paper.id, 'revision');
     setSelected(paper);
+    setSelectedBundle(findBundleForPaper(paper.id, allBundles) || null);
+    setPurchaseOption('SINGLE');
     if (isPaperUnlocked(paper.id)) {
       navigate(`/revision?paper=${encodeURIComponent(String(paper.id))}`);
       return;
@@ -417,6 +485,25 @@ export const ExamPaperBankPage: React.FC = () => {
           <PurchaseThankYou receipt={{ status: 'SUCCESS', type: 'PAST_PAPER' }} title={confirmedPaper.title} guest
             continueLabel={paperDestination(confirmedPaper.id).startsWith('/revision') ? 'Continue revision' : 'Open your paper'}
             onContinue={() => navigate(paperDestination(confirmedPaper.id), { replace: true })} />
+          {confirmedPaper.bundleCode && confirmedPaper.bundlePapers && (
+            <div className="mt-4 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4">
+              <p className="text-xs font-black uppercase tracking-wider text-indigo-800">
+                📦 Bundle Set {confirmedPaper.bundleCode} Unlocked ({confirmedPaper.bundlePapers.length} Subject Papers)
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {confirmedPaper.bundlePapers.map((bp) => (
+                  <button
+                    key={bp.id}
+                    type="button"
+                    onClick={() => navigate(`/exam-papers/${encodeURIComponent(String(bp.id))}/read`, { replace: true })}
+                    className="rounded-xl border border-indigo-200 bg-white px-3 py-1.5 text-xs font-bold text-indigo-900 hover:bg-indigo-100"
+                  >
+                    {bp.subject}: {bp.title} →
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
             <p className="text-xs font-black uppercase tracking-wider text-emerald-800">
               ✨ 24-Hour Unlimited AI Revision &amp; Homework Pass Active
@@ -467,23 +554,92 @@ export const ExamPaperBankPage: React.FC = () => {
         initialGrade={searchParams.get('grade') || undefined} initialSubject={searchParams.get('subject') || undefined}
         isUnlocked={isPaperUnlocked} onOpen={paper => { void openPaper(paper); }}
         onRevision={paper => { void openRevisionMode(paper); }}
+        onBuyBundle={openBundleCheckout}
         onRetry={() => setLoadAttempt(value => value + 1)}
         onClearFilters={() => setSearchParams({})} />
       {checkoutOpen && selected ? (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/45 p-4" role="dialog" aria-modal="true" aria-label="Buy exam paper">
           <div className="max-h-[92vh] w-full max-w-3xl overflow-auto rounded-3xl bg-white shadow-2xl">
             <div className="sticky top-0 z-10 flex items-start justify-between border-b border-slate-200 bg-white px-5 py-4">
-              <div><p className="text-xs font-black uppercase tracking-wider text-indigo-600">{isRenewingPass ? '24-Hour AI Revision Pass Renewal' : 'Exam paper package'}</p><h2 className="mt-1 font-black text-slate-950">{isRenewingPass ? `Continue 24h Revision · ${selected.title}` : selected.title}</h2></div>
-              <button onClick={() => { setCheckoutOpen(false); setCheckoutUrl(''); setCheckoutReference(''); setSelected(null); const params = new URLSearchParams(searchParams); ['paper', 'ref', 'status', 'renew', 'phone'].forEach(key => params.delete(key)); setSearchParams(params, { replace: true }); }} className="rounded-full p-2 text-slate-500 hover:bg-slate-100" aria-label="Close checkout"><X className="h-5 w-5" /></button>
+              <div>
+                <p className="text-xs font-black uppercase tracking-wider text-indigo-600">
+                  {isRenewingPass
+                    ? '24-Hour AI Revision Pass Renewal'
+                    : purchaseOption === 'BUNDLE' && selectedBundle
+                      ? `Exam Set Bundle · ${selectedBundle.bundleCode}`
+                      : 'Exam paper package'}
+                </p>
+                <h2 className="mt-1 font-black text-slate-950">
+                  {isRenewingPass
+                    ? `Continue 24h Revision · ${selected.title}`
+                    : purchaseOption === 'BUNDLE' && selectedBundle
+                      ? `${selectedBundle.bundleCode} · ${selectedBundle.papers.length} Subject Papers (1 per subject)`
+                      : selected.title}
+                </h2>
+              </div>
+              <button onClick={() => { setCheckoutOpen(false); setCheckoutUrl(''); setCheckoutReference(''); setSelected(null); setSelectedBundle(null); setPurchaseOption('SINGLE'); const params = new URLSearchParams(searchParams); ['paper', 'ref', 'status', 'renew', 'phone', 'bundle'].forEach(key => params.delete(key)); setSearchParams(params, { replace: true }); }} className="rounded-full p-2 text-slate-500 hover:bg-slate-100" aria-label="Close checkout"><X className="h-5 w-5" /></button>
             </div>
             {checkoutUrl ? (
               <div className="p-4"><iframe title="M-Pesa checkout" src={checkoutUrl} className="h-[620px] w-full rounded-2xl border border-slate-200" allow="payment" /></div>
             ) : (
               <form onSubmit={beginPurchase} className="grid gap-6 p-6 md:grid-cols-[1fr_280px]">
                 <div>
+                  {(() => {
+                    const activeBundle = selectedBundle || findBundleForPaper(selected.id, allBundles);
+                    if (!activeBundle || activeBundle.papers.length < 2) return null;
+                    return (
+                      <div className="mb-4 grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Choose single paper or exam set bundle">
+                        <button
+                          type="button"
+                          onClick={() => setPurchaseOption('SINGLE')}
+                          className={`rounded-2xl border-2 p-3 text-left transition-all ${
+                            purchaseOption === 'SINGLE'
+                              ? 'border-indigo-600 bg-indigo-50/70'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black text-slate-900">1 Paper Only</span>
+                            <span className="rounded-md bg-indigo-100 px-2 py-0.5 text-xs font-black text-indigo-800">
+                              KES {EXAM_PAPER_PRICE_KES}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-[11px] font-medium text-slate-600 truncate">
+                            {selected.subject}: {selected.title}
+                          </p>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedBundle(activeBundle);
+                            setPurchaseOption('BUNDLE');
+                          }}
+                          className={`rounded-2xl border-2 p-3 text-left transition-all ${
+                            purchaseOption === 'BUNDLE'
+                              ? 'border-emerald-600 bg-emerald-50/70'
+                              : 'border-slate-200 bg-white hover:border-slate-300'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-black text-slate-900">{activeBundle.bundleCode} Set</span>
+                            <span className="rounded-md bg-emerald-100 px-2 py-0.5 text-xs font-black text-emerald-800">
+                              KES {activeBundle.priceKes}
+                            </span>
+                          </div>
+                          <p className="mt-1 text-[11px] font-medium text-slate-600">
+                            {activeBundle.papers.length} subjects (1 paper each): {activeBundle.subjects.join(', ')}
+                          </p>
+                        </button>
+                      </div>
+                    );
+                  })()}
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                     <p className="flex items-center gap-2 text-sm font-black"><CheckCircle2 className="h-5 w-5 text-emerald-600" /> No account needed</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">Enter your M-Pesa details below. Payments are processed securely via Pesapal (Authorized Payment Agent for M-Pesa &amp; Airtel Money). Includes the full past paper, marking scheme, and 24-hour free AI Revision Pass.</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">
+                      {purchaseOption === 'BUNDLE' && selectedBundle
+                        ? `Enter your M-Pesa details once to unlock all ${selectedBundle.papers.length} subject papers inside ${selectedBundle.bundleCode} (1 paper per subject: ${selectedBundle.subjects.join(', ')}) + marking schemes + 24-hour free AI Revision Pass.`
+                        : 'Enter your M-Pesa details below. Payments are processed securely via Pesapal (Authorized Payment Agent for M-Pesa & Airtel Money). Includes the full past paper, marking scheme, and 24-hour free AI Revision Pass.'}
+                    </p>
                   </div>
                   <div className="mt-5 space-y-4">
                     <label className="block text-sm font-bold text-slate-700">Your name<input required value={buyer.name} onChange={(event) => setBuyer({ ...buyer, name: event.target.value })} className="mt-1 h-12 w-full rounded-xl border border-slate-200 px-4 outline-none focus:border-indigo-400" /></label>
@@ -493,9 +649,16 @@ export const ExamPaperBankPage: React.FC = () => {
                 </div>
                 <aside className="rounded-2xl border border-indigo-100 bg-indigo-50 p-5">
                   <Smartphone className="h-8 w-8 text-indigo-600" />
-                  <p className="mt-4 text-sm font-bold text-slate-600">Total</p><p className="text-3xl font-black">KES {EXAM_PAPER_PRICE_KES}</p>
+                  <p className="mt-4 text-sm font-bold text-slate-600">Total</p>
+                  <p className="text-3xl font-black">
+                    KES {purchaseOption === 'BUNDLE' && selectedBundle ? selectedBundle.priceKes : EXAM_PAPER_PRICE_KES}
+                  </p>
                   <div className="my-5 h-px bg-indigo-100" />
-                  <p className="text-sm font-semibold leading-6 text-slate-600">Includes the exam paper, marking scheme, and 24-hour free AI Revision Pass. Access is remembered on this device.</p>
+                  <p className="text-sm font-semibold leading-6 text-slate-600">
+                    {purchaseOption === 'BUNDLE' && selectedBundle
+                      ? `Unlocks the ${selectedBundle.papers.length} papers in ${selectedBundle.bundleCode} + marking schemes + 24-hour AI Revision Pass.`
+                      : 'Includes the exam paper, marking scheme, and 24-hour free AI Revision Pass. Access is remembered on this device.'}
+                  </p>
                   <button disabled={buying} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-black text-white disabled:opacity-60">{buying ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />} Pay with M-Pesa (Pesapal)</button>
                   <p className="mt-3 text-center text-[11px] font-bold text-slate-500">🔒 Secured by Pesapal · Instant STK Push</p>
                 </aside>
