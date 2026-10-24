@@ -229,6 +229,25 @@ function ExamPrepWorkspace({
     [grade, subject, poolFilter, poolSearch, poolVersion]
   );
 
+  useEffect(() => {
+    try {
+      const requestedPoolId = new URLSearchParams(window.location.search).get('pool');
+      if (!requestedPoolId) return;
+      const all = learnerPoolService.listLocalPool();
+      const target = all.find((item) => item.id === requestedPoolId);
+      if (target) {
+        if (target.itemType === 'PRACTICE_DRILL') {
+          startPracticeFromPoolItem(target);
+        } else {
+          setSelectedPoolNote(target);
+        }
+      }
+    } catch {
+      // ignore invalid URL search params
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handlePhoneLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     const raw = phoneInput.trim();
@@ -1786,6 +1805,13 @@ function ExamPrepWorkspace({
               <button
                 type="button"
                 className="ep-outline"
+                onClick={() => learnerPoolService.printPooledRevisionSheet(selectedPoolNote)}
+              >
+                <FileText size={16} /> Print / Save 1-Page Sheet
+              </button>
+              <button
+                type="button"
+                className="ep-outline"
                 onClick={() => setSelectedPoolNote(null)}
               >
                 Close
@@ -1907,6 +1933,12 @@ function ExamPrepWorkspace({
           onChange={updateSession}
           onClose={() => setPracticeOpen(false)}
           online={isOnline}
+          hasFullAccess={hasFullExplanationAccess}
+          onSubscribe={() => navigate('/pricing?segment=STUDENT')}
+          onUnlockPass={() => {
+            setPracticeOpen(false);
+            openInlinePassCheckout();
+          }}
           onExplain={(prompt) => {
             setPracticeOpen(false);
             setGuru({ mode: 'chat', prompt });

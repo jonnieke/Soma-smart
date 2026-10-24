@@ -154,6 +154,13 @@ const withTimeout = <T>(work: PromiseLike<T>, ms = POOL_RPC_TIMEOUT_MS): Promise
  * (stopping at a natural sentence or line boundary to demonstrate clear value)
  * while the remaining portion is covered by the subscription/pass paywall.
  */
+export type DeeperExplanationResult = {
+  fullAnswer: string;
+  visiblePart: string;
+  coveredPart: string;
+  fromPool: boolean;
+};
+
 export const splitAnswerForPaywallTeaser = (
   fullAnswer: string
 ): {
@@ -687,6 +694,7 @@ export const learnerPoolService = {
       subject?: string;
       itemType?: PoolItemType | 'ALL';
       search?: string;
+      limit?: number;
     },
     extraRemoteItems: LearnerPoolItem[] = []
   ): LearnerPoolItem[] {
@@ -694,6 +702,7 @@ export const learnerPoolService = {
     const subjectFilter = params?.subject?.trim() || '';
     const typeFilter = params?.itemType && params.itemType !== 'ALL' ? params.itemType : '';
     const searchFilter = params?.search?.trim().toLowerCase() || '';
+    const maxItems = params?.limit && params.limit > 0 ? params.limit : undefined;
 
     const combinedMap = new Map<string, LearnerPoolItem>();
     for (const item of [...extraRemoteItems, ...readLocalPool(), ...CURATED_STARTER_POOL]) {
@@ -724,7 +733,7 @@ export const learnerPoolService = {
     });
 
     if (filtered.length === 0 && subjectFilter) {
-      return allItems
+      const fallback = allItems
         .filter((item) => {
           if (typeFilter && item.itemType !== typeFilter) return false;
           if (item.subject.toLowerCase() !== subjectFilter.toLowerCase()) return false;
@@ -735,9 +744,11 @@ export const learnerPoolService = {
           return true;
         })
         .sort((a, b) => b.reuseCount - a.reuseCount);
+      return maxItems ? fallback.slice(0, maxItems) : fallback;
     }
 
-    return filtered.sort((a, b) => b.reuseCount - a.reuseCount);
+    const sorted = filtered.sort((a, b) => b.reuseCount - a.reuseCount);
+    return maxItems ? sorted.slice(0, maxItems) : sorted;
   },
 
   /**
@@ -1167,5 +1178,85 @@ export const learnerPoolService = {
     } catch {
       return false;
     }
+  },
+
+  /**
+   * Formats a clean, printable 1-Page Revision Sheet HTML document for any pooled note or drill.
+   */
+  formatPrintableRevisionSheetHtml(item: LearnerPoolItem): string {
+    const escapeHtml = (value: string) =>
+      String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+
+    let bodyHtml = '';
+    if (item.itemType === 'PRACTICE_DRILL' && Array.isArray(item.contentJson)) {
+      bodyHtml = `<ol>${item.contentJson
+        .map(
+          (q: any) =>
+            `<li style="margin-bottom:14px;"><strong>${escapeHtml(q.text || '')}</strong> <em>(${Number(q.marks) || 2} marks)</em><br/><span style="color:#065f46;font-size:13px;">Marking guide: ${escapeHtml(q.modelAnswerOutline || (Array.isArray(q.markingScheme) ? q.markingScheme.join('; ') : ''))}</span></li>`
+        )
+        .join('')}</ol>`;
+    } else if (typeof item.contentJson === 'string') {
+      bodyHtml = `<pre style="white-space:pre-wrap;font-family:inherit;line-height:1.65;">${escapeHtml(item.contentJson)}</pre>`;
+    } else if (typeof item.contentJson?.content === 'string') {
+      bodyHtml = `<pre style="white-space:pre-wrap;font-family:inherit;line-height:1.65;">${escapeHtml(item.contentJson.content)}</pre>`;
+    } else {
+      bodyHtml = `<p style="line-height:1.65;">${escapeHtml(item.summaryPreview)}</p>`;
+    }
+
+    return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>${escapeHtml(item.topic)} · Soma AI Revision Sheet</title>
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; color: #0f172a; margin: 28px; max-width: 780px; }
+    .header { border-bottom: 2px solid #047857; padding-bottom: 12px; margin-bottom: 18px; display: flex; justify-content: space-between; align-items: flex-start; }
+    .badge { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; text-transform: uppercase; }
+    h1 { font-size: 22px; margin: 8px 0 4px; }
+    .meta { color: #475569; font-size: 13px; font-weight: 600; }
+    .footer { margin-top: 28px; padding-top: 12px; border-top: 1px solid #cbd5e1; font-size: 12px; color: #475569; display: flex; justify-content: space-between; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <span class="badge">Soma AI · Learner’s Revision Pool (100% Free)</span>
+      <h1>${escapeHtml(item.topic)}</h1>
+      <div class="meta">${escapeHtml(item.grade)} · ${escapeHtml(item.subject)} · Studied by ${item.reuseCount} learners</div>
+    </div>
+  </div>
+  <div class="content">${bodyHtml}</div>
+  <div class="footer">
+    <span>Generated &amp; shared via Soma AI Learner’s Revision Pool</span>
+    <strong>https://www.somaai.co.ke/revision</strong>
+  </div>
+</body>
+</html>`;
+  },
+
+  /**
+   * Opens a print-ready window for a pooled study note or practice drill.
+   */
+  printPooledRevisionSheet(item: LearnerPoolItem): boolean {
+    if (typeof window === 'undefined') return false;
+    const html = this.formatPrintableRevisionSheetHtml(item);
+    const win = window.open('', '_blank', 'noopener,noreferrer,width=840,height=720');
+    if (!win) return false;
+    win.document.open();
+    win.document.write(html);
+    win.document.close();
+    win.focus();
+    setTimeout(() => {
+      try {
+        win.print();
+      } catch {
+        // ignore if print dialog blocked
+      }
+    }, 150);
+    return true;
   },
 };

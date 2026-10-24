@@ -369,6 +369,11 @@ describe('Shared Learner Knowledge Pool & Relatable Query Deduplication', () => 
     const boosted = await learnerPoolService.boostPooledItem(drillA!.id, 10);
     expect(boosted?.reuseCount).toBeGreaterThanOrEqual((drillA?.reuseCount || 1) + 10);
 
+    const printableHtml = learnerPoolService.formatPrintableRevisionSheetHtml(boosted!);
+    expect(printableHtml).toContain('Hookes Law &amp; Elasticity');
+    expect(printableHtml).toContain('Soma AI · Learner’s Revision Pool (100% Free)');
+    expect(printableHtml).toContain('https://www.somaai.co.ke/revision');
+
     const removed = await learnerPoolService.deletePooledItem(drillB!.id);
     expect(removed).toBe(true);
   });
