@@ -214,6 +214,7 @@ export const examPaperBankService = {
   readPhoneSession: readPhoneRestoreSession,
   clearPhoneSession: clearPhoneRestoreSession,
   recordLocalPaperPurchase: recordLocalPaperPurchaseSession,
+  recordPurchaseSession: recordLocalPaperPurchaseSession,
 
   async restoreByPhone(rawPhone: string): Promise<PhoneRestoreSession> {
     const last9 = normalizeKenyanPhoneLast9(rawPhone);

@@ -1,6 +1,6 @@
 import { supabase } from '../lib/supabase';
 import type { PracticeQuestion } from './geminiService';
-import type { QuestionExplanation } from '../types';
+import type { ExamAnalysis, QuestionExplanation } from '../types';
 
 export type PoolItemType =
   | 'PRACTICE_DRILL'
@@ -26,6 +26,7 @@ export interface LearnerPoolItem {
 }
 
 const LOCAL_POOL_KEY = 'soma_learner_knowledge_pool_v1';
+const HELPFUL_VOTES_KEY = 'soma_learner_pool_helpful_votes_v1';
 const MAX_LOCAL_POOL_ITEMS = 120;
 const POOL_RPC_TIMEOUT_MS = 3500;
 
@@ -862,5 +863,165 @@ export const learnerPoolService = {
 
     const split = splitAnswerForPaywallTeaser(generatedText);
     return { ...split, fromPool: false };
+  },
+
+  /**
+   * Checks if the current learner browser has already marked a pooled item as helpful.
+   */
+  hasMarkedHelpful(itemId: string): boolean {
+    try {
+      const raw = localStorage.getItem(HELPFUL_VOTES_KEY);
+      if (!raw) return false;
+      const ids = JSON.parse(raw);
+      return Array.isArray(ids) && ids.includes(itemId);
+    } catch {
+      return false;
+    }
+  },
+
+  /**
+   * Marks a pooled item as helpful, incrementing its reuseCount locally and in Supabase
+   * so top-rated community notes and drills surface first.
+   */
+  async markItemHelpful(itemId: string): Promise<LearnerPoolItem | null> {
+    if (!itemId) return null;
+    try {
+      const rawVotes = localStorage.getItem(HELPFUL_VOTES_KEY);
+      const votes: string[] = rawVotes ? JSON.parse(rawVotes) : [];
+      if (!votes.includes(itemId)) {
+        votes.push(itemId);
+        localStorage.setItem(HELPFUL_VOTES_KEY, JSON.stringify(votes.slice(-200)));
+      }
+    } catch {
+      // Ignore storage quota errors
+    }
+
+    const localItems = readLocalPool();
+    const allItems = [...localItems, ...CURATED_STARTER_POOL];
+    const target = allItems.find((i) => i.id === itemId);
+    if (!target) return null;
+
+    const updated: LearnerPoolItem = {
+      ...target,
+      reuseCount: (target.reuseCount || 1) + 1,
+      updatedAt: new Date().toISOString(),
+    };
+    const nextLocal = [
+      updated,
+      ...localItems.filter((i) => i.queryFingerprint !== target.queryFingerprint),
+    ];
+    writeLocalPool(nextLocal);
+
+    if (
+      typeof navigator !== 'undefined' &&
+      navigator.onLine &&
+      supabase &&
+      typeof (supabase as any).rpc === 'function'
+    ) {
+      try {
+        await withTimeout(
+          supabase.rpc('save_pooled_learning_material', {
+            p_item_type: updated.itemType,
+            p_exam_pathway: updated.examPathway,
+            p_grade: updated.grade,
+            p_subject: updated.subject,
+            p_topic: updated.topic,
+            p_fingerprint: updated.queryFingerprint,
+            p_tokens: updated.searchTokens,
+            p_prompt_text: updated.promptText,
+            p_summary_preview: updated.summaryPreview,
+            p_content_json: updated.contentJson,
+          })
+        );
+      } catch {
+        // Non-blocking
+      }
+    }
+
+    return updated;
+  },
+
+  /**
+   * Finds a pooled captured revision paper or scanned note analysis (`REVISION_PAPER`).
+   */
+  async findPooledCapturedPaper(params: {
+    subject: string;
+    grade?: string;
+    query: string;
+  }): Promise<ExamAnalysis | null> {
+    const found = await this.findPooledMaterial({
+      itemType: 'REVISION_PAPER',
+      grade: params.grade,
+      subject: params.subject,
+      query: params.query,
+    });
+    if (!found || !found.contentJson || !Array.isArray(found.contentJson.questions)) {
+      return null;
+    }
+    return found.contentJson as ExamAnalysis;
+  },
+
+  /**
+   * Saves a scanned photo, captured class note, or analysed revision paper (`ExamAnalysis`)
+   * into the shared Learner Knowledge Pool (`REVISION_PAPER`), and also extracts a 3-question
+   * `PRACTICE_DRILL` so other candidates immediately see it in the free Learner's Revision Pool.
+   */
+  async savePooledCapturedPaper(
+    analysis: ExamAnalysis,
+    sourceHint?: string
+  ): Promise<LearnerPoolItem | null> {
+    if (!analysis || !Array.isArray(analysis.questions) || analysis.questions.length === 0) {
+      return null;
+    }
+    const subject = analysis.subject || 'General';
+    const grade = analysis.grade || 'Form 4';
+    const firstTopics = Array.from(
+      new Set(analysis.questions.map((q) => q.topic).filter(Boolean))
+    ).slice(0, 3);
+    const topicTitle =
+      sourceHint?.trim() ||
+      (firstTopics.length > 0
+        ? `${subject}: ${firstTopics.join(', ')}`
+        : `${subject} Captured Revision Questions`);
+    const preview = analysis.questions
+      .slice(0, 2)
+      .map((q) => `Q${q.number}: ${q.text}`)
+      .join(' · ')
+      .slice(0, 240);
+
+    // Also populate a 3-question Practice Drill into the pool so learners on /revision can practise it directly
+    const drillQuestions: PracticeQuestion[] = analysis.questions.slice(0, 3).map((q, idx) => ({
+      number: idx + 1,
+      text: q.text,
+      marks: q.marks || 2,
+      topic: q.topic || topicTitle,
+      guidance: q.competency ? `Competency: ${q.competency}` : undefined,
+      modelAnswerOutline:
+        Array.isArray(q.markingScheme) && q.markingScheme.length > 0
+          ? q.markingScheme.join('; ')
+          : q.modelAnswer || 'State the core syllabus concept and show working clearly.',
+    }));
+    if (drillQuestions.length >= 1) {
+      await this.savePooledPractice(
+        {
+          subject,
+          topic: topicTitle,
+          examType: analysis.examType || 'KNEC',
+          grade,
+        },
+        drillQuestions
+      );
+    }
+
+    return this.savePooledMaterial({
+      itemType: 'REVISION_PAPER',
+      examPathway: analysis.examType || 'KNEC',
+      grade,
+      subject,
+      topic: topicTitle,
+      promptText: `${topicTitle} ${analysis.questions[0]?.text || ''}`.trim(),
+      summaryPreview: preview,
+      contentJson: analysis,
+    });
   },
 };

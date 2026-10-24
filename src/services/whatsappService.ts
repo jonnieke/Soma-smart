@@ -410,3 +410,29 @@ export const parseInboundWhatsAppMessage = (payload: any): InboundWhatsAppWebhoo
   }
 };
 
+export const formatPooledMaterialForWhatsApp = (item: {
+  topic: string;
+  subject: string;
+  grade: string;
+  itemType: string;
+  summaryPreview: string;
+  reuseCount?: number;
+}) => {
+  const label = item.itemType === 'PRACTICE_DRILL' ? 'Free Practice Drill' : 'Free Study Note';
+  const topic = compactText(item.topic || 'Revision Material').slice(0, 120);
+  const preview = trimToReadableLength(item.summaryPreview || '', 380);
+  return [
+    `*Soma AI Learner’s Revision Pool (${label})*`,
+    `Topic: *${topic}*`,
+    `Level: *${compactText(item.grade)} · ${compactText(item.subject)}*`,
+    item.reuseCount && item.reuseCount > 1 ? `Studied by *${item.reuseCount} candidates* across Kenya` : '',
+    '',
+    preview,
+    '',
+    `Read the full note & practise for free on Soma AI: https://www.somaai.co.ke/revision`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+};
+
+

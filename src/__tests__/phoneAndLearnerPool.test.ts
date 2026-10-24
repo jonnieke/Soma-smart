@@ -17,6 +17,7 @@ import {
   learnerPoolService,
   splitAnswerForPaywallTeaser,
 } from '../services/learnerPoolService';
+import { formatPooledMaterialForWhatsApp } from '../services/whatsappService';
 
 describe('Kenyan Phone Number Last-9 Normalization & 24h Revision Pass', () => {
   beforeEach(() => {
@@ -236,5 +237,70 @@ describe('Shared Learner Knowledge Pool & Relatable Query Deduplication', () => 
 
     const directSplit = splitAnswerForPaywallTeaser(result.fullAnswer);
     expect(directSplit.visiblePart).toBe(result.visiblePart);
+  });
+
+  it('pools scanned/captured exam papers & notes and supports Helpful upvoting + WhatsApp sharing', async () => {
+    const capturedAnalysis = {
+      subject: 'Chemistry',
+      grade: 'Form 4',
+      examType: 'KCSE' as const,
+      questions: [
+        {
+          id: 1,
+          number: '1a',
+          text: 'State Charles Law and give its mathematical expression.',
+          topic: 'Gas Laws',
+          competency: 'Scientific principles',
+          marks: 2,
+          markingScheme: ['Volume is directly proportional to Kelvin temperature at constant pressure [1 mk]', 'V1/T1 = V2/T2 [1 mk]'],
+        },
+        {
+          id: 2,
+          number: '1b',
+          text: 'A gas occupies 400 cm3 at 27°C. Calculate its volume at 127°C at constant pressure.',
+          topic: 'Gas Laws',
+          competency: 'Calculation',
+          marks: 3,
+          markingScheme: ['T1 = 300K, T2 = 400K [1 mk]', 'V2 = (400 x 400) / 300 [1 mk]', '533.33 cm3 [1 mk]'],
+        },
+      ],
+    };
+
+    const savedPaper = await learnerPoolService.savePooledCapturedPaper(
+      capturedAnalysis,
+      'KCSE Chemistry Gas Laws Captured Paper'
+    );
+    expect(savedPaper).not.toBeNull();
+    expect(savedPaper!.itemType).toBe('REVISION_PAPER');
+
+    // Should be retrievable as a captured paper for relatable queries
+    const foundPaper = await learnerPoolService.findPooledCapturedPaper({
+      subject: 'Chemistry',
+      grade: 'Form 4',
+      query: 'KCSE Chemistry Gas Laws paper questions',
+    });
+    expect(foundPaper).not.toBeNull();
+    expect(foundPaper?.questions).toHaveLength(2);
+
+    // Should also have populated a free Practice Drill in the Learner's Pool
+    const chemistryPool = learnerPoolService.listLocalPool({
+      grade: 'Form 4',
+      subject: 'Chemistry',
+      itemType: 'PRACTICE_DRILL',
+    });
+    expect(chemistryPool.length).toBeGreaterThanOrEqual(1);
+
+    // Test Helpful upvoting
+    const drillItem = chemistryPool[0];
+    const beforeCount = drillItem.reuseCount;
+    const updatedItem = await learnerPoolService.markItemHelpful(drillItem.id);
+    expect(updatedItem?.reuseCount).toBe(beforeCount + 1);
+    expect(learnerPoolService.hasMarkedHelpful(drillItem.id)).toBe(true);
+
+    // Test Classmate WhatsApp formatting
+    const waText = formatPooledMaterialForWhatsApp(updatedItem!);
+    expect(waText).toContain('Soma AI Learner’s Revision Pool');
+    expect(waText).toContain('Gas Laws');
+    expect(waText).toContain('https://www.somaai.co.ke/revision');
   });
 });

@@ -1942,7 +1942,9 @@ export const analyzeExamPaper = async (base64Image: string, mimeType: string): P
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
-    return JSON.parse(text) as ExamAnalysis;
+    const parsed = JSON.parse(text) as ExamAnalysis;
+    void learnerPoolService.savePooledCapturedPaper(parsed);
+    return parsed;
   } catch (error) {
     console.error("Error analyzing exam:", error);
     throw error;
@@ -2016,7 +2018,9 @@ export const analyzeExamPaperUrl = async (fileUrl: string, mimeType: string): Pr
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
 
-    return JSON.parse(text) as ExamAnalysis;
+    const parsed = JSON.parse(text) as ExamAnalysis;
+    void learnerPoolService.savePooledCapturedPaper(parsed);
+    return parsed;
   } catch (error) {
     console.error("Error analyzing exam from URL:", error);
     throw error;
@@ -2029,6 +2033,16 @@ export const reconstructPaperQuestions = async (
   paperTitle: string,
   language: 'EN' | 'SW' = 'EN'
 ): Promise<ExamAnalysis> => {
+  // Check shared pool first for an already reconstructed paper matching this title/subject
+  const pooledPaper = await learnerPoolService.findPooledCapturedPaper({
+    subject: subject || 'General',
+    grade,
+    query: paperTitle,
+  });
+  if (pooledPaper) {
+    return pooledPaper;
+  }
+
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -2089,7 +2103,9 @@ export const reconstructPaperQuestions = async (
   const result = await model.generateContent(prompt);
   const text = result.response.text();
   if (!text) throw new Error("No response from AI");
-  return JSON.parse(text) as ExamAnalysis;
+  const parsed = JSON.parse(text) as ExamAnalysis;
+  void learnerPoolService.savePooledCapturedPaper(parsed, paperTitle);
+  return parsed;
 };
 
 export const getRevisionTutorResponse = async (
@@ -2390,7 +2406,9 @@ export const generateExamQuestions = async (
 
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
-    return JSON.parse(text) as ExamAnalysis;
+    const parsed = JSON.parse(text) as ExamAnalysis;
+    void learnerPoolService.savePooledCapturedPaper(parsed, `${subject} Captured Notes Practice`);
+    return parsed;
   } catch (error) {
     console.error("Error generating exam questions:", error);
     throw error;
@@ -2401,6 +2419,16 @@ export const predictLikelyQuestions = async (
   analysis: ExamAnalysis,
   language: 'EN' | 'SW' = 'EN'
 ): Promise<ExamAnalysis> => {
+  const topicsKey = analysis.questions.slice(0, 4).map((q) => q.topic).filter(Boolean).join(' ');
+  const pooledPredicted = await learnerPoolService.findPooledCapturedPaper({
+    subject: analysis.subject || 'General',
+    grade: analysis.grade,
+    query: `predicted questions ${topicsKey}`,
+  });
+  if (pooledPredicted) {
+    return pooledPredicted;
+  }
+
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -2469,7 +2497,9 @@ Grade: ${analysis.grade}
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
-    return JSON.parse(text) as ExamAnalysis;
+    const parsed = JSON.parse(text) as ExamAnalysis;
+    void learnerPoolService.savePooledCapturedPaper(parsed, `predicted questions ${topicsKey}`);
+    return parsed;
   } catch (error) {
     console.error("Error predicting questions:", error);
     throw error;

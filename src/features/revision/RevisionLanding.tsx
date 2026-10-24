@@ -23,6 +23,8 @@ import {
   Search,
   X,
   Lock,
+  ThumbsUp,
+  ShieldCheck,
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useApp } from '../../context/AppContext';
@@ -43,7 +45,11 @@ import {
   type LearnerPoolItem,
   type PoolItemType,
 } from '../../services/learnerPoolService';
-import { formatCandidateRevisionProgressForWhatsApp, openWhatsAppShare } from '../../services/whatsappService';
+import {
+  formatCandidateRevisionProgressForWhatsApp,
+  formatPooledMaterialForWhatsApp,
+  openWhatsAppShare,
+} from '../../services/whatsappService';
 import type { PanelMode } from './ExamGuruPanel';
 import {
   GRADES,
@@ -137,6 +143,17 @@ function ExamPrepWorkspace({
     coveredPart: string;
     fromPool: boolean;
   } | null>(null);
+  const [passCheckoutOpen, setPassCheckoutOpen] = useState(false);
+  const [passBuyer, setPassBuyer] = useState(() => ({
+    name: studentProfile?.name || phoneSession?.buyerName || '',
+    phone: phoneSession?.normalizedPhone || '',
+    email: '',
+  }));
+  const [passBuying, setPassBuying] = useState(false);
+  const [passCheckoutUrl, setPassCheckoutUrl] = useState('');
+  const [passCheckoutRef, setPassCheckoutRef] = useState('');
+  const [passCheckoutExamId, setPassCheckoutExamId] = useState('');
+  const [passCheckoutError, setPassCheckoutError] = useState('');
   const [papers, setPapers] = useState<
     Array<{ id: string | number; title: string; subject?: string; grade?: string }>
   >([]);
@@ -296,6 +313,121 @@ function ExamPrepWorkspace({
   const hasFullExplanationAccess = Boolean(
     isPro || (purchasedPaperIds.length > 0 && (!phoneSession || phoneSession.passActive))
   );
+
+  const handleMarkPoolHelpful = async (item: LearnerPoolItem) => {
+    await learnerPoolService.markItemHelpful(item.id);
+    if (mounted.current) setPoolVersion((v) => v + 1);
+  };
+
+  const handleSharePoolItemWhatsApp = (item: LearnerPoolItem) => {
+    const message = formatPooledMaterialForWhatsApp({
+      topic: item.topic,
+      subject: item.subject,
+      grade: item.grade,
+      itemType: item.itemType,
+      summaryPreview: item.summaryPreview,
+      reuseCount: item.reuseCount,
+    });
+    openWhatsAppShare(message);
+  };
+
+  const openInlinePassCheckout = () => {
+    setPassCheckoutError('');
+    setPassCheckoutUrl('');
+    setPassCheckoutRef('');
+    setPassBuyer((prev) => ({
+      ...prev,
+      name: prev.name || studentProfile?.name || phoneSession?.buyerName || '',
+      phone: prev.phone || phoneSession?.normalizedPhone || '',
+    }));
+    setPassCheckoutOpen(true);
+  };
+
+  const startInlinePassCheckout = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passBuying) return;
+    setPassBuying(true);
+    setPassCheckoutError('');
+    try {
+      let targetId =
+        phoneSession?.paperIds?.[0] ||
+        purchasedPaperIds[0] ||
+        (papers[0]?.id ? String(papers[0].id) : '');
+
+      if (!targetId && typeof examPaperBankService?.listPapers === 'function') {
+        const list = await examPaperBankService.listPapers();
+        const match =
+          list.find((p) => p.subject?.toLowerCase() === subject.toLowerCase()) || list[0];
+        if (match?.id) targetId = String(match.id);
+      }
+      if (!targetId) {
+        navigate(`/exam-papers?grade=${encodeURIComponent(grade)}&subject=${encodeURIComponent(subject)}`);
+        return;
+      }
+      setPassCheckoutExamId(targetId);
+
+      if (typeof examPaperBankService?.initiatePurchase !== 'function') {
+        navigate(`/exam-papers?renew=1&paper=${encodeURIComponent(targetId)}&phone=${encodeURIComponent(passBuyer.phone)}`);
+        return;
+      }
+
+      const result = await examPaperBankService.initiatePurchase(targetId, passBuyer, {
+        renewPass: true,
+      });
+
+      if (result.already_paid) {
+        const activeSess = examPaperBankService.recordPurchaseSession?.(targetId, passBuyer);
+        if (activeSess) setPhoneSession(activeSess);
+        setPurchasedPaperIds((prev) => Array.from(new Set([...prev, String(targetId)])));
+        setPassCheckoutOpen(false);
+        setPhoneMessage('Your 24-Hour AI Revision Pass is now active! Full Akili explanations are unlocked.');
+        return;
+      }
+      if (!result?.redirect_url) throw new Error('Checkout unavailable');
+      setPassCheckoutUrl(result.redirect_url);
+      setPassCheckoutRef(result.reference);
+    } catch {
+      setPassCheckoutError(
+        'Could not start M-Pesa checkout right now. Check your phone number or open the Paper Bank.'
+      );
+    } finally {
+      if (mounted.current) setPassBuying(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!passCheckoutOpen || !passCheckoutRef || !passCheckoutExamId) return;
+    if (typeof examPaperBankService?.getAccess !== 'function') return;
+    let cancelled = false;
+    const interval = window.setInterval(async () => {
+      try {
+        const access = await examPaperBankService.getAccess(passCheckoutExamId, passCheckoutRef);
+        if (!cancelled && access.paid) {
+          window.clearInterval(interval);
+          const activeSess = examPaperBankService.recordPurchaseSession?.(
+            passCheckoutExamId,
+            passBuyer
+          );
+          if (activeSess) setPhoneSession(activeSess);
+          setPurchasedPaperIds((prev) =>
+            Array.from(new Set([...prev, String(passCheckoutExamId)]))
+          );
+          setPassCheckoutOpen(false);
+          setPassCheckoutUrl('');
+          setPassCheckoutRef('');
+          setPhoneMessage(
+            'Payment confirmed! Your 24-Hour AI Revision Pass is active and Akili’s full answer is unlocked.'
+          );
+        }
+      } catch {
+        // Keep polling while Pesapal checkout is open
+      }
+    }, 3000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+    };
+  }, [passCheckoutOpen, passCheckoutRef, passCheckoutExamId, passBuyer]);
 
   const handlePoolAskAkili = async (
     e?: React.FormEvent,
@@ -602,13 +734,7 @@ function ExamPrepWorkspace({
               <div className="ep-actions">
                 <button
                   className="ep-primary"
-                  onClick={() =>
-                    navigate(
-                      `/exam-papers?renew=1&paper=${encodeURIComponent(
-                        phoneSession.paperIds[0] || purchasedPaperIds[0] || ''
-                      )}&phone=${encodeURIComponent(phoneSession.normalizedPhone || '')}`
-                    )
-                  }
+                  onClick={openInlinePassCheckout}
                 >
                   Pay KES 20 to continue revision (24h Pass)
                 </button>
@@ -1233,7 +1359,26 @@ function ExamPrepWorkspace({
                     <h3>{item.topic}</h3>
                     <p>{item.summaryPreview}</p>
                     <div className="ep-pool-card-footer">
-                      <span>{item.grade} · {item.subject}</span>
+                      <div className="ep-pool-peer-bar">
+                        <button
+                          type="button"
+                          className={`ep-pool-helpful-btn ${learnerPoolService.hasMarkedHelpful(item.id) ? 'voted' : ''}`}
+                          onClick={() => void handleMarkPoolHelpful(item)}
+                          aria-label={`Mark ${item.topic} as helpful`}
+                        >
+                          <ThumbsUp size={13} />
+                          <span>Helpful ({item.reuseCount})</span>
+                        </button>
+                        <button
+                          type="button"
+                          className="ep-pool-wa-btn"
+                          onClick={() => handleSharePoolItemWhatsApp(item)}
+                          aria-label={`Share ${item.topic} with classmates on WhatsApp`}
+                        >
+                          <Share2 size={13} />
+                          <span>Share</span>
+                        </button>
+                      </div>
                       <div className="ep-pool-card-actions">
                         <button
                           type="button"
@@ -1395,13 +1540,9 @@ function ExamPrepWorkspace({
                             <button
                               type="button"
                               className="ep-outline"
-                              onClick={() =>
-                                navigate(
-                                  `/exam-papers?grade=${encodeURIComponent(grade)}&subject=${encodeURIComponent(subject)}`
-                                )
-                              }
+                              onClick={openInlinePassCheckout}
                             >
-                              Or get 24h Pass with a KES 20 Past Paper
+                              Or Unlock 24h Pass for KES 20 (M-Pesa)
                             </button>
                             <button
                               type="button"
@@ -1600,11 +1741,125 @@ function ExamPrepWorkspace({
               <button
                 type="button"
                 className="ep-outline"
+                onClick={() => handleSharePoolItemWhatsApp(selectedPoolNote)}
+              >
+                <Share2 size={16} /> Share Note on WhatsApp
+              </button>
+              <button
+                type="button"
+                className="ep-outline"
                 onClick={() => setSelectedPoolNote(null)}
               >
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {passCheckoutOpen && (
+        <div
+          className="ep-pool-modal-backdrop"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ep-pass-checkout-title"
+        >
+          <div className="ep-card ep-pool-modal">
+            <div className="ep-pool-modal-head">
+              <div>
+                <span className="ep-eyebrow">24-Hour AI Revision Pass · KES 20 via Pesapal M-Pesa</span>
+                <h2 id="ep-pass-checkout-title">Unlock Full Akili Explanations &amp; Past Paper Access</h2>
+              </div>
+              <button
+                type="button"
+                className="ep-outline"
+                aria-label="Close M-Pesa checkout"
+                onClick={() => {
+                  setPassCheckoutOpen(false);
+                  setPassCheckoutUrl('');
+                  setPassCheckoutRef('');
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            {passCheckoutUrl ? (
+              <div className="ep-pool-modal-body">
+                <iframe
+                  title="Pesapal M-Pesa Checkout"
+                  src={passCheckoutUrl}
+                  style={{ width: '100%', height: '540px', border: '1px solid #cbd5e1', borderRadius: '12px' }}
+                  allow="payment"
+                />
+              </div>
+            ) : (
+              <form className="ep-pool-modal-body" onSubmit={(e) => void startInlinePassCheckout(e)}>
+                <p style={{ marginBottom: '12px' }}>
+                  Pay <strong>KES 20</strong> via M-Pesa (processed securely by Pesapal) to unlock a full 24-hour AI Revision Pass, reveal the rest of Akili’s answer right here, and access a past paper + marking scheme.
+                </p>
+                <div style={{ display: 'grid', gap: '12px', marginBottom: '16px' }}>
+                  <label style={{ display: 'block', fontWeight: 700, fontSize: '14px' }}>
+                    Your name
+                    <input
+                      required
+                      value={passBuyer.name}
+                      onChange={(e) => setPassBuyer({ ...passBuyer, name: e.target.value })}
+                      placeholder="Candidate name"
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        minHeight: '44px',
+                        marginTop: '4px',
+                        padding: '8px 12px',
+                        borderRadius: '9px',
+                        border: '1px solid #cbd5e1',
+                      }}
+                    />
+                  </label>
+                  <label style={{ display: 'block', fontWeight: 700, fontSize: '14px' }}>
+                    M-Pesa phone number (+254..., 07..., or last 9 digits)
+                    <input
+                      required
+                      type="tel"
+                      inputMode="tel"
+                      value={passBuyer.phone}
+                      onChange={(e) => setPassBuyer({ ...passBuyer, phone: e.target.value })}
+                      placeholder="07XX XXX XXX"
+                      style={{
+                        display: 'block',
+                        width: '100%',
+                        minHeight: '44px',
+                        marginTop: '4px',
+                        padding: '8px 12px',
+                        borderRadius: '9px',
+                        border: '1px solid #cbd5e1',
+                      }}
+                    />
+                  </label>
+                </div>
+                {passCheckoutError && (
+                  <p role="alert" className="ep-error">
+                    {passCheckoutError}
+                  </p>
+                )}
+                <div className="ep-actions">
+                  <button type="submit" className="ep-primary" disabled={passBuying}>
+                    <ShieldCheck size={18} />
+                    {passBuying ? 'Starting M-Pesa STK Push…' : 'Pay KES 20 with M-Pesa (Pesapal)'}
+                  </button>
+                  <button
+                    type="button"
+                    className="ep-outline"
+                    onClick={() =>
+                      navigate(
+                        `/exam-papers?grade=${encodeURIComponent(grade)}&subject=${encodeURIComponent(subject)}`
+                      )
+                    }
+                  >
+                    Choose a specific past paper
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

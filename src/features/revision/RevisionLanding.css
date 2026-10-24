@@ -1218,6 +1218,35 @@
   align-items: center;
   gap: 10px;
 }
+.ep-pool-peer-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.ep-pool-helpful-btn,
+.ep-pool-wa-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 30px !important;
+  padding: 4px 9px !important;
+  font-size: 11px !important;
+  font-weight: 700;
+  border-radius: 999px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #334155;
+}
+.ep-pool-helpful-btn.voted {
+  background: #ecfdf5;
+  border-color: #6ee7b7;
+  color: #047857;
+}
+.ep-pool-wa-btn {
+  background: #f0fdf4;
+  border-color: #86efac;
+  color: #166534;
+}
 .ep-pool-deeper-link {
   font-size: 12px !important;
   font-weight: 700;
