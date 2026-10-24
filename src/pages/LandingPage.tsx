@@ -337,18 +337,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         }
 
         // Unregistered visitors: show the teaser modal with login gate, without dashboard looping.
+        const hasActivePhonePass = Boolean(isPro || examPaperBankService.readPhoneSession()?.passActive);
         let count = 0;
-        if (!isRegistered) {
+        if (!isRegistered && !hasActivePhonePass) {
             try { count = parseInt(localStorage.getItem('soma_hero_detailed_uses') || '0', 10); } catch { /* ignore */ }
         }
         setShowDetailedView(true);
         if (isGeneratingDetailed) return;
         if (detailedAnswer && previousQuestion === activeQuestion && !fileOverride) return;
-        if (!isRegistered && count >= 5) {
+        if (!isRegistered && !hasActivePhonePass && count >= 5) {
             setDetailedLimitReached(true);
             return;
         }
-        if (!isRegistered) {
+        if (!isRegistered && !hasActivePhonePass) {
             try {
                 localStorage.setItem('soma_hero_detailed_uses', String(count + 1));
                 setDetailedUsesLeft(Math.max(0, 5 - (count + 1)));
@@ -2499,9 +2500,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                             </>
                                         )}
                                     </div>
+                                    <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+                                        <button
+                                            type="button"
+                                            onClick={() => { setShowDetailedView(false); navigate('/exam-papers'); }}
+                                            className="rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-black text-emerald-800 hover:bg-emerald-100 transition-colors"
+                                        >
+                                            Or Unlock 24h Pass + Past Paper (KES 20) →
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => { setShowDetailedView(false); navigate('/free-pool'); }}
+                                            className="rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-100 transition-colors"
+                                        >
+                                            Explore Free Revision Pool →
+                                        </button>
+                                    </div>
                                 </div>
                             ) : (
-                                /* Partial view with blur gate */
+                                /* Partial view with blur gate (or full unlocked view when 24h Pass / Registered) */
                                 <div className="relative flex-1 min-h-0">
                                     {/* Scrollable content */}
                                     <div className="overflow-y-auto h-full p-5 pb-36">
@@ -2572,16 +2589,52 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                         )}
                                     </div>
 
-                                    {/* Gradient fade + blur overlay on bottom half */}
-                                    {!isRegistered && (
+                                    {/* Gradient fade + blur overlay on bottom half (only when not registered and no 24h pass) */}
+                                    {!isRegistered && !isPro && !examPaperBankService.readPhoneSession()?.passActive && (
                                         <>
                                             <div className="absolute bottom-[112px] left-0 right-0 h-28 bg-gradient-to-b from-transparent to-white dark:to-slate-950 pointer-events-none" />
                                             <div className="absolute bottom-[112px] left-0 right-0 h-6 backdrop-blur-sm pointer-events-none" />
                                         </>
                                     )}
 
-                                    {/* Login gate docked at bottom */}
-                                    {!isRegistered && (
+                                    {/* Bottom action bar: Full Classroom continuation when unlocked, or Login/Pass gate for guests */}
+                                    {isRegistered || isPro || examPaperBankService.readPhoneSession()?.passActive ? (
+                                        <div className="absolute bottom-0 left-0 right-0 border-t border-emerald-100 dark:border-slate-800 bg-emerald-50/95 dark:bg-slate-950 p-4">
+                                            <div className="flex flex-wrap items-center justify-between gap-3">
+                                                <div className="min-w-0">
+                                                    <p className="text-xs font-black text-emerald-900 dark:text-emerald-200">
+                                                        ✅ Full Answer Unlocked · Ready to practise this topic?
+                                                    </p>
+                                                    <p className="text-[11px] text-emerald-700 dark:text-slate-400">
+                                                        Continue in the Learner Classroom for audio reading, follow-up questions &amp; a practice quiz.
+                                                    </p>
+                                                </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setShowDetailedView(false);
+                                                            setRole(UserRole.LEARNER);
+                                                            navigate('/learner', { state: { pendingHeroQuestion: questionInput } });
+                                                        }}
+                                                        className="min-h-[38px] bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-4 font-black text-xs transition-colors"
+                                                    >
+                                                        Open in Classroom →
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setShowDetailedView(false);
+                                                            navigate('/free-pool');
+                                                        }}
+                                                        className="min-h-[38px] border border-emerald-300 bg-white text-emerald-800 hover:bg-emerald-100 rounded-xl px-3.5 font-black text-xs transition-colors"
+                                                    >
+                                                        Free Pool →
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ) : (
                                         <div className="absolute bottom-0 left-0 right-0 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-950 p-4">
                                             <div className="flex items-start gap-3 mb-3">
                                                 <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 flex items-center justify-center shrink-0">
@@ -2592,13 +2645,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                     <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                                                         {detailedUsesLeft > 0
                                                             ? `${detailedUsesLeft} free preview${detailedUsesLeft !== 1 ? 's' : ''} remaining — no payment needed`
-                                                            : 'Free account unlocks full point-form answer guides'}
+                                                            : 'Free account or KES 20 24h Pass unlocks full point-form answer guides'}
                                                     </p>
                                                 </div>
                                             </div>
-                                            <div className="flex gap-2">
+                                            <div className="flex flex-wrap gap-2">
                                                 <button onClick={() => { setShowDetailedView(false); setShowRegistration(true); }} className="flex-1 min-h-[40px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs transition-colors">Register Free</button>
                                                 <button onClick={() => { setShowDetailedView(false); setShowLogin(true); }} className="flex-1 min-h-[40px] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 rounded-xl font-black text-xs transition-colors">Continue Learning</button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setShowDetailedView(false);
+                                                        navigate('/exam-papers');
+                                                    }}
+                                                    className="min-h-[40px] border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 rounded-xl px-3 font-black text-xs transition-colors"
+                                                >
+                                                    KES 20 24h Pass →
+                                                </button>
                                             </div>
                                         </div>
                                     )}

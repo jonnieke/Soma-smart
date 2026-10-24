@@ -238,19 +238,17 @@ export const LandingHome: React.FC<Props> = (props) => {
       if (res.found && res.passActive) {
         setRestoreNotice({
           tone: 'ok',
-          text: `24h Pass active (+254${res.last9} · ${res.hoursRemaining}h left)`,
+          text: `✅ 24h Unlimited AI & Revision Pass active (+254${res.last9} · ${res.hoursRemaining}h left). Ask homework below or jump to any tool:`,
         });
-        props.onRevision();
       } else if (res.found) {
         setRestoreNotice({
           tone: 'ok',
-          text: `Past papers restored for +254${res.last9}`,
+          text: `✅ Past papers restored for +254${res.last9} (${res.paperIds.length} paper${res.paperIds.length === 1 ? '' : 's'}).`,
         });
-        props.onRevision();
       } else {
         setRestoreNotice({
           tone: 'err',
-          text: 'No pass found for that number yet.',
+          text: 'No pass found for that number yet. Buy any KES 20 past paper to unlock a 24h Pass.',
         });
       }
     } catch {
@@ -299,13 +297,69 @@ export const LandingHome: React.FC<Props> = (props) => {
           background: restoreNotice.tone === 'ok' ? '#ecfdf5' : '#fffbeb',
           color: restoreNotice.tone === 'ok' ? '#065f46' : '#92400e',
           borderBottom: '1px solid #d1fae5',
-          padding: '6px 5%',
+          padding: '8px 5%',
           fontSize: '12px',
           fontWeight: 700,
-          textAlign: 'center',
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: '10px',
         }}
       >
-        {restoreNotice.text}
+        <span>{restoreNotice.text}</span>
+        {restoreNotice.tone === 'ok' && (
+          <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
+            <button
+              type="button"
+              onClick={props.onStartLearning}
+              style={{
+                background: '#059669',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '999px',
+                padding: '3px 10px',
+                fontSize: '11px',
+                fontWeight: 800,
+                cursor: 'pointer',
+              }}
+            >
+              Open Classroom →
+            </button>
+            <button
+              type="button"
+              onClick={props.onRevision}
+              style={{
+                background: '#ffffff',
+                color: '#065f46',
+                border: '1px solid #a7f3d0',
+                borderRadius: '999px',
+                padding: '3px 10px',
+                fontSize: '11px',
+                fontWeight: 800,
+                cursor: 'pointer',
+              }}
+            >
+              Revision Hub →
+            </button>
+            <button
+              type="button"
+              onClick={() => props.onExamPapers()}
+              style={{
+                background: '#ffffff',
+                color: '#065f46',
+                border: '1px solid #a7f3d0',
+                borderRadius: '999px',
+                padding: '3px 10px',
+                fontSize: '11px',
+                fontWeight: 800,
+                cursor: 'pointer',
+              }}
+            >
+              Past Papers →
+            </button>
+          </span>
+        )}
       </div>
     )}
     {menuOpen && <nav id="soma-mobile-menu" className="soma-mobile-nav" aria-label="Mobile navigation" onClick={() => setMenuOpen(false)}>{navigation}</nav>}

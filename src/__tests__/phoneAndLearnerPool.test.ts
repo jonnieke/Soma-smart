@@ -18,6 +18,7 @@ import {
   splitAnswerForPaywallTeaser,
 } from '../services/learnerPoolService';
 import { formatPooledMaterialForWhatsApp } from '../services/whatsappService';
+import { assertPlanLimit, getPlanLimit, getStoredPlan, hasActive24hPhonePass } from '../services/planLimitService';
 
 describe('Kenyan Phone Number Last-9 Normalization & 24h Revision Pass', () => {
   beforeEach(() => {
@@ -93,6 +94,23 @@ describe('Kenyan Phone Number Last-9 Normalization & 24h Revision Pass', () => {
     });
     const renewed = readPhoneRestoreSession(futureNow + 1000);
     expect(renewed?.passActive).toBe(true);
+  });
+
+  it('recognizes an active 24h Phone Pass in planLimitService and grants DAILY unlimited AI homework & exam access', () => {
+    expect(hasActive24hPhonePass()).toBe(false);
+    expect(getStoredPlan()).toBe('FREE');
+
+    recordLocalPaperPurchaseSession('paper-kcse-chem-1', {
+      name: 'Brian Kiprop',
+      phone: '+254711222333',
+    });
+
+    expect(hasActive24hPhonePass()).toBe(true);
+    expect(getStoredPlan()).toBe('DAILY');
+    expect(getPlanLimit('ai_generation')).toBe(Infinity);
+    expect(getPlanLimit('exam_guru')).toBe(Infinity);
+    expect(getPlanLimit('exam_marking')).toBe(Infinity);
+    expect(assertPlanLimit('ai_generation', 100)).toBe(true);
   });
 });
 

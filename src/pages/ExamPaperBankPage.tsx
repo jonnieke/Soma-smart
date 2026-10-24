@@ -417,6 +417,44 @@ export const ExamPaperBankPage: React.FC = () => {
           <PurchaseThankYou receipt={{ status: 'SUCCESS', type: 'PAST_PAPER' }} title={confirmedPaper.title} guest
             continueLabel={paperDestination(confirmedPaper.id).startsWith('/revision') ? 'Continue revision' : 'Open your paper'}
             onContinue={() => navigate(paperDestination(confirmedPaper.id), { replace: true })} />
+          <div className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50/80 p-4">
+            <p className="text-xs font-black uppercase tracking-wider text-emerald-800">
+              ✨ 24-Hour Unlimited AI Revision &amp; Homework Pass Active
+            </p>
+            <p className="mt-1 text-xs font-medium text-emerald-700">
+              Your M-Pesa phone number now unlocks 24 hours of unlimited AI revision, homework help, and smart marking across Soma AI:
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => navigate(`/exam-papers/${confirmedPaper.id}/read`, { replace: true })}
+                className="rounded-xl border border-emerald-300 bg-white px-3 py-2 text-xs font-black text-emerald-900 hover:bg-emerald-100"
+              >
+                Read Paper &amp; Scheme →
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate(`/revision?paper=${encodeURIComponent(confirmedPaper.id)}`, { replace: true })}
+                className="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-800 hover:bg-indigo-100"
+              >
+                Timed AI Revision →
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/learner', { replace: true })}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-800 hover:bg-slate-100"
+              >
+                Ask Akili Homework →
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/free-pool', { replace: true })}
+                className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-black text-slate-800 hover:bg-slate-100"
+              >
+                Free Revision Pool →
+              </button>
+            </div>
+          </div>
         </div>
       </div>}
 

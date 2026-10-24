@@ -91,11 +91,33 @@ export class PlanLimitError extends Error {
   }
 }
 
-const getStoredPlan = (): SubscriptionTier => {
+export const hasActive24hPhonePass = (): boolean => {
+  try {
+    if (typeof window === 'undefined' || !window.localStorage) return false;
+    const raw = window.localStorage.getItem('soma_candidate_phone_session');
+    if (!raw) return false;
+    const parsed = JSON.parse(raw) as { passExpiresAt?: string | null; latestPaidAt?: string | null };
+    const expiryStr =
+      parsed.passExpiresAt ||
+      (parsed.latestPaidAt
+        ? new Date(new Date(parsed.latestPaidAt).getTime() + 24 * 60 * 60 * 1000).toISOString()
+        : null);
+    if (!expiryStr) return false;
+    const expiryTime = new Date(expiryStr).getTime();
+    return Number.isFinite(expiryTime) && expiryTime > Date.now();
+  } catch {
+    return false;
+  }
+};
+
+export const getStoredPlan = (): SubscriptionTier => {
   const plan = (localStorage.getItem('soma_subscription_plan') || localStorage.getItem('soma_active_plan') || 'FREE') as SubscriptionTier;
   const expiry = localStorage.getItem('soma_subscription_expiry');
-  if (plan !== 'FREE' && expiry && new Date(expiry) <= new Date()) return 'FREE';
-  return plan || 'FREE';
+  const activeSubPlan = plan !== 'FREE' && expiry && new Date(expiry) <= new Date() ? 'FREE' : (plan || 'FREE');
+  if (activeSubPlan === 'FREE' && hasActive24hPhonePass()) {
+    return 'DAILY';
+  }
+  return activeSubPlan;
 };
 
 const normalizeFeature = (feature: string): BillableFeature => {

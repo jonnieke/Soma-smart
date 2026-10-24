@@ -48,7 +48,7 @@ import { getLearnerCtaVariant } from '../../utils/abExperiments';
 import { QuestRoadmap } from './QuestRoadmap';
 import { LearningPathView } from './LearningPathView';
 import { safeImport } from '../../utils/safeImport';
-import { PlanLimitError, formatLearningCredits, getPlanLimit, getPlanUsage, getCreditPackExpiry } from '../../services/planLimitService';
+import { PlanLimitError, formatLearningCredits, getPlanLimit, getPlanUsage, getCreditPackExpiry, hasActive24hPhonePass } from '../../services/planLimitService';
 import { pesapalService } from '../../services/pesapalService';
 import { supabase } from '../../lib/supabase';
 import { trackAnalyticsEvent } from '../../services/analyticsEventService';
@@ -2089,9 +2089,10 @@ Stay anchored to this context unless I ask for something broader.`;
   }, [fadedSolutionData.answer, fadedSolutionData.query]);
 
   // A homepage answer is the start of a lesson, not a dismiss-only modal.
-  // This also resumes the same answer after a guest signs in, without another AI call.
+  // This also resumes the same answer after a guest signs in or activates a 24h Pass, without another AI call.
   React.useEffect(() => {
-    const lesson = heroAnswerContinuation(isRegistered, fadedSolutionData);
+    const canUnlockHeroLesson = Boolean(isRegistered || isPro || hasActive24hPhonePass());
+    const lesson = heroAnswerContinuation(canUnlockHeroLesson, fadedSolutionData);
     if (!lesson) return;
     setExplanation(lesson);
     setExplanationSubject(undefined);
@@ -2099,7 +2100,7 @@ Stay anchored to this context unless I ask for something broader.`;
     setPodcastScript(null);
     setFadedSolutionData(prev => ({ ...prev, show: false }));
     setMode('RESULT');
-  }, [isRegistered, fadedSolutionData.show, fadedSolutionData.isGenerating, fadedSolutionData.answer, fadedSolutionData.query]);
+  }, [isRegistered, isPro, fadedSolutionData.show, fadedSolutionData.isGenerating, fadedSolutionData.answer, fadedSolutionData.query]);
 
   // Check for subscription intent & Auto-open material intent
   React.useEffect(() => {
@@ -2259,12 +2260,13 @@ Stay anchored to this context unless I ask for something broader.`;
         // Already pro, just stay on dashboard and clear state
         navigate(location.pathname, { replace: true, state: {} });
       } else {
+        setSelectedPlan(state.selectedPlan);
+        setPendingMaterialId(state.materialId || null); // Preserve materialId if available
         if (!isRegistered) {
+          setAwaitingUpgradeCheckout(true);
           setShowRegistration(true);
         } else {
-          setSelectedPlan(state.selectedPlan);
           setMode('PAYMENT');
-          setPendingMaterialId(state.materialId || null); // Preserve materialId if available 
         }
         // Clear state to avoid re-triggering on refresh
         navigate(location.pathname, { replace: true, state: {} });
@@ -2930,8 +2932,8 @@ Stay anchored to this context unless I ask for something broader.`;
       !isNaN(new Date(subscriptionExpiry).getTime()) &&
       new Date(subscriptionExpiry) > new Date();
 
-    // Pro = Unlimited Checks
-    if (isPro || hasRecentPaymentUnlock || hasClientActiveSubscription || learningCredits > 0) return true;
+    // Pro / 24h Pass = Unlimited Checks
+    if (isPro || hasRecentPaymentUnlock || hasClientActiveSubscription || learningCredits > 0 || hasActive24hPhonePass()) return true;
 
     // Defensive: If we are registered but isPro is not yet set (or false), 
     // we should still allow access if usage is below limit.
@@ -7188,6 +7190,7 @@ ${explanation.explanation}
             setHasRecentPaymentUnlock(true);
             setShowLimitModal(false);
             await verifySubscription();
+            triggerToast('✅ Payment confirmed! Your unlimited study access is now active.');
             setMode('MENU');
             setSelectedPlan(null);
             
@@ -8123,7 +8126,7 @@ ${explanation.explanation}
                     <p className="text-slate-600 max-w-sm mb-6 font-medium text-base">
                       Sign up free to unlock the complete answer, examples and revision support. You get <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md font-bold mx-1">5 free answers</span> before KES 20/day premium access!
                     </p>
-                    <div className="flex gap-3 w-full sm:w-auto">
+                    <div className="flex flex-wrap gap-3 w-full sm:w-auto justify-center">
                         <button
                             onClick={() => {
                                 setFadedSolutionData(prev => ({ ...prev, show: false }));
@@ -8138,9 +8141,18 @@ ${explanation.explanation}
                                 setFadedSolutionData(prev => ({ ...prev, show: false }));
                                 setShowLogin(true);
                             }}
-                            className="flex-1 sm:flex-none bg-white hover:bg-slate-50 hover:bg-slate-50 text-slate-700 font-bold py-3.5 px-6 rounded-xl border-2 border-slate-200 transition-all"
+                            className="flex-1 sm:flex-none bg-white hover:bg-slate-50 text-slate-700 font-bold py-3.5 px-6 rounded-xl border-2 border-slate-200 transition-all"
                         >
                             Log In
+                        </button>
+                        <button
+                            onClick={() => {
+                                setFadedSolutionData(prev => ({ ...prev, show: false }));
+                                navigate('/exam-papers');
+                            }}
+                            className="w-full sm:w-auto bg-emerald-50 hover:bg-emerald-100 text-emerald-800 font-bold py-3.5 px-5 rounded-xl border-2 border-emerald-200 transition-all"
+                        >
+                            KES 20 24h Pass + Paper →
                         </button>
                     </div>
                   </div>

@@ -10,6 +10,7 @@ import { UserRole } from '../../types';
 import { supabase } from '../../lib/supabase';
 import { trackAnalyticsEvent } from '../../services/analyticsEventService';
 import { verifyAndFixSubscription } from '../../services/subscriptionService';
+import { recordLocalPaperPurchaseSession } from '../../services/examPaperBankService';
 import { GA_MEASUREMENT_ID } from '../../config/analytics';
 
 interface Props {
@@ -180,6 +181,16 @@ export const PaymentFlow: React.FC<Props> = ({ plan, materialId, onSuccess, onCa
                 if (data && data.status === 'SUCCESS') {
                     // Stop polling while we process success
                     clearInterval(interval);
+                    if (phone.trim()) {
+                        try {
+                            recordLocalPaperPurchaseSession(String(materialId || plan?.id || 'daily_pass'), {
+                                name: firstName || 'Learner',
+                                phone: phone.trim(),
+                            });
+                        } catch {
+                            // Non-blocking phone pass sync
+                        }
+                    }
                     
                     setReceipt(data);
                     setStep('SUCCESS');

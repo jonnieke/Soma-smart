@@ -62,11 +62,18 @@ export const ExamPaperReaderPage: React.FC = () => {
             <button onClick={() => navigate('/exam-papers')} className="rounded-xl border border-slate-200 p-2.5 text-slate-600" aria-label="Back to paper bank"><ArrowLeft className="h-5 w-5" /></button>
             <div className="min-w-0"><p className="text-[10px] font-black uppercase tracking-wider text-indigo-600">Your exam paper</p><h1 className="truncate text-sm font-black text-slate-950 sm:text-base">{access.title}</h1></div>
           </div>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {examPaperBankService.readPhoneSession()?.passActive && (
+              <span className="inline-flex items-center gap-1 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-[11px] font-black text-emerald-800">
+                ✨ 24h AI Pass Active
+              </span>
+            )}
             <button onClick={() => setActiveDocument('paper')} className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-black ${activeDocument === 'paper' ? 'bg-indigo-600 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}><FileText className="h-4 w-4" /> Exam paper</button>
             <button onClick={() => setActiveDocument('scheme')} className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-black ${activeDocument === 'scheme' ? 'bg-emerald-600 text-white' : 'border border-slate-200 bg-white text-slate-700'}`}><FileCheck2 className="h-4 w-4" /> Marking scheme</button>
             <button onClick={() => void share()} className="rounded-xl border border-slate-200 bg-white p-2.5 text-slate-700" aria-label="Share paper"><Share2 className="h-5 w-5" /></button>
             <button onClick={() => navigate(`/revision?paper=${encodeURIComponent(id)}`)} className="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-4 py-2 text-sm font-black text-white"><BookOpen className="h-4 w-4" /> {isPro ? 'Revision Mode' : 'Revision Mode unlocked'}</button>
+            <button onClick={() => navigate('/learner')} className="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-black text-indigo-700 hover:bg-indigo-100">Ask Akili Homework →</button>
+            <button onClick={() => navigate('/free-pool')} className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-black text-emerald-800 hover:bg-emerald-100">Free Pool →</button>
           </div>
         </div>
       </header>
