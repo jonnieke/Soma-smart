@@ -31,6 +31,7 @@ const AdminDashboard = React.lazy(() => safeImport(() => import('./features/admi
 const AdminKnowledgeBase = React.lazy(() => safeImport(() => import('./features/admin/KnowledgeBase').then(module => ({ default: module.AdminKnowledgeBase }))));
 const AdminAssessmentEngine = React.lazy(() => safeImport(() => import('./features/admin/AdminAssessmentEngine').then(module => ({ default: module.AdminAssessmentEngine }))));
 const RevisionPortal = React.lazy(() => safeImport(() => import('./features/revision/RevisionPortal').then(module => ({ default: module.RevisionPortal }))));
+const FreeRevisionPoolPage = React.lazy(() => safeImport(() => import('./pages/FreeRevisionPoolPage').then(module => ({ default: module.FreeRevisionPoolPage }))));
 const RevisionDashboard = React.lazy(() => safeImport(() => import('./features/revision/RevisionDashboard').then(module => ({ default: module.RevisionDashboard }))));
 const ExamPaperBankPage = React.lazy(() => safeImport(() => import('./pages/ExamPaperBankPage').then(module => ({ default: module.ExamPaperBankPage }))));
 const ExamPaperReaderPage = React.lazy(() => safeImport(() => import('./pages/ExamPaperReaderPage').then(module => ({ default: module.ExamPaperReaderPage }))));
@@ -150,7 +151,7 @@ const GlobalNavigation: React.FC = () => {
         { label: 'Admin', icon: Shield, to: '/admin', active: pathname.startsWith('/admin') },
     ];
 
-    if (pathname === '/' || pathname === '/learning-videos' || pathname.startsWith('/learner') || pathname.startsWith('/teacher') || pathname.startsWith('/revision') || pathname.startsWith('/exam-papers')) return null;
+    if (pathname === '/' || pathname === '/learning-videos' || pathname.startsWith('/free-pool') || pathname.startsWith('/learner') || pathname.startsWith('/teacher') || pathname.startsWith('/revision') || pathname.startsWith('/exam-papers')) return null;
 
     return (
         <div className="sticky top-0 z-[90] border-b border-slate-200/80 bg-white/95 backdrop-blur dark:border-slate-800/80 dark:bg-slate-950/95">
@@ -193,7 +194,7 @@ const GlobalNavigation: React.FC = () => {
 const App: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
-    const quietPublicPage = location.pathname === '/' || location.pathname === '/learning-videos';
+    const quietPublicPage = location.pathname === '/' || location.pathname === '/learning-videos' || location.pathname.startsWith('/free-pool');
     const hideGlobalAssistant = quietPublicPage || ['/learner', '/teacher', '/revision'].some(path => location.pathname.startsWith(path));
     const previousPathRef = React.useRef<string | null>(null);
 
@@ -324,6 +325,8 @@ const App: React.FC = () => {
                             <Route path="/admin/knowledge" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminKnowledgeBase /></AdminGuard>} />
                             <Route path="/admin/assessment-engine" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminAssessmentEngine /></AdminGuard>} />
                             <Route path="/revision" element={<RevisionPortal />} />
+                            <Route path="/free-pool" element={<FreeRevisionPoolPage />} />
+                            <Route path="/learner-pool" element={<FreeRevisionPoolPage />} />
                             <Route path="/exam-papers" element={<ExamPaperBankPage />} />
                             <Route path="/exam-papers/:id/read" element={<ExamPaperReaderPage />} />
                             <Route path="/guide" element={<SomaGuidePage />} />

@@ -392,6 +392,26 @@ const CURATED_STARTER_POOL: LearnerPoolItem[] = [
     createdAt: '2026-10-21T07:00:00.000Z',
     updatedAt: '2026-10-23T16:00:00.000Z',
   },
+  {
+    id: 'starter-bio-photosynthesis',
+    itemType: 'TOPIC_EXPLANATION',
+    examPathway: 'KCSE',
+    grade: 'Form 4',
+    subject: 'Biology',
+    topic: 'Photosynthesis Light & Dark Stage [KNEC Marking Points]',
+    queryFingerprint: 'topic_explanation|form 4|biology|dark light photosynthesi stage',
+    searchTokens: ['dark', 'light', 'photosynthesi', 'stage'],
+    promptText: 'Explain the light and dark stages of photosynthesis with KNEC marking points',
+    summaryPreview: 'Photolysis of water in the grana vs. carbon dioxide fixation in the stroma with full 1-mark point breakdown.',
+    contentJson: {
+      title: 'Photosynthesis Light & Dark Stage [KNEC Marking Points]',
+      content:
+        '1. Light-Dependent Stage (Takes place in the Grana of Chloroplast):\n• Chlorophyll traps light energy [1 mk].\n• Photolysis of water: Light energy splits water molecules (H2O) into Hydrogen ions (H+) and Oxygen gas (O2) [1 mk].\n• Oxygen gas is released into the atmosphere or used for respiration, while Adenosine Triphosphate (ATP) is formed [1 mk].\n\n2. Light-Independent / Dark Stage (Takes place in the Stroma):\n• Carbon (IV) oxide fixation: Hydrogen atoms from the light stage combine with Carbon (IV) oxide using energy from ATP to form simple sugars (glucose) [1 mk].\n• Controlled by enzymes and is sensitive to temperature changes [1 mk].\n\n🎯 KNEC Examiner Trap: Never say the dark stage "only happens at night" — it is called light-independent because it does not directly require light, only the products of the light stage (H+ and ATP).',
+    },
+    reuseCount: 68,
+    createdAt: '2026-10-21T08:30:00.000Z',
+    updatedAt: '2026-10-24T10:00:00.000Z',
+  },
 ];
 
 export const learnerPoolService = {

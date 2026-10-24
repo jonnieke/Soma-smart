@@ -539,7 +539,7 @@ export function PaperBankCatalog({
                     }}
                     onClick={() =>
                       navigate(
-                        `/revision?grade=${encodeURIComponent(item.grade)}&subject=${encodeURIComponent(item.subject)}&pool=${encodeURIComponent(item.id)}`
+                        `/free-pool?grade=${encodeURIComponent(item.grade)}&subject=${encodeURIComponent(item.subject)}&pool=${encodeURIComponent(item.id)}`
                       )
                     }
                   >
@@ -555,7 +555,7 @@ export function PaperBankCatalog({
                 type="button"
                 className="pb-outline"
                 style={{ width: '100%', marginTop: '6px' }}
-                onClick={() => navigate('/revision')}
+                onClick={() => navigate('/free-pool')}
               >
                 Open Free Revision Pool <ArrowRight size={15} />
               </button>
