@@ -274,7 +274,7 @@ export const examPaperBankService = {
   },
 
   async initiatePurchase(examId: string | number, buyer: PaperBuyer, options?: { renewPass?: boolean }) {
-    const buyerToken = getPaperBuyerToken();
+    let buyerToken = getPaperBuyerToken();
     const normalizedPhone = normalizeKenyanPhone(buyer.phone) || buyer.phone;
     const { data, error } = await supabase.functions.invoke('exam-paper-bank/initiate', {
       body: {
@@ -285,7 +285,40 @@ export const examPaperBankService = {
       },
     });
     if (error) throw error;
-    return data as { redirect_url?: string; order_tracking_id?: string; reference: string; already_paid?: boolean };
+    const response = data as {
+      redirect_url?: string;
+      order_tracking_id?: string;
+      reference: string;
+      already_paid?: boolean;
+    };
+
+    // Compatibility fallback if the deployed edge function has not yet picked up `renewPass`:
+    // rotate a fresh buyerToken so Pesapal creates a new KES 20 renewal order tied to the buyer's phone.
+    if (options?.renewPass && response?.already_paid && !response?.redirect_url) {
+      buyerToken = crypto.randomUUID();
+      try {
+        localStorage.setItem(TOKEN_KEY, buyerToken);
+      } catch {
+        // ignore storage quota errors
+      }
+      const retry = await supabase.functions.invoke('exam-paper-bank/initiate', {
+        body: {
+          examId,
+          buyerToken,
+          buyer: { ...buyer, phone: normalizedPhone },
+          renewPass: true,
+        },
+      });
+      if (retry.error) throw retry.error;
+      return retry.data as {
+        redirect_url?: string;
+        order_tracking_id?: string;
+        reference: string;
+        already_paid?: boolean;
+      };
+    }
+
+    return response;
   },
 
   async getAccess(examId: string | number, reference?: string | null): Promise<PaperAccess> {
