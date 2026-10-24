@@ -16,10 +16,12 @@ import {
   Sparkles,
   CalendarDays,
   Upload,
+  MessageCircle,
+  Share2,
 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { useApp } from '../../context/AppContext';
-import { RevisionMode, TeacherActivity, ViewState } from '../../types';
+import { RevisionMode, TeacherActivity, ViewState, UserRole } from '../../types';
 import {
   generatePracticeQuestions,
   RateLimitError,
@@ -28,6 +30,7 @@ import {
 import { PlanLimitError } from '../../services/planLimitService';
 import { examService } from '../../services/examService';
 import { examPaperBankService } from '../../services/examPaperBankService';
+import { formatCandidateRevisionProgressForWhatsApp, openWhatsAppShare } from '../../services/whatsappService';
 import type { PanelMode } from './ExamGuruPanel';
 import {
   GRADES,
@@ -92,7 +95,7 @@ function ExamPrepWorkspace({
   owner,
 }: Props & { owner: string }) {
   const navigate = useNavigate();
-  const { studentProfile, studentCode, userId, isOnline } = useApp();
+  const { studentProfile, studentCode, userId, isOnline, role } = useApp();
   const recoveryOwner = studentCode || studentProfile?.id || userId || 'guest';
   const [unfinished] = useState(() => listTimedExams(recoveryOwner));
   const [purchasedPaperIds, setPurchasedPaperIds] = useState<string[]>([]);
@@ -318,6 +321,37 @@ function ExamPrepWorkspace({
   const weak = weakTopics(progress, subject);
   const plan = planFor(planPhase, exam, weak[0]?.topic);
   const streakDays = streak(progress.practisedDays, today);
+
+  const shareProgressWithParent = () => {
+    const parentPhone = (studentProfile as any)?.parentPhone || (studentProfile as any)?.parent_phone || null;
+    const message = formatCandidateRevisionProgressForWhatsApp({
+      learnerName: studentProfile?.name,
+      exam,
+      grade,
+      subject,
+      daysLeft,
+      streakDays,
+      practisedCount: progress.practisedCount,
+      weakTopics: weak.map((w) => w.topic),
+      recentTopic: topic || session?.topic,
+    });
+    openWhatsAppShare(message, parentPhone);
+  };
+
+  const shareTeacherClassRevision = () => {
+    const message = [
+      `*Soma AI Classroom Revision Assignment*`,
+      `Grade & Subject: *${grade} · ${subject}*`,
+      `Exam Focus: *${exam}*`,
+      `Today's Practice: *${topic || `${subject} Core Concepts`}*`,
+      daysLeft !== null && daysLeft >= 0 ? `Days remaining: *${daysLeft} days*` : '',
+      '',
+      `Candidates, please complete today's 10-minute revision practice and review your marking feedback:`,
+      `https://www.somaai.co.ke/revision`,
+    ].filter(Boolean).join('\n');
+    openWhatsAppShare(message);
+  };
+
   return (
     <div className="exam-prep">
       <Helmet>
@@ -693,6 +727,28 @@ function ExamPrepWorkspace({
                       ? 'Saved on this device. It will sync when you are back online.'
                       : ''}
             </small>
+
+            {/* Parent & Teacher WhatsApp Progress Loop */}
+            <div className="ep-whatsapp-loop">
+              <button
+                type="button"
+                className="ep-whatsapp-btn"
+                onClick={shareProgressWithParent}
+              >
+                <MessageCircle size={16} />
+                <span>Share progress with Parent on WhatsApp</span>
+              </button>
+              {role === UserRole.TEACHER && (
+                <button
+                  type="button"
+                  className="ep-whatsapp-outline-btn"
+                  onClick={shareTeacherClassRevision}
+                >
+                  <Share2 size={16} />
+                  <span>Share revision with Class</span>
+                </button>
+              )}
+            </div>
           </section>
           <h2 className="ep-section-title">Your revision toolkit</h2>
           <div className="ep-lanes">

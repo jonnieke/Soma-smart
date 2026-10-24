@@ -864,3 +864,53 @@
 .ep-pass-banner .ep-primary:hover {
   background: #047857;
 }
+
+.ep-whatsapp-loop {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ep-border, #e2e8f0);
+}
+
+.ep-whatsapp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #25D366;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 16px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease, transform 0.1s ease;
+  box-shadow: 0 2px 4px rgba(37, 211, 102, 0.2);
+}
+
+.ep-whatsapp-btn:hover {
+  background-color: #20bd5a;
+  transform: translateY(-1px);
+}
+
+.ep-whatsapp-outline-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background-color: #ffffff;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 16px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.ep-whatsapp-outline-btn:hover {
+  background-color: #f8fafc;
+  border-color: #94a3b8;
+}

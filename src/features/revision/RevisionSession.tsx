@@ -3,7 +3,8 @@ import { useApp } from '../../context/AppContext';
 import {
     ArrowLeft, ArrowRight, Clock, CheckCircle, XCircle, Sparkles, Target,
     Trophy, TrendingUp, ChevronRight, AlertTriangle, BarChart3, Zap,
-    FileText, Brain, Timer, Star, ChevronDown, ChevronUp, Loader2, ExternalLink
+    FileText, Brain, Timer, Star, ChevronDown, ChevronUp, Loader2, ExternalLink,
+    Volume2, VolumeX, Languages, WifiOff
 } from 'lucide-react';
 import {
     RevisionMode, ExamAnalysis, ExamQuestion, TeacherActivity,
@@ -15,6 +16,7 @@ import {
     predictLikelyQuestions, getPaperGuidance, explainQuestion
 } from '../../services/geminiService';
 import { examService } from '../../services/examService';
+import { speak, stopSpeech } from '../../services/elevenLabsService';
 import { readTimedExam, saveTimedExam, removeTimedExam, type TimedExamRecovery } from './timedExamRecovery';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -194,6 +196,11 @@ const RevisionSessionWorkspace: React.FC<Props> = ({ data, mode, initialAnalysis
     const { language, isPro, studentCode, studentProfile, userId } = useApp();
     const isLimited = !isPro;
 
+    const handleExit = () => {
+        stopSpeech();
+        onExit();
+    };
+
     // Core state
     const [phase, setPhase] = useState<SessionPhase>('LOADING');
     const [analysis, setAnalysis] = useState<ExamAnalysis | null>(initialAnalysis || null);
@@ -238,6 +245,23 @@ const RevisionSessionWorkspace: React.FC<Props> = ({ data, mode, initialAnalysis
     // Confidence rating
     const [showConfidence, setShowConfidence] = useState(false);
     const [confidenceLevel, setConfidenceLevel] = useState<number>(0); // 1-5
+
+    // Audio explanation & walkthrough state
+    const [audioState, setAudioState] = useState<{
+        isPlaying: boolean;
+        target: 'marking' | 'explaining' | null;
+        lang: 'EN' | 'SW';
+    }>({
+        isPlaying: false,
+        target: null,
+        lang: language === 'SW' ? 'SW' : 'EN'
+    });
+
+    useEffect(() => {
+        return () => {
+            stopSpeech();
+        };
+    }, []);
 
     // Timer state
     const [timeLimit, setTimeLimit] = useState(0);
@@ -632,6 +656,68 @@ const RevisionSessionWorkspace: React.FC<Props> = ({ data, mode, initialAnalysis
         lastSavedAnswerRef.current = '';
     };
 
+    const handleToggleAudioLang = () => {
+        const nextLang = audioState.lang === 'EN' ? 'SW' : 'EN';
+        setAudioState(s => ({ ...s, lang: nextLang }));
+        if (audioState.isPlaying) {
+            stopSpeech();
+            if (audioState.target === 'marking') {
+                void handleSpeakMarking(nextLang);
+            } else if (audioState.target === 'explaining') {
+                void handleSpeakExplanation(nextLang);
+            }
+        }
+    };
+
+    const handleSpeakMarking = async (langOverride?: 'EN' | 'SW') => {
+        if (!currentMarking) return;
+        const currentLang = langOverride || audioState.lang;
+        if (audioState.isPlaying && audioState.target === 'marking' && !langOverride) {
+            stopSpeech();
+            setAudioState(s => ({ ...s, isPlaying: false, target: null }));
+            return;
+        }
+        stopSpeech();
+        setAudioState({ isPlaying: true, target: 'marking', lang: currentLang });
+
+        const qNumber = quizQuestions[currentQuestionIdx]?.number || (currentQuestionIdx + 1);
+        const spokenText = currentLang === 'SW'
+            ? `Swali la ${qNumber}. Alama ulizopata: ${currentMarking.marksAwarded} kati ya ${currentMarking.marksAvailable}. ${currentMarking.feedback}. ${currentMarking.examTip ? `Kidokezo cha mtihani: ${currentMarking.examTip}` : ''}`
+            : `Question ${qNumber}. Score: ${currentMarking.marksAwarded} out of ${currentMarking.marksAvailable} marks. ${currentMarking.feedback}. ${currentMarking.examTip ? `National exam tip: ${currentMarking.examTip}` : ''}`;
+
+        try {
+            await speak(spokenText, currentLang);
+        } catch (err) {
+            console.warn('Marking audio explanation error:', err);
+        } finally {
+            setAudioState(s => ({ ...s, isPlaying: false, target: null }));
+        }
+    };
+
+    const handleSpeakExplanation = async (langOverride?: 'EN' | 'SW') => {
+        if (!currentExplanation) return;
+        const currentLang = langOverride || audioState.lang;
+        if (audioState.isPlaying && audioState.target === 'explaining' && !langOverride) {
+            stopSpeech();
+            setAudioState(s => ({ ...s, isPlaying: false, target: null }));
+            return;
+        }
+        stopSpeech();
+        setAudioState({ isPlaying: true, target: 'explaining', lang: currentLang });
+
+        const spokenText = currentLang === 'SW'
+            ? `Mwongozo wa Akili AI. Lengo la swali: ${currentExplanation.whatItTests}. Dhana muhimu: ${currentExplanation.keyConcepts.join(', ')}. Mbinu ya kujibu: ${currentExplanation.approachStrategy}.`
+            : `Akili AI walkthrough. What this tests: ${currentExplanation.whatItTests}. Key concepts: ${currentExplanation.keyConcepts.join(', ')}. Approach: ${currentExplanation.approachStrategy}.`;
+
+        try {
+            await speak(spokenText, currentLang);
+        } catch (err) {
+            console.warn('Explanation audio playback error:', err);
+        } finally {
+            setAudioState(s => ({ ...s, isPlaying: false, target: null }));
+        }
+    };
+
     const handleSubmitAnswer = async () => {
         if (!userAnswer.trim() || isMarking) return;
         const question = quizQuestions[currentQuestionIdx];
@@ -639,6 +725,22 @@ const RevisionSessionWorkspace: React.FC<Props> = ({ data, mode, initialAnalysis
 
         setIsMarking(true);
         setPhase('MARKING');
+
+        const isDeviceOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
+        if (!isDeviceOnline) {
+            void persistCurrentAnswer(userAnswer);
+            setCurrentMarking({
+                marksAwarded: 0,
+                marksAvailable: question.marks || 2,
+                isCorrect: false,
+                modelAnswer: question.modelAnswer || 'Saved offline on your device. Live AI marking and detailed scheme will sync when reconnected.',
+                feedback: 'Offline Mode: Your answer is safely saved on this device. When you are back online, Akili AI will score your response.',
+                examTip: 'Review your answer structure and verify key terms against the question.'
+            });
+            setShowModelAnswer(true);
+            setIsMarking(false);
+            return;
+        }
 
         try {
             const result = activeExamId
@@ -666,16 +768,19 @@ const RevisionSessionWorkspace: React.FC<Props> = ({ data, mode, initialAnalysis
             setShowModelAnswer(true);
         } catch (error) {
             console.error('Error marking answer:', error);
+            const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
             // Fallback marking
             setCurrentMarking({
                 marksAwarded: 0,
                 marksAvailable: question.marks || 2,
                 isCorrect: false,
-                modelAnswer: 'AI could not generate a model answer at this time.',
-                feedback: activeExamId
-                    ? 'We could not contact the exam marker right now. Please try again.'
-                    : 'We encountered an error while marking. Please try again.',
-                examTip: 'Write clear, structured answers.'
+                modelAnswer: question.modelAnswer || 'Saved locally. Compare your answer against key concepts.',
+                feedback: isOffline
+                    ? 'Saved offline on your device. Live AI scoring will update once you reconnect.'
+                    : activeExamId
+                        ? 'We could not contact the exam marker right now. Your answer is saved; please try again.'
+                        : 'We encountered an error while marking. Your answer is saved safely.',
+                examTip: 'Write clear, structured answers with key definitions and examples.'
             });
             setShowModelAnswer(true);
         } finally {
@@ -684,6 +789,8 @@ const RevisionSessionWorkspace: React.FC<Props> = ({ data, mode, initialAnalysis
     };
 
     const handleNextQuestion = () => {
+        stopSpeech();
+        setAudioState(prev => ({ ...prev, isPlaying: false, target: null }));
         if (questionTimerRef.current) clearInterval(questionTimerRef.current);
         setQuestionTimerActive(false);
         setShowConfidence(false);
@@ -852,7 +959,7 @@ const RevisionSessionWorkspace: React.FC<Props> = ({ data, mode, initialAnalysis
                 <p className="mt-3">{submittedReceipt || 'Your answers are saved in this browser. The original timer keeps running while you are away.'}</p>
                 {recoveryError && <p role="alert" className="mt-3 text-red-700">{recoveryError}</p>}
                 {!submittedReceipt && <button disabled={recoveryBusy} onClick={() => void resumeExam()} className="mt-5 rounded-xl bg-indigo-600 text-white px-5 py-3 font-bold">{recoveryBusy ? 'Checking saved attempt…' : 'Resume saved paper'}</button>}
-                <button onClick={onExit} className="m-3 underline">Back to exam prep</button>
+                <button onClick={handleExit} className="m-3 underline">Back to exam prep</button>
             </section>
         </div>;
     }
@@ -891,7 +998,7 @@ const RevisionSessionWorkspace: React.FC<Props> = ({ data, mode, initialAnalysis
                 </div>
                 <p className="text-slate-900 font-black text-2xl">This paper is not ready yet</p>
                 <p className="mt-3 max-w-lg text-slate-500 text-sm leading-6">{loadError} Open a ready past paper from the library and keep practicing right away.</p>
-                <button onClick={onExit} className="mt-6 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-black text-slate-900 shadow-lg shadow-indigo-600/20">Open paper library</button>
+                <button onClick={handleExit} className="mt-6 rounded-2xl bg-indigo-600 px-6 py-3 text-sm font-black text-slate-900 shadow-lg shadow-indigo-600/20">Open paper library</button>
             </div>
         );
     }
@@ -1070,7 +1177,7 @@ const RevisionSessionWorkspace: React.FC<Props> = ({ data, mode, initialAnalysis
                 {/* Header */}
                 <div className="bg-white border-b border-slate-100 px-4 py-3 flex items-center justify-between shadow-sm transition-colors">
                     <div className="flex items-center gap-3">
-                        <button onClick={onExit} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
+                        <button onClick={handleExit} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
                             <ArrowLeft className="w-5 h-5 text-slate-600" />
                         </button>
                         <div>
@@ -1332,7 +1439,7 @@ const RevisionSessionWorkspace: React.FC<Props> = ({ data, mode, initialAnalysis
                 {/* Header */}
                 <div className="bg-white border-b border-slate-100 px-4 py-3 shadow-sm transition-colors">
                     <div className="flex items-center justify-between mb-2">
-                        <button onClick={onExit} className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
+                        <button onClick={handleExit} className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
                             <ArrowLeft className="w-4 h-4 text-slate-500" />
                         </button>
                         <p className="text-[10px] font-black text-slate-500 uppercase tracking-wider">
@@ -1389,6 +1496,40 @@ const RevisionSessionWorkspace: React.FC<Props> = ({ data, mode, initialAnalysis
                                 animate={{ opacity: 1, y: 0 }}
                                 className="space-y-4"
                             >
+                                {/* Akili Audio Walkthrough */}
+                                <div className="bg-indigo-50/80 border border-indigo-200 rounded-2xl p-3.5 flex items-center justify-between gap-3 shadow-sm">
+                                    <div className="flex items-center gap-2.5">
+                                        <div className="w-8 h-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center shrink-0">
+                                            <Volume2 className="w-4 h-4" />
+                                        </div>
+                                        <div>
+                                            <p className="text-xs font-black text-indigo-950">Akili Audio Walkthrough</p>
+                                            <p className="text-[11px] font-medium text-indigo-700">Listen to step-by-step guidance</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-1.5 shrink-0">
+                                        <button
+                                            type="button"
+                                            onClick={handleToggleAudioLang}
+                                            className="px-2 py-1 rounded-lg text-[11px] font-bold bg-white text-indigo-900 border border-indigo-200 hover:bg-indigo-50"
+                                            title="Switch narration language"
+                                        >
+                                            {audioState.lang === 'SW' ? 'Kiswahili' : 'English'}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSpeakExplanation()}
+                                            className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                                                audioState.isPlaying && audioState.target === 'explaining'
+                                                    ? 'bg-rose-600 text-white shadow-sm'
+                                                    : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm'
+                                            }`}
+                                        >
+                                            {audioState.isPlaying && audioState.target === 'explaining' ? 'Stop' : 'Listen'}
+                                        </button>
+                                    </div>
+                                </div>
+
                                 {/* What It Tests */}
                                 <div className="bg-white border border-blue-200 rounded-2xl p-5 shadow-sm">
                                     <div className="flex items-center gap-2 mb-3">
@@ -1522,7 +1663,7 @@ const RevisionSessionWorkspace: React.FC<Props> = ({ data, mode, initialAnalysis
                 {/* Quiz Header */}
                 <div className="bg-white border-b border-slate-100 px-4 py-3 shadow-sm transition-colors">
                     <div className="flex items-center justify-between mb-2">
-                        <button onClick={onExit} className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
+                        <button onClick={handleExit} className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
                             <ArrowLeft className="w-4 h-4 text-slate-500" />
                         </button>
                         <div className="text-center">
@@ -1763,6 +1904,40 @@ const RevisionSessionWorkspace: React.FC<Props> = ({ data, mode, initialAnalysis
                                         {currentMarking.isCorrect && <Star className="w-5 h-5 text-amber-400 fill-current" />}
                                     </div>
                                     <p className={`text-sm leading-relaxed font-medium ${currentMarking.isCorrect ? 'text-emerald-800' : currentMarking.marksAwarded > 0 ? 'text-amber-800' : 'text-red-800'}`}>{currentMarking.feedback}</p>
+
+                                    {/* Akili Audio Explanation Player */}
+                                    <div className="mt-3 pt-3 border-t border-slate-200/60 flex items-center justify-between gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => handleSpeakMarking()}
+                                            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-black transition-all ${
+                                                audioState.isPlaying && audioState.target === 'marking'
+                                                    ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20 animate-pulse'
+                                                    : 'bg-white/80 hover:bg-white text-indigo-800 border border-indigo-200 shadow-sm'
+                                            }`}
+                                        >
+                                            {audioState.isPlaying && audioState.target === 'marking' ? (
+                                                <>
+                                                    <VolumeX className="w-3.5 h-3.5" />
+                                                    <span>Stop Akili Audio</span>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Volume2 className="w-3.5 h-3.5" />
+                                                    <span>Listen to Feedback ({audioState.lang === 'SW' ? 'Kiswahili' : 'English'})</span>
+                                                </>
+                                            )}
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={handleToggleAudioLang}
+                                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold bg-white/80 hover:bg-white text-slate-700 border border-slate-200 shadow-sm"
+                                            title="Switch language between English and Kiswahili"
+                                        >
+                                            <Languages className="w-3 h-3 text-indigo-600" />
+                                            <span>{audioState.lang === 'SW' ? 'SW' : 'EN'}</span>
+                                        </button>
+                                    </div>
                                 </div>
 
                                 <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4">
@@ -1884,7 +2059,7 @@ const RevisionSessionWorkspace: React.FC<Props> = ({ data, mode, initialAnalysis
                         <ArrowLeft className="w-5 h-5 text-slate-600" />
                     </button>
                     <h2 className="font-black text-slate-800">Exam Results</h2>
-                    <button onClick={onExit} className="text-xs text-indigo-600 font-black hover:underline uppercase tracking-tight">
+                    <button onClick={handleExit} className="text-xs text-indigo-600 font-black hover:underline uppercase tracking-tight">
                         Exit
                     </button>
                 </div>
@@ -2059,7 +2234,7 @@ const RevisionSessionWorkspace: React.FC<Props> = ({ data, mode, initialAnalysis
         <div className="h-screen flex items-center justify-center bg-slate-50 transition-colors">
             <div className="text-center">
                 <p className="text-slate-600 font-black">Something went wrong</p>
-                <button onClick={onExit} className="mt-4 text-indigo-600 font-black hover:underline text-sm uppercase tracking-tight">Go back</button>
+                <button onClick={handleExit} className="mt-4 text-indigo-600 font-black hover:underline text-sm uppercase tracking-tight">Go back</button>
             </div>
         </div>
     );

@@ -380,7 +380,7 @@ export const ExamPaperBankPage: React.FC = () => {
                 <div>
                   <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                     <p className="flex items-center gap-2 text-sm font-black"><CheckCircle2 className="h-5 w-5 text-emerald-600" /> No account needed</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">Enter the M-Pesa contact details below. After payment, the paper and marking scheme open inside Soma AI.</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">Enter your M-Pesa details below. Payments are processed securely via Pesapal (Authorized Payment Agent for M-Pesa &amp; Airtel Money). Includes the full past paper, marking scheme, and 24-hour free AI Revision Pass.</p>
                   </div>
                   <div className="mt-5 space-y-4">
                     <label className="block text-sm font-bold text-slate-700">Your name<input required value={buyer.name} onChange={(event) => setBuyer({ ...buyer, name: event.target.value })} className="mt-1 h-12 w-full rounded-xl border border-slate-200 px-4 outline-none focus:border-indigo-400" /></label>
@@ -392,8 +392,9 @@ export const ExamPaperBankPage: React.FC = () => {
                   <Smartphone className="h-8 w-8 text-indigo-600" />
                   <p className="mt-4 text-sm font-bold text-slate-600">Total</p><p className="text-3xl font-black">KES {EXAM_PAPER_PRICE_KES}</p>
                   <div className="my-5 h-px bg-indigo-100" />
-                  <p className="text-sm font-semibold leading-6 text-slate-600">Includes the exam paper and available marking scheme. Your access is remembered on this device.</p>
-                  <button disabled={buying} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-black text-white disabled:opacity-60">{buying ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />} Pay with M-Pesa</button>
+                  <p className="text-sm font-semibold leading-6 text-slate-600">Includes the exam paper, marking scheme, and 24-hour free AI Revision Pass. Access is remembered on this device.</p>
+                  <button disabled={buying} className="mt-6 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 text-sm font-black text-white disabled:opacity-60">{buying ? <Loader2 className="h-5 w-5 animate-spin" /> : <ShieldCheck className="h-5 w-5" />} Pay with M-Pesa (Pesapal)</button>
+                  <p className="mt-3 text-center text-[11px] font-bold text-slate-500">🔒 Secured by Pesapal · Instant STK Push</p>
                 </aside>
               </form>
             )}

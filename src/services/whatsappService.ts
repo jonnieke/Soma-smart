@@ -311,6 +311,39 @@ export const formatPracticeQuizForWhatsApp = (quiz: {
   ].filter(Boolean).join('\n');
 };
 
+export const formatCandidateRevisionProgressForWhatsApp = (data: {
+  learnerName?: string;
+  exam: string;
+  grade?: string;
+  subject?: string;
+  daysLeft?: number | null;
+  streakDays?: number;
+  practisedCount?: number;
+  weakTopics?: string[];
+  recentTopic?: string;
+}) => {
+  const name = cleanShareText(data.learnerName || 'Candidate');
+  const exam = cleanShareText(data.exam || 'National Exam');
+  const daysText = typeof data.daysLeft === 'number'
+    ? (data.daysLeft > 0 ? `${data.daysLeft} days to go` : data.daysLeft === 0 ? 'Starts today!' : 'Exam completed')
+    : 'Upcoming';
+
+  const lines = [
+    `*Soma AI Candidate Study Update*`,
+    `Learner: *${name}*`,
+    `Exam Target: *${exam}* (${daysText})`,
+    data.subject ? `Subject Focus: *${data.subject}*` : '',
+    data.streakDays && data.streakDays > 0 ? `Study Streak: *${data.streakDays} days*` : '',
+    data.practisedCount ? `Revision Sessions Completed: *${data.practisedCount}*` : '',
+    data.weakTopics && data.weakTopics.length > 0 ? `Topics Being Strengthened: ${data.weakTopics.slice(0, 3).join(', ')}` : '',
+    '',
+    `"Practise with purpose. Walk into your exam prepared."`,
+    `Review daily plan on Soma AI: https://www.somaai.co.ke/revision`,
+  ].filter(Boolean);
+
+  return lines.join('\n');
+};
+
 export interface InboundWhatsAppWebhookMessage {
   from: string;
   text?: string;

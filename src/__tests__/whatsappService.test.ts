@@ -11,6 +11,7 @@ import {
   formatStudyNoteForWhatsApp,
   formatStudyPackForWhatsApp,
   formatWeeklyProgressForWhatsApp,
+  formatCandidateRevisionProgressForWhatsApp,
   normalizeWhatsAppPhone,
   parseInboundWhatsAppMessage,
 } from '../services/whatsappService';
@@ -203,5 +204,26 @@ describe('WhatsApp learning shares', () => {
     const parsedDirect = parseInboundWhatsAppMessage(directPayload);
     expect(parsedDirect?.from).toBe('254722763760');
     expect(parsedDirect?.text).toBe('Explain fractions in Grade 5');
+  });
+
+  it('formats candidate revision progress update for parents', () => {
+    const message = formatCandidateRevisionProgressForWhatsApp({
+      learnerName: 'Kamau',
+      exam: 'KCSE 2026',
+      subject: 'Mathematics',
+      daysLeft: 10,
+      streakDays: 4,
+      practisedCount: 7,
+      weakTopics: ['Trigonometry', 'Vectors'],
+    });
+
+    expect(message).toContain('*Soma AI Candidate Study Update*');
+    expect(message).toContain('Learner: *Kamau*');
+    expect(message).toContain('Exam Target: *KCSE 2026* (10 days to go)');
+    expect(message).toContain('Subject Focus: *Mathematics*');
+    expect(message).toContain('Study Streak: *4 days*');
+    expect(message).toContain('Revision Sessions Completed: *7*');
+    expect(message).toContain('Topics Being Strengthened: Trigonometry, Vectors');
+    expect(message).toContain('https://www.somaai.co.ke/revision');
   });
 });
