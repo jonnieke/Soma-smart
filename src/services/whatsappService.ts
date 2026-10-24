@@ -411,6 +411,7 @@ export const parseInboundWhatsAppMessage = (payload: any): InboundWhatsAppWebhoo
 };
 
 export const formatPooledMaterialForWhatsApp = (item: {
+  id?: string;
   topic: string;
   subject: string;
   grade: string;
@@ -421,6 +422,9 @@ export const formatPooledMaterialForWhatsApp = (item: {
   const label = item.itemType === 'PRACTICE_DRILL' ? 'Free Practice Drill' : 'Free Study Note';
   const topic = compactText(item.topic || 'Revision Material').slice(0, 120);
   const preview = trimToReadableLength(item.summaryPreview || '', 380);
+  const deepLink = item.id
+    ? `https://www.somaai.co.ke/revision?grade=${encodeURIComponent(item.grade || '')}&subject=${encodeURIComponent(item.subject || '')}&pool=${encodeURIComponent(item.id)}`
+    : 'https://www.somaai.co.ke/revision';
   return [
     `*Soma AI Learner’s Revision Pool (${label})*`,
     `Topic: *${topic}*`,
@@ -429,7 +433,7 @@ export const formatPooledMaterialForWhatsApp = (item: {
     '',
     preview,
     '',
-    `Read the full note & practise for free on Soma AI: https://www.somaai.co.ke/revision`,
+    `Read the full note & practise for free on Soma AI: ${deepLink}`,
   ]
     .filter(Boolean)
     .join('\n');

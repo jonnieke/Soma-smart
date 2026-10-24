@@ -2205,6 +2205,16 @@ Mode: ${mode}
 };
 
 export const getPaperGuidance = async (analysis: ExamAnalysis, query?: string, language: 'EN' | 'SW' = 'EN'): Promise<string> => {
+  const poolQuery = query?.trim() || `paper strategy ${analysis.subject} ${analysis.grade}`;
+  const pooledGuidance = await learnerPoolService.findPooledExplanation({
+    subject: analysis.subject,
+    grade: analysis.grade,
+    prompt: poolQuery,
+  });
+  if (pooledGuidance) {
+    return pooledGuidance;
+  }
+
   const model = genAI.getGenerativeModel({ model: MODEL_NAME });
 
   const paperContext = `
@@ -2253,6 +2263,17 @@ Questions:
   try {
     const result = await model.generateContent(finalPrompt);
     const text = result.response.text();
+    if (text && text.trim()) {
+      void learnerPoolService.savePooledExplanation(
+        {
+          subject: analysis.subject,
+          grade: analysis.grade,
+          topic: query?.trim().slice(0, 80) || `${analysis.subject} Paper Strategy`,
+          prompt: poolQuery,
+        },
+        text
+      );
+    }
     return text || "I couldn't analyze that for you right now.";
   } catch (error) {
     console.error("Error in paper guidance:", error);
@@ -2601,7 +2622,23 @@ Output as StructuredStudyNotes JSON.
 
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
-    return JSON.parse(text) as StructuredStudyNotes;
+    const parsedNotes = JSON.parse(text) as StructuredStudyNotes;
+    if (Array.isArray(parsedNotes.topics)) {
+      for (const t of parsedNotes.topics.slice(0, 6)) {
+        if (t?.title && t?.content) {
+          void learnerPoolService.savePooledExplanation(
+            {
+              subject: parsedNotes.subject || subject,
+              grade: parsedNotes.grade || grade,
+              topic: t.title,
+              prompt: t.title,
+            },
+            t.content
+          );
+        }
+      }
+    }
+    return parsedNotes;
   } catch (error) {
     console.error("Error extracting structured notes:", error);
     throw error;
@@ -2614,6 +2651,15 @@ export const generateTopicQuiz = async (
   grade: string,
   language: 'EN' | 'SW' = 'EN'
 ): Promise<ExamAnalysis> => {
+  const pooledQuiz = await learnerPoolService.findPooledCapturedPaper({
+    subject,
+    grade,
+    query: `topic quiz ${topic.title}`,
+  });
+  if (pooledQuiz && Array.isArray(pooledQuiz.questions) && pooledQuiz.questions.length > 0) {
+    return pooledQuiz;
+  }
+
   const model = genAI.getGenerativeModel({
     model: MODEL_NAME,
     generationConfig: {
@@ -2684,7 +2730,9 @@ export const generateTopicQuiz = async (
     const result = await model.generateContent(prompt);
     const text = result.response.text();
     if (!text) throw new Error("No response from AI");
-    return JSON.parse(text) as ExamAnalysis;
+    const parsedQuiz = JSON.parse(text) as ExamAnalysis;
+    void learnerPoolService.savePooledCapturedPaper(parsedQuiz, `topic quiz ${topic.title}`);
+    return parsedQuiz;
   } catch (error) {
     console.error("Error generating topic quiz:", error);
     throw error;

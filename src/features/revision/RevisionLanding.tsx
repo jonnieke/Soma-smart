@@ -363,6 +363,7 @@ function ExamPrepWorkspace({
 
   const handleSharePoolItemWhatsApp = (item: LearnerPoolItem) => {
     const message = formatPooledMaterialForWhatsApp({
+      id: item.id,
       topic: item.topic,
       subject: item.subject,
       grade: item.grade,

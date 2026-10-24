@@ -50,6 +50,7 @@ import {
     saveTeacherComposerDraft,
 } from '../types/teacherComposerHandoff';
 import { examPaperBankService } from '../services/examPaperBankService';
+import { learnerPoolService } from '../services/learnerPoolService';
 import { safeImport } from '../utils/safeImport';
 import { trackAnalyticsEvent } from '../services/analyticsEventService';
 
@@ -399,9 +400,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 const data = await resp.json();
                 text = data.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
             } else {
-                text = await callGeminiProxy(
-                    `Provide a learner-friendly direct answer in short bullet points for the following question, aligned to the Kenyan CBC/KPSEA/KCSE curriculum. Lead with the direct answer first. Then add only the key points a learner needs to revise. Avoid long tutoring text and avoid paragraph blocks. Use these sections only if helpful: Direct answer, Key points, Example, Exam tip. Keep every bullet clear, short, and learner-ready. Do not use markdown bold. Question: ${activeQuestion}`
-                );
+                const pooled = await learnerPoolService.findPooledExplanation({
+                    subject: 'General',
+                    grade: 'All Grades',
+                    prompt: activeQuestion,
+                });
+                if (pooled) {
+                    text = pooled;
+                } else {
+                    text = await callGeminiProxy(
+                        `Provide a learner-friendly direct answer in short bullet points for the following question, aligned to the Kenyan CBC/KPSEA/KCSE curriculum. Lead with the direct answer first. Then add only the key points a learner needs to revise. Avoid long tutoring text and avoid paragraph blocks. Use these sections only if helpful: Direct answer, Key points, Example, Exam tip. Keep every bullet clear, short, and learner-ready. Do not use markdown bold. Question: ${activeQuestion}`
+                    );
+                }
             }
             const cleaned = (text || '')
                 .replace(/\*\*(.*?)\*\*/g, '$1')
@@ -412,6 +422,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             if (!cleaned.trim()) throw new Error('EMPTY_ANSWER');
             setDetailedAnswer(cleaned);
             setPendingHeroFile(null);
+
+            void learnerPoolService.savePooledExplanation(
+                {
+                    subject: 'General',
+                    grade: 'All Grades',
+                    topic: activeQuestion.slice(0, 80) || 'Homework Solution',
+                    prompt: activeQuestion || 'Homework Solution',
+                },
+                cleaned
+            );
 
             // Auto-save to offline notebook so the student never loses it
             try {
