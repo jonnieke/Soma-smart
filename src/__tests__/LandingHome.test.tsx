@@ -1,7 +1,8 @@
-import { fireEvent, render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { afterEach, describe, expect, it, vi, beforeEach } from 'vitest';
-import { LegacyLandingHome as LandingHome } from '../components/LandingHome';
+import { LandingHome } from '../components/LandingHome';
+import { examPaperBankService } from '../services/examPaperBankService';
 
 const baseProps = {
   isRegistered: false,
@@ -9,9 +10,6 @@ const baseProps = {
   onAskQuestion: vi.fn(),
   onLearnerShortcut: vi.fn(),
   onTeacher: vi.fn(),
-  onTeacherPreview: vi.fn().mockResolvedValue('Photosynthesis notes begin here with a clear learning objective. The complete notes continue with several key points, examples, activities, and a learner check that should remain hidden.'),
-  onTeacherSignUp: vi.fn(),
-  onTeacherCompose: vi.fn(),
   onParent: vi.fn(),
   onLibrary: vi.fn(),
   onExamPapers: vi.fn(),
@@ -25,52 +23,28 @@ const baseProps = {
   onTrack: vi.fn(),
 };
 
-describe('LandingHome', () => {
+describe('LandingHome (Streamlined)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubGlobal('scrollTo', vi.fn());
+    sessionStorage.clear();
   });
-    vi.restoreAllMocks();
 
   afterEach(() => {
     vi.unstubAllGlobals();
   });
 
-  it('routes learner shortcut cards to the right tool', () => {
+  it('renders the primary brand and the three distinct doors', () => {
     render(
       <MemoryRouter>
         <LandingHome {...baseProps} />
       </MemoryRouter>
     );
 
-    fireEvent.click(screen.getAllByRole('button', { name: /listen & learn/i })[0]);
-
-    expect(baseProps.onLearnerShortcut).toHaveBeenCalledWith('TALKBACK', 'listen_and_learn');
-  });
-
-  it('opens the teacher dashboard directly from the hero teacher button', () => {
-    render(
-      <MemoryRouter>
-        <LandingHome {...baseProps} />
-      </MemoryRouter>
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: /create for your class/i }));
-
-    expect(baseProps.onTeacher).toHaveBeenCalledTimes(1);
-    expect(baseProps.onTeacherPreview).not.toHaveBeenCalled();
-  });
-
-  it('opens the library from the learner tools section', () => {
-    render(
-      <MemoryRouter>
-        <LandingHome {...baseProps} />
-      </MemoryRouter>
-    );
-
-    fireEvent.click(screen.getAllByRole('button', { name: /library/i })[0]);
-
-    expect(baseProps.onLibrary).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole('link', { name: /soma ai homepage/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /homework help/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /revise a topic/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /^past papers$/i })).toBeInTheDocument();
   });
 
   it('submits an Ask Akili question from the hero demo', () => {
@@ -121,104 +95,50 @@ describe('LandingHome', () => {
     );
   });
 
-  it('shows a view-only sample before handing a teacher request to the dashboard', async () => {
+  it('routes to revision when the Revise door is clicked', () => {
     render(
       <MemoryRouter>
         <LandingHome {...baseProps} />
       </MemoryRouter>
     );
 
-    fireEvent.change(screen.getByLabelText(/what would you like to prepare for your learners/i), {
-      target: { value: 'Mark these Grade 8 mathematics answers.' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /mark learner work/i }));
-    fireEvent.click(screen.getByRole('button', { name: /create sample/i }));
-
-    const previewDialog = await screen.findByRole('dialog', { name: /your notes have started/i });
-    expect(previewDialog).toHaveTextContent(/photosynthesis notes begin/i);
-    expect(previewDialog).not.toHaveTextContent(/learner check that should remain hidden/i);
-    expect(screen.getByRole('button', { name: /create teacher account/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /teacher login/i })).toBeInTheDocument();
-    expect(baseProps.onTeacherCompose).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByRole('button', { name: /teacher login/i }));
-
-    expect(baseProps.onTeacherCompose).toHaveBeenCalledWith({
-      prompt: 'Mark these Grade 8 mathematics answers.',
-      intent: 'MARK',
-      file: undefined,
-      source: 'TEXT',
-      generatedContent: expect.stringContaining('Photosynthesis notes begin here'),
-    });
-  }, 15000);
-  it('explains the fallback when voice input is unsupported', () => {
-    render(
-      <MemoryRouter>
-        <LandingHome {...baseProps} />
-      </MemoryRouter>
-    );
-
-    fireEvent.click(screen.getByRole('button', { name: /start voice input/i }));
-
-    expect(screen.getByRole('status')).toHaveTextContent(/voice input is not supported/i);
-    expect(baseProps.onTrack).toHaveBeenCalledWith('teacher_composer_error', {
-      stage: 'voice',
-      reason: 'unsupported_browser',
-    });
+    fireEvent.click(screen.getByRole('button', { name: /revise a topic/i }));
+    expect(baseProps.onRevision).toHaveBeenCalledTimes(1);
   });
 
-  it('opens teacher registration from the sample preview', async () => {
+  it('routes to exam papers when the Past Papers door is clicked', () => {
     render(
       <MemoryRouter>
         <LandingHome {...baseProps} />
       </MemoryRouter>
     );
 
-    fireEvent.change(screen.getByLabelText(/what would you like to prepare for your learners/i), {
-      target: { value: 'Create Grade 6 agriculture notes.' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /create sample/i }));
-    await screen.findByRole('dialog', { name: /your notes have started/i });
-    fireEvent.click(screen.getByRole('button', { name: /create teacher account/i }));
-
-    expect(baseProps.onTeacherSignUp).toHaveBeenCalledWith({
-      prompt: 'Create Grade 6 agriculture notes.',
-      intent: 'CREATE',
-      file: undefined,
-      source: 'TEXT',
-      generatedContent: expect.stringContaining('Photosynthesis notes begin here'),
-    });
-  }, 15000);
-
-  it('keeps the request in place while the teacher is offline', () => {
-    vi.spyOn(window.navigator, 'onLine', 'get').mockReturnValue(false);
-    render(
-      <MemoryRouter>
-        <LandingHome {...baseProps} />
-      </MemoryRouter>
-    );
-
-    fireEvent.change(screen.getByLabelText(/what would you like to prepare for your learners/i), {
-      target: { value: 'Create a Grade 7 science quiz.' },
-    });
-    fireEvent.click(screen.getByRole('button', { name: /create sample/i }));
-
-    expect(baseProps.onTeacherCompose).not.toHaveBeenCalled();
-    expect(screen.getByRole('status')).toHaveTextContent(/offline/i);
+    fireEvent.click(screen.getByRole('heading', { name: /^past papers$/i }).closest('button')!);
+    expect(baseProps.onExamPapers).toHaveBeenCalledTimes(1);
   });
 
-  it('rejects unsupported attachment types with a useful message', () => {
+  it('supports 24h pass restoration from the header form', async () => {
+    vi.spyOn(examPaperBankService, 'restoreByPhone').mockResolvedValueOnce({
+      found: true,
+      passActive: true,
+      normalizedPhone: '+254123456789',
+      last9: '123456789',
+      hoursRemaining: 18,
+      paperIds: ['kcse-2023-math-1'],
+    });
+
     render(
       <MemoryRouter>
         <LandingHome {...baseProps} />
       </MemoryRouter>
     );
-    const upload = screen.getByLabelText<HTMLInputElement>(/attach notes or work/i);
-    const file = new File(['unsafe'], 'answers.exe', { type: 'application/x-msdownload' });
 
-    fireEvent.change(upload, { target: { files: [file] } });
+    const phoneInput = screen.getByLabelText(/enter phone number to restore 24h pass/i);
+    fireEvent.change(phoneInput, { target: { value: '0712345678' } });
+    fireEvent.submit(phoneInput.closest('form')!);
 
-    expect(screen.getByRole('status')).toHaveTextContent(/file type is not supported/i);
-    expect(baseProps.onTeacherCompose).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(screen.getByRole('status')).toHaveTextContent(/24h pass active/i);
+    });
   });
 });
