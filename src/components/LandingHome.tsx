@@ -441,6 +441,7 @@ export const LandingHome: React.FC<Props> = (props) => {
       <nav aria-label="Footer navigation">
         <button onClick={props.onParent}>For parents</button>
         <button onClick={props.onTeacher}>For teachers</button>
+        <button onClick={props.onSomaGuide}>Exam calendar</button>
         <Link to="/learning-videos">Learning videos</Link>
         <button onClick={props.onPricing}>Pricing</button>
         <button onClick={props.onContact}>Help</button>

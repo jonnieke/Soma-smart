@@ -20,6 +20,8 @@ import { trackAnalyticsEvent } from './services/analyticsEventService';
 import { launchFeatures } from './config/launchFeatures';
 import { GA_MEASUREMENT_ID } from './config/analytics';
 import { TelegramService } from './services/telegramService';
+import { ROUTE_ALIASES } from './config/routeAliases';
+import { RedirectKeepQuery } from './components/RedirectKeepQuery';
 
 // Lazy Load Pages for Performance
 const LandingPage = React.lazy(() => safeImport(() => import('./pages/LandingPage').then(module => ({ default: module.LandingPage }))));
@@ -141,14 +143,14 @@ const GlobalNavigation: React.FC = () => {
     const navigate = useNavigate();
     const { pathname } = useLocation();
 
+    // Learner navigation mirrors the three doors. Teacher, school and admin
+    // areas are reached from the homepage footer or their own URLs.
     const items = [
         { label: 'Home', icon: Home, to: '/', active: pathname === '/' },
-        { label: 'Learner', icon: GraduationCap, to: '/learner', active: pathname.startsWith('/learner') },
-        { label: 'Exam Papers', icon: FileText, to: '/exam-papers', active: pathname.startsWith('/exam-papers') },
         { label: 'Revision', icon: BookOpen, to: '/revision', active: pathname.startsWith('/revision') },
-        { label: 'Soma Guide', icon: BookOpen, to: '/guide', active: pathname.startsWith('/guide') },
-        { label: 'Teacher', icon: Users, to: '/teacher', active: pathname.startsWith('/teacher') },
-        { label: 'Admin', icon: Shield, to: '/admin', active: pathname.startsWith('/admin') },
+        { label: 'Past Papers', icon: FileText, to: '/exam-papers', active: pathname.startsWith('/exam-papers') },
+        { label: 'My Desk', icon: GraduationCap, to: '/learner', active: pathname.startsWith('/learner') },
+        { label: 'Exam Calendar', icon: BookOpen, to: '/guide', active: pathname.startsWith('/guide') },
     ];
 
     if (pathname === '/' || pathname === '/learning-videos' || pathname.startsWith('/free-pool') || pathname.startsWith('/learner') || pathname.startsWith('/teacher') || pathname.startsWith('/revision') || pathname.startsWith('/exam-papers')) return null;
@@ -207,7 +209,6 @@ const MobileBottomNav: React.FC = () => {
             pathname === '/' ||
             pathname.startsWith('/revision') ||
             pathname.startsWith('/free-pool') ||
-            pathname.startsWith('/learner-pool') ||
             pathname.startsWith('/exam-papers')
         );
     if (hidden) return null;
@@ -225,7 +226,7 @@ const MobileBottomNav: React.FC = () => {
         {
             label: 'Revise',
             icon: BookOpen,
-            active: pathname.startsWith('/revision') || pathname.startsWith('/free-pool') || pathname.startsWith('/learner-pool'),
+            active: pathname.startsWith('/revision') || pathname.startsWith('/free-pool'),
             onClick: () => navigate('/revision'),
         },
         { label: 'Papers', icon: FileText, active: pathname.startsWith('/exam-papers'), onClick: () => navigate('/exam-papers') },
@@ -391,7 +392,9 @@ const App: React.FC = () => {
                             <Route path="/admin/assessment-engine" element={<AdminGuard onNavigateBack={() => navigate('/')}><AdminAssessmentEngine /></AdminGuard>} />
                             <Route path="/revision" element={<RevisionPortal />} />
                             <Route path="/free-pool" element={<FreeRevisionPoolPage />} />
-                            <Route path="/learner-pool" element={<FreeRevisionPoolPage />} />
+                            {Object.entries(ROUTE_ALIASES).map(([from, to]) => (
+                                <Route key={from} path={from} element={<RedirectKeepQuery to={to} />} />
+                            ))}
                             <Route path="/exam-papers" element={<ExamPaperBankPage />} />
                             <Route path="/exam-papers/:id/read" element={<ExamPaperReaderPage />} />
                             <Route path="/guide" element={<SomaGuidePage />} />
