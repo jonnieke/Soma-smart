@@ -519,6 +519,55 @@ Instructions:
     return `1. Step 1: State relevant formula or initial definition [1 mk]\n2. Step 2: Show correct substitution and working [1 mk]\n3. Final Answer with correct units [1 mk]`;
   },
 
+  getPublishedPaper(examId: string | number): {
+    id: string | number;
+    title: string;
+    grade: string;
+    subject: string;
+    total_marks?: number;
+    structured_questions: Array<Record<string, any>>;
+  } | null {
+    const batches = readLocalBatches();
+    const batch = batches.find(
+      (b) => String(b.published_exam_id) === String(examId) || String(b.id) === String(examId)
+    );
+    if (!batch) return null;
+    const questions = readLocalQuestions(batch.id);
+    return {
+      id: batch.published_exam_id || batch.id,
+      title: `${batch.title} (Soma AI Original)`,
+      grade: batch.grade,
+      subject: batch.subject,
+      total_marks: batch.total_marks,
+      structured_questions: questions.map((q, idx) => ({
+        id: q.id || `q-${idx + 1}`,
+        number: q.question_number || `${idx + 1}`,
+        text: q.question_text,
+        marks: Number(q.marks || 1),
+        topic: q.topic || batch.subject,
+        competency: q.competency || '',
+        hasDiagram: Boolean(q.has_diagram),
+        has_diagram: Boolean(q.has_diagram),
+        diagramType: q.diagram_type,
+        diagram_type: q.diagram_type,
+        diagramUrl: q.diagram_image_url || q.diagram_source_url || null,
+        diagram_url: q.diagram_image_url || q.diagram_source_url || null,
+        diagramSvg: q.diagram_svg || null,
+        diagram_svg: q.diagram_svg || null,
+        markingScheme:
+          q.marking_scheme_steps && q.marking_scheme_steps.length > 0
+            ? q.marking_scheme_steps.map((s) => `${s.step} [${s.mark} mk]`)
+            : [q.marking_scheme],
+        marking_scheme:
+          q.marking_scheme_steps && q.marking_scheme_steps.length > 0
+            ? q.marking_scheme_steps.map((s) => `${s.step} [${s.mark} mk]`)
+            : [q.marking_scheme],
+        modelAnswer: q.marking_scheme,
+        model_answer: q.marking_scheme,
+      })),
+    };
+  },
+
   async publishBatchToPaperBank(
     batchId: string,
     targetBundleCode?: string
@@ -537,6 +586,33 @@ Instructions:
     const compiledTitle = `${batch.title} (Soma AI Original)`;
     const nowIso = new Date().toISOString();
 
+    const structuredQuestions = (batch.questions || []).map((q, idx) => ({
+      id: q.id || `q-${idx + 1}`,
+      number: q.question_number || `${idx + 1}`,
+      text: q.question_text,
+      marks: Number(q.marks || 1),
+      topic: q.topic || batch.subject,
+      competency: q.competency || '',
+      hasDiagram: Boolean(q.has_diagram),
+      has_diagram: Boolean(q.has_diagram),
+      diagramType: q.diagram_type,
+      diagram_type: q.diagram_type,
+      diagramUrl: q.diagram_image_url || q.diagram_source_url || null,
+      diagram_url: q.diagram_image_url || q.diagram_source_url || null,
+      diagramSvg: q.diagram_svg || null,
+      diagram_svg: q.diagram_svg || null,
+      markingScheme:
+        q.marking_scheme_steps && q.marking_scheme_steps.length > 0
+          ? q.marking_scheme_steps.map((s) => `${s.step} [${s.mark} mk]`)
+          : [q.marking_scheme],
+      marking_scheme:
+        q.marking_scheme_steps && q.marking_scheme_steps.length > 0
+          ? q.marking_scheme_steps.map((s) => `${s.step} [${s.mark} mk]`)
+          : [q.marking_scheme],
+      modelAnswer: q.marking_scheme,
+      model_answer: q.marking_scheme,
+    }));
+
     try {
       const { data, error } = await supabase
         .from('knowledge_base')
@@ -552,6 +628,8 @@ Instructions:
             is_official: true,
             review_status: 'PUBLISHED',
             created_at: nowIso,
+            structured_questions: structuredQuestions,
+            total_marks: batch.total_marks || structuredQuestions.reduce((sum, q) => sum + (q.marks || 0), 0),
           },
         ])
         .select()
@@ -575,18 +653,21 @@ Instructions:
     }
 
     // Local update
+    const generatedId = Date.now();
     const batches = readLocalBatches();
     const idx = batches.findIndex((b) => b.id === batchId);
     if (idx >= 0) {
       batches[idx].status = 'PUBLISHED';
       batches[idx].published_at = nowIso;
+      batches[idx].published_exam_id = generatedId;
+      batches[idx].target_bundle_code = targetBundleCode || batches[idx].target_bundle_code;
       saveLocalBatches(batches);
     }
 
     return {
       success: true,
       publishedItem: {
-        id: Date.now(),
+        id: generatedId,
         title: compiledTitle,
         grade: batch.grade,
         subject: batch.subject,

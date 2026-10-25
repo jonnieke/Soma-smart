@@ -280,6 +280,9 @@ export interface ExamQuestion {
   questionType?: "numeric" | "fraction" | "algebraic" | "multiple_choice" | "short_text" | "structured_text" | "table" | "graph" | "construction" | "image_upload";
   options?: string[];
   diagramUrl?: string;
+  diagramSvg?: string;
+  hasDiagram?: boolean;
+  diagramType?: string;
   answerFormat?: Record<string, unknown>;
   subStrand?: string;
   competency?: string;

@@ -24,7 +24,13 @@ describe('revision hub paper model', () => {
     expect(
       paperHasDiagrams({ structured_questions: [{ id: '2', diagramUrl: '/diagram-2.png' }] })
     ).toBe(true);
-    expect(paperHasDiagrams({ structured_questions: [{ id: '3' }] })).toBe(false);
+    expect(
+      paperHasDiagrams({ structured_questions: [{ id: '3', diagramSvg: '<svg></svg>' }] })
+    ).toBe(true);
+    expect(
+      paperHasDiagrams({ structured_questions: [{ id: '4', diagram_svg: '<svg></svg>' }] })
+    ).toBe(true);
+    expect(paperHasDiagrams({ structured_questions: [{ id: '5' }] })).toBe(false);
   });
 
   it('recovers a usable subject from a paper title when metadata is generic', () => {

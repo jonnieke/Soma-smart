@@ -296,7 +296,12 @@ export const RevisionHubPage: React.FC<Props> = ({
       commonTrap,
       teacherNote,
       modelAnswer,
-      hasDiagram: Boolean((question as any)?.diagramUrl || (question as any)?.diagram_url),
+      hasDiagram: Boolean(
+        (question as any)?.diagramUrl ||
+        (question as any)?.diagram_url ||
+        (question as any)?.diagramSvg ||
+        (question as any)?.diagram_svg
+      ),
     };
   }), [inlinePdfQuestions]);
 

@@ -181,7 +181,15 @@ export const paperMarkingSchemeUrl = (paper: RevisionPaper): string => {
 export const paperHasDiagrams = (paper: RevisionPaper): boolean =>
   Array.isArray(paper.structured_questions) &&
   paper.structured_questions.some((question) =>
-    Boolean(String((question as any)?.diagramUrl || (question as any)?.diagram_url || '').trim())
+    Boolean(
+      String(
+        (question as any)?.diagramUrl ||
+        (question as any)?.diagram_url ||
+        (question as any)?.diagramSvg ||
+        (question as any)?.diagram_svg ||
+        ''
+      ).trim()
+    )
   );
 export const paperAttemptStatus = (
   paper: RevisionPaper

@@ -81,5 +81,12 @@ describe('Exam Paper Digitizer & Verification Engine', () => {
     );
     expect(successfulPublish.success).toBe(true);
     expect(successfulPublish.publishedItem?.title).toContain('Soma AI Original');
+
+    // Published paper is immediately retrievable for candidate revision with vector diagrams
+    const publishedPaper = examDigitizerService.getPublishedPaper(batch.id);
+    expect(publishedPaper).toBeDefined();
+    expect(publishedPaper?.title).toContain('KPSEA 2024 Mathematics');
+    expect(publishedPaper?.structured_questions.length).toBeGreaterThanOrEqual(2);
+    expect(publishedPaper?.structured_questions[0].diagramSvg).toBeDefined();
   });
 });

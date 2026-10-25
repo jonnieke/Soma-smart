@@ -16,6 +16,7 @@ import {
     predictLikelyQuestions, getPaperGuidance, explainQuestion
 } from '../../services/geminiService';
 import { examService } from '../../services/examService';
+import { examDigitizerService } from '../../services/examDigitizerService';
 import { speak, stopSpeech } from '../../services/elevenLabsService';
 import { readTimedExam, saveTimedExam, removeTimedExam, type TimedExamRecovery } from './timedExamRecovery';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -136,17 +137,59 @@ const questionLikelyNeedsOriginalDiagram = (question: ExamQuestion): boolean => 
 };
 
 const QuestionDiagramSupport: React.FC<{ question: ExamQuestion; sourcePaperUrl?: string }> = ({ question, sourcePaperUrl }) => {
+    const [isZoomed, setIsZoomed] = useState(false);
+    const rawQ = question as any;
+    const diagramSvg = String(question.diagramSvg || rawQ.diagram_svg || '').trim();
     const diagramUrl = getQuestionDiagramUrl(question);
     const answerFormat = (question.answerFormat || {}) as any;
     const diagramPage = answerFormat.diagramPage || answerFormat.diagram_page || (question as any).diagramPage || (question as any).diagram_page;
     const diagramDescription = String(answerFormat.diagramDescription || answerFormat.diagram_description || (question as any).diagramDescription || (question as any).diagram_description || '').trim();
+
+    if (diagramSvg) {
+        return (
+            <div className="mt-4 rounded-2xl border border-indigo-200 bg-white p-4 shadow-sm dark:border-indigo-900/50 dark:bg-slate-900">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
+                        <span className="h-2 w-2 rounded-full bg-indigo-500 animate-pulse" />
+                        Official Vector Diagram
+                    </span>
+                    <button
+                        type="button"
+                        onClick={() => setIsZoomed((prev) => !prev)}
+                        className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-xs font-bold text-slate-700 hover:bg-indigo-50 hover:text-indigo-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300 dark:hover:bg-slate-700 transition"
+                    >
+                        {isZoomed ? 'Reset View' : 'Tap to Zoom'}
+                    </button>
+                </div>
+                <div
+                    className={`mt-3 flex items-center justify-center overflow-auto rounded-xl bg-slate-50 p-3 dark:bg-slate-950 transition-all ${
+                        isZoomed ? 'max-h-[550px] min-h-[350px] scale-110 p-6' : 'max-h-80'
+                    }`}
+                    dangerouslySetInnerHTML={{ __html: diagramSvg }}
+                />
+                {diagramDescription && (
+                    <p className="mt-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
+                        Diagram note: {diagramDescription}
+                    </p>
+                )}
+            </div>
+        );
+    }
+
     if (diagramUrl) {
         return (
-            <img
-                src={diagramUrl}
-                alt={`Diagram for question ${question.number}`}
-                className="mt-4 max-h-80 w-full rounded-2xl border border-slate-200 object-contain"
-            />
+            <div className="mt-4">
+                <img
+                    src={diagramUrl}
+                    alt={`Diagram for question ${question.number}`}
+                    className="max-h-80 w-full rounded-2xl border border-slate-200 object-contain dark:border-slate-800"
+                />
+                {diagramDescription && (
+                    <p className="mt-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
+                        Diagram note: {diagramDescription}
+                    </p>
+                )}
+            </div>
         );
     }
 
@@ -381,9 +424,30 @@ const RevisionSessionWorkspace: React.FC<Props> = ({ data, mode, initialAnalysis
                     setAnalysis(result);
                     setPreExamMinutes(result.durationMinutes || 120);
                     setSelectedQuestionIds((result.questions || []).filter(question => normalizeSection(question.section) === 'II').slice(0, 5).map(question => String(question.id)));
-                } else if (Array.isArray((data as any)?.structured_questions) || 'file_path' in (data as any) || (data as any)?.fileUrl || (data as any)?.file_url) {
-                    const res = data as any;
-                    const savedQuestions = Array.isArray(res.structured_questions) ? res.structured_questions : [];
+                } else if (Array.isArray((data as any)?.structured_questions) || 'file_path' in (data as any) || (data as any)?.fileUrl || (data as any)?.file_url || (data as any)?.id) {
+                    let res = data as any;
+                    let savedQuestions = Array.isArray(res.structured_questions) ? res.structured_questions : [];
+
+                    if (savedQuestions.length === 0 && res?.id) {
+                        setLoadingText('Loading exam questions and diagrams...');
+                        try {
+                            const fetched = await examService.getExamForAttempt(res.id);
+                            if (fetched && Array.isArray((fetched as any).questions || (fetched as any).structured_questions)) {
+                                res = { ...res, ...fetched };
+                                savedQuestions = (fetched as any).questions || (fetched as any).structured_questions || [];
+                            }
+                        } catch {
+                            // Offline or local digitizer fallback
+                        }
+
+                        if (savedQuestions.length === 0) {
+                            const localPaper = examDigitizerService.getPublishedPaper(res.id);
+                            if (localPaper) {
+                                res = { ...res, ...localPaper };
+                                savedQuestions = localPaper.structured_questions;
+                            }
+                        }
+                    }
 
                     if (savedQuestions.length === 0) {
                         setLoadError('This exam is not ready yet. Ask an administrator to analyze, structure, and publish it first.');

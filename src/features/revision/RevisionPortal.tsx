@@ -7,7 +7,8 @@ import {
     Loader2, LogOut, ShieldCheck, Sparkles, Star, Target, Zap,
     Headphones, Volume2, Mic, Flame, CheckCircle2, MessageCircle,
     Trophy, Calendar, Play, Bot, Notebook, ArrowUpRight, Compass,
-    SlidersHorizontal, Search, Check, Eye, Download, X
+    SlidersHorizontal, Search, Check, Eye, Download, X, Phone, RefreshCw,
+    Layers, HelpCircle, CheckSquare, ChevronRight, AlertCircle, BookmarkCheck
 } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types';
@@ -15,18 +16,28 @@ import { LoginModal } from '../../components/LoginModal';
 import { RegistrationModal } from '../../components/RegistrationModal';
 import { LogoutModal } from '../../components/LogoutModal';
 import { examService } from '../../services/examService';
-import { examPaperBankService } from '../../services/examPaperBankService';
+import {
+    examPaperBankService,
+    readPhoneRestoreSession,
+    buildExamPaperBundles,
+    findBundleForPaper,
+    EXAM_PAPER_PRICE_KES,
+    EXAM_BUNDLE_PRICE_KES,
+    type PhoneRestoreSession,
+    type ExamPaperBundle
+} from '../../services/examPaperBankService';
 import { TelegramBanner } from '../../components/TelegramBanner';
 import { ExamPaperTickerBelt } from '../../components/ExamPaperTickerBelt';
+import { listTimedExams, type TimedExamRecovery } from './timedExamRecovery';
 import logoImg from '../../assets/images/main_logo.png';
 
 type CandidatePathway = 'KCSE' | 'KJSEA' | 'KPSEA';
 type PublishedExam = Record<string, any> & { id: string | number; title: string; subject: string; grade: string };
 
-const PATHWAYS: Array<{ id: CandidatePathway; grade: string; label: string; sub: string; badge: string }> = [
-    { id: 'KCSE', grade: 'Form 4', label: 'KCSE Candidates', sub: 'Senior Secondary (Form 4)', badge: 'National Exam' },
-    { id: 'KJSEA', grade: 'Grade 9', label: 'KJSEA Assessment', sub: 'Junior Secondary (Grade 9)', badge: 'CBC JSS' },
-    { id: 'KPSEA', grade: 'Grade 6', label: 'KPSEA Assessment', sub: 'Primary Assessment (Grade 6)', badge: 'Primary CBC' },
+const PATHWAYS: Array<{ id: CandidatePathway; grade: string; label: string; sub: string; badge: string; examName: string }> = [
+    { id: 'KCSE', grade: 'Form 4', label: 'KCSE Candidates', sub: 'Senior Secondary (Form 4)', badge: 'National Exam', examName: 'KCSE 2026' },
+    { id: 'KJSEA', grade: 'Grade 9', label: 'KJSEA Assessment', sub: 'Junior Secondary (Grade 9)', badge: 'CBC JSS', examName: 'KJSEA 2026' },
+    { id: 'KPSEA', grade: 'Grade 6', label: 'KPSEA Assessment', sub: 'Primary Assessment (Grade 6)', badge: 'Primary CBC', examName: 'KPSEA 2026' },
 ];
 
 const FILTER_SUBJECTS = [
@@ -66,11 +77,25 @@ const inferPathwayFromGrade = (grade?: string): CandidatePathway | null => {
     return null;
 };
 
+// Calculate days remaining to Kenyan exam seasons
+const getDaysToExam = (pathway: CandidatePathway): number => {
+    const now = new Date();
+    // Default national exam target dates (November)
+    let target = new Date(now.getFullYear(), 10, 4);
+    if (pathway === 'KPSEA') target = new Date(now.getFullYear(), 9, 28);
+    if (pathway === 'KJSEA') target = new Date(now.getFullYear(), 10, 10);
+    if (target.getTime() < now.getTime()) {
+        target = new Date(now.getFullYear() + 1, target.getMonth(), target.getDate());
+    }
+    const diff = target.getTime() - now.getTime();
+    return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
+};
+
 export const RevisionPortal: React.FC = () => {
     const navigate = useNavigate();
-    const [searchParams] = useSearchParams();
+    const [searchParams, setSearchParams] = useSearchParams();
     const requestedPaperId = searchParams.get('paper');
-    const { isRegistered, studentCode, setRole, logout, studentProfile, isPro, subscriptionPlan } = useApp();
+    const { isRegistered, studentCode, setRole, logout, studentProfile, isPro } = useApp();
     const [showLogin, setShowLogin] = useState(false);
     const [showRegister, setShowRegister] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
@@ -86,17 +111,46 @@ export const RevisionPortal: React.FC = () => {
     const [purchasedPaperIds, setPurchasedPaperIds] = useState<string[]>([]);
     const [hasPassForRequested, setHasPassForRequested] = useState(false);
 
+    // Phone Restore State
+    const [phoneSession, setPhoneSession] = useState<PhoneRestoreSession | null>(null);
+    const [showPhoneRestoreModal, setShowPhoneRestoreModal] = useState(false);
+    const [phoneInput, setPhoneInput] = useState('');
+    const [restoringPhone, setRestoringPhone] = useState(false);
+    const [phoneRestoreMessage, setPhoneRestoreMessage] = useState('');
+    const [phoneRestoreError, setPhoneRestoreError] = useState('');
+
+    // Active in-progress timed recovery
+    const [activeRecovery, setActiveRecovery] = useState<TimedExamRecovery | null>(null);
+
+    // Load phone session and purchased papers
     useEffect(() => {
+        const session = readPhoneRestoreSession();
+        if (session) {
+            setPhoneSession(session);
+            if (Array.isArray(session.paperIds) && session.paperIds.length > 0) {
+                setPurchasedPaperIds(prev => Array.from(new Set([...prev, ...session.paperIds.map(String)])));
+            }
+        }
+
         let active = true;
         examPaperBankService.listPurchasedPaperIds()
             .then(ids => {
                 if (active && Array.isArray(ids)) {
-                    setPurchasedPaperIds(ids.map(String));
+                    setPurchasedPaperIds(prev => Array.from(new Set([...prev, ...ids.map(String)])));
                 }
             })
             .catch(() => {});
         return () => { active = false; };
     }, []);
+
+    // Check for in-progress timed exam drafts for the active student
+    useEffect(() => {
+        const owner = studentCode || studentProfile?.id || 'guest';
+        const exams = listTimedExams(owner);
+        if (exams.length > 0) {
+            setActiveRecovery(exams[0]);
+        }
+    }, [studentCode, studentProfile?.id]);
 
     useEffect(() => {
         let active = true;
@@ -142,6 +196,11 @@ export const RevisionPortal: React.FC = () => {
         }, {} as Record<CandidatePathway, number>);
     }, [publishedExams]);
 
+    // Bundle Partitioning
+    const allBundles = useMemo(() => {
+        return buildExamPaperBundles(publishedExams as any);
+    }, [publishedExams]);
+
     useEffect(() => {
         if (loadingExams || publishedExams.length === 0) return;
 
@@ -164,7 +223,7 @@ export const RevisionPortal: React.FC = () => {
         return publishedExams.filter(exam => purchasedPaperIds.includes(String(exam.id)));
     }, [purchasedPaperIds, publishedExams]);
 
-    // Auto-open requested paper from ?paper=... (e.g. from Reader after purchase)
+    // Auto-open requested paper from ?paper=...
     useEffect(() => {
         if (!requestedPaperId || publishedExams.length === 0) return;
         const match = publishedExams.find(p => String(p.id) === String(requestedPaperId));
@@ -175,7 +234,7 @@ export const RevisionPortal: React.FC = () => {
         }
     }, [requestedPaperId, publishedExams]);
 
-    // Check pass entitlement for currently selected modal paper
+    // Check pass entitlement for modal paper
     useEffect(() => {
         if (!selectedPaperModal?.id) {
             setHasPassForRequested(false);
@@ -197,11 +256,6 @@ export const RevisionPortal: React.FC = () => {
             .catch(() => {});
         return () => { active = false; };
     }, [selectedPaperModal?.id, purchasedPaperIds]);
-
-    const openSubjectTab = (subjectName: string) => {
-        setRole(UserRole.LEARNER);
-        navigate('/learner', { state: { targetTab: 'SUBJECTS', targetSubject: subjectName } });
-    };
 
     const startRevision = (examOrId?: PublishedExam | string | number) => {
         setRole(UserRole.LEARNER);
@@ -253,100 +307,149 @@ export const RevisionPortal: React.FC = () => {
         navigate('/learner', { state: { targetTab: 'NOTEBOOK', targetIntent: 'flashcards' } });
     };
 
+    const handleRestorePhoneSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!phoneInput.trim()) return;
+        setRestoringPhone(true);
+        setPhoneRestoreError('');
+        setPhoneRestoreMessage('');
+        try {
+            const session = await examPaperBankService.restoreByPhone(phoneInput.trim());
+            if (session.found && session.paperIds.length > 0) {
+                setPhoneSession(session);
+                setPurchasedPaperIds(prev => Array.from(new Set([...prev, ...session.paperIds.map(String)])));
+                setPhoneRestoreMessage(
+                    session.passActive
+                        ? `Restored ${session.paperIds.length} paper(s) & 24h AI Pass (${session.hoursRemaining}h remaining).`
+                        : `Restored ${session.paperIds.length} paper(s). Pass expired — renew for KES 20.`
+                );
+                setTimeout(() => setShowPhoneRestoreModal(false), 2000);
+            } else {
+                setPhoneRestoreError('No paid papers found for this number. Check that you used the exact M-Pesa number.');
+            }
+        } catch (err: any) {
+            setPhoneRestoreError(err?.message || 'Verification failed. Please retry.');
+        } finally {
+            setRestoringPhone(false);
+        }
+    };
+
+    const daysToExam = getDaysToExam(pathway);
+    const activeTimedPaper = activeRecovery
+        ? publishedExams.find(p => String(p.id) === String(activeRecovery.examId))
+        : null;
+
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-indigo-500 selection:text-white pb-20">
+        <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans selection:bg-indigo-500 selection:text-white pb-24">
             <Helmet>
                 <html lang="en" />
                 <title>Candidates Exam Hub | KCSE, KPSEA &amp; CBC Revision — Soma AI</title>
                 <meta name="description" content="The dedicated candidates hub for Kenyan KCSE, KPSEA &amp; CBC students. Listen to audio notes, practice past papers under exam conditions, and get instant AI exam coaching." />
                 <meta name="keywords" content="KCSE candidate revision, KPSEA candidates hub, CBC Grade 9 revision, listen and learn Kenya, KCSE past papers online, Soma AI exam prep" />
-
                 <meta property="og:site_name" content="Soma AI" />
                 <meta property="og:type" content="website" />
                 <meta property="og:title" content="Candidates Exam Hub | KCSE, KPSEA &amp; KJSEA Revision — Soma AI" />
                 <meta property="og:description" content="The dedicated candidates hub for Kenyan students. Listen to audio revision, attempt past papers, and fix weak topics." />
-                <meta property="og:image" content="https://www.somaai.co.ke/hero_option_a.png" />
-                <meta property="og:url" content="https://www.somaai.co.ke/revision" />
                 <link rel="canonical" href="https://www.somaai.co.ke/revision" />
             </Helmet>
 
-            <header className="sticky top-0 z-50 border-b border-slate-200/90 bg-white/95 backdrop-blur-xl px-4 py-3 sm:px-8 shadow-xs">
-                <div className="mx-auto flex max-w-7xl items-center justify-between">
+            {/* Top Navigation & Status Bar */}
+            <header className="sticky top-0 z-50 border-b border-slate-200/90 bg-white/95 backdrop-blur-xl px-4 py-2.5 sm:px-8 shadow-xs">
+                <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
+                    {/* Brand Logo & Hub Badge */}
                     <button
                         onClick={() => navigate('/')}
-                        className="flex items-center gap-2.5 transition hover:opacity-90"
+                        className="flex items-center gap-2.5 transition hover:opacity-90 shrink-0"
                     >
-                        <img src={logoImg} alt="Soma AI Logo" className="h-9 w-9 object-contain" />
-                        <span className="text-xl font-black text-slate-950">Soma AI</span>
+                        <img src={logoImg} alt="Soma AI Logo" className="h-8 w-8 object-contain" />
+                        <span className="text-lg font-black text-slate-950 tracking-tight">Soma AI</span>
                         <span className="inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-indigo-700 border border-indigo-200">
                             <Flame className="w-3 h-3 text-amber-500 fill-amber-500" /> Candidates Hub
                         </span>
                     </button>
 
-                    <div className="flex items-center gap-2.5 sm:gap-3">
-                        {!isPro ? (
+                    {/* Integrated Pathway Selector Pills */}
+                    <div className="hidden md:flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl border border-slate-200/80">
+                        {PATHWAYS.map(item => (
                             <button
-                                onClick={() => navigate('/pricing')}
-                                className="flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50/80 hover:bg-amber-100 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-black text-amber-900 transition-colors shadow-2xs"
+                                key={item.id}
+                                onClick={() => setPathway(item.id)}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-black transition-all flex items-center gap-1.5 ${
+                                    pathway === item.id
+                                        ? 'bg-indigo-600 text-white shadow-xs scale-[1.02]'
+                                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/60'
+                                }`}
                             >
-                                <Sparkles className="h-3.5 w-3.5 text-amber-600 animate-pulse" />
-                                <span className="hidden xs:inline">Pass from KES 20</span>
-                                <span className="xs:hidden">Plans</span>
+                                <span>{item.id}</span>
+                                <span className={`text-[10px] font-semibold opacity-85`}>({item.grade})</span>
                             </button>
+                        ))}
+                    </div>
+
+                    {/* Right Controls: Phone Pass Badge & Account */}
+                    <div className="flex items-center gap-2 sm:gap-3">
+                        {phoneSession && phoneSession.passActive ? (
+                            <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-black shadow-2xs">
+                                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="hidden sm:inline">24h Pass Active</span>
+                                <span className="text-emerald-700">· 0{phoneSession.last9.slice(-4)}</span>
+                                <span className="bg-emerald-200/70 text-emerald-950 px-1.5 py-0.2 rounded text-[10px]">
+                                    {phoneSession.hoursRemaining}h
+                                </span>
+                            </div>
                         ) : (
                             <button
-                                onClick={() => navigate('/pricing')}
-                                className="flex items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 sm:px-3.5 sm:py-2 text-xs font-black text-emerald-800 transition-colors shadow-2xs"
+                                onClick={() => setShowPhoneRestoreModal(true)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-50 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-300 text-slate-700 hover:text-indigo-700 text-xs font-black transition-colors shadow-2xs"
                             >
-                                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                                <span>PRO · Upgrade</span>
+                                <Phone className="w-3.5 h-3.5 text-indigo-600" />
+                                <span className="hidden sm:inline">Have a 24h Pass? Restore</span>
+                                <span className="sm:hidden">Restore Pass</span>
                             </button>
                         )}
 
-                        <button
-                            onClick={() => navigate('/contact')}
-                            className="hidden text-xs font-bold text-slate-600 hover:text-slate-950 md:inline-block"
-                        >
-                            Help (0722763760)
-                        </button>
-
                         {isRegistered ? (
-                            <div className="flex items-center gap-2.5">
-                                <div className="hidden text-right sm:block">
-                                    <p className="text-xs font-black text-slate-900">{studentProfile?.name?.split(' ')[0] || 'Candidate'}</p>
-                                    <p className="text-[10px] font-bold text-indigo-600">{studentCode}</p>
-                                </div>
+                            <div className="flex items-center gap-2">
                                 <button
                                     onClick={() => startRevision()}
-                                    className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-3.5 py-2 text-xs font-black shadow-md shadow-indigo-600/20 transition-all"
+                                    className="rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 text-xs font-black shadow-xs transition-all"
                                 >
-                                    My Exam Space
+                                    My Desk
                                 </button>
                                 <button
                                     onClick={() => setShowLogoutModal(true)}
-                                    className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-rose-600 transition-colors"
+                                    className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-rose-600 transition-colors"
                                     aria-label="Logout"
                                 >
                                     <LogOut className="h-4 w-4" />
                                 </button>
                             </div>
                         ) : (
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => setShowLogin(true)}
-                                    className="px-2.5 sm:px-3.5 py-2 text-xs font-black text-slate-700 hover:text-slate-950"
-                                >
-                                    Sign In
-                                </button>
-                                <button
-                                    onClick={() => setShowRegister(true)}
-                                    className="rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3.5 py-2 text-xs font-black text-white shadow-sm transition-colors"
-                                >
-                                    Register
-                                </button>
-                            </div>
+                            <button
+                                onClick={() => setShowLogin(true)}
+                                className="rounded-xl bg-indigo-600 hover:bg-indigo-700 px-3.5 py-1.5 text-xs font-black text-white shadow-xs transition-colors"
+                            >
+                                Sign In
+                            </button>
                         )}
                     </div>
+                </div>
+
+                {/* Mobile Pathway Selector */}
+                <div className="flex md:hidden items-center justify-center gap-1.5 pt-2 border-t border-slate-100 mt-2">
+                    {PATHWAYS.map(item => (
+                        <button
+                            key={item.id}
+                            onClick={() => setPathway(item.id)}
+                            className={`flex-1 py-1.5 rounded-xl text-xs font-black transition-all text-center ${
+                                pathway === item.id
+                                    ? 'bg-indigo-600 text-white shadow-xs'
+                                    : 'bg-slate-100 text-slate-700'
+                            }`}
+                        >
+                            {item.id} ({item.grade})
+                        </button>
+                    ))}
                 </div>
             </header>
 
@@ -355,61 +458,205 @@ export const RevisionPortal: React.FC = () => {
                 onPaperClick={(paperId) => startRevision(publishedExams.find(p => p.id === paperId))}
             />
 
-            <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-8">
+            <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 space-y-7">
 
-                {/* Compact Hero Banner */}
-                <div className="rounded-3xl bg-white border border-slate-200/90 p-5 sm:p-7 shadow-xs">
-                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-                        <div className="space-y-2 max-w-2xl">
-                            <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-extrabold text-indigo-700 border border-indigo-100">
-                                <Trophy className="w-3.5 h-3.5 text-amber-500" /> KNEC Exam Success Accelerator
+                {/* ACTION-FIRST SPLIT HERO */}
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+                    
+                    {/* LEFT COLUMN (7 Cols): Candidate Mission Control & Resume Drill */}
+                    <div className="lg:col-span-7 flex flex-col justify-between rounded-3xl bg-white border border-slate-200/90 p-5 sm:p-7 shadow-xs">
+                        <div className="space-y-4">
+                            {/* Exam Countdown & Badge */}
+                            <div className="flex flex-wrap items-center justify-between gap-2">
+                                <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700 border border-indigo-100">
+                                    <Trophy className="w-3.5 h-3.5 text-amber-500" />
+                                    <span>{pathwayConfig.examName} Readiness</span>
+                                </div>
+                                <div className="inline-flex items-center gap-1.5 text-xs font-black text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-xl">
+                                    <Clock className="w-3.5 h-3.5 text-amber-600" />
+                                    <span>{daysToExam} Days Remaining</span>
+                                </div>
                             </div>
-                            <h1 className="text-2xl sm:text-4xl font-black text-slate-950 tracking-tight leading-tight">
-                                Candidates <span className="text-indigo-600">Revision Hub</span>
-                            </h1>
-                            <p className="text-slate-600 text-xs sm:text-sm font-medium leading-relaxed">
-                                Access published past papers with complete marking schemes, audio notes, and instant AI step-by-step coaching for KCSE, KJSEA &amp; KPSEA.
-                            </p>
+
+                            {/* Headline */}
+                            <div>
+                                <h1 className="text-2xl sm:text-3xl font-black text-slate-950 tracking-tight leading-tight">
+                                    Conquer {pathwayConfig.label} with{' '}
+                                    <span className="text-indigo-600">Official Past Papers</span>
+                                </h1>
+                                <p className="text-slate-600 text-xs sm:text-sm font-medium mt-1 leading-relaxed">
+                                    Practise real KNEC past papers under strict timer conditions, check exact marking schemes, and get step-by-step scoring from Akili AI.
+                                </p>
+                            </div>
+
+                            {/* Resume Card or Recommended Drill */}
+                            <div className="rounded-2xl border border-indigo-200 bg-gradient-to-r from-indigo-50/80 via-white to-blue-50/50 p-4">
+                                <div className="flex items-center justify-between mb-2">
+                                    <span className="inline-flex items-center gap-1.5 text-[10px] font-black uppercase tracking-wider text-indigo-700">
+                                        <Sparkles className="w-3 h-3 text-indigo-600" />
+                                        {activeTimedPaper ? 'In-Progress Timed Attempt' : 'Recommended Daily Timed Drill'}
+                                    </span>
+                                    <span className="text-[10px] font-bold text-slate-500">
+                                        {activeTimedPaper ? 'Auto-Saved Draft' : 'Full 120-Min Paper'}
+                                    </span>
+                                </div>
+                                <h3 className="text-sm sm:text-base font-black text-slate-900 leading-snug">
+                                    {activeTimedPaper
+                                        ? activeTimedPaper.title
+                                        : (pathwayExams[0]?.title || `${pathway} Mathematics Paper 1`)}
+                                </h3>
+                                <p className="text-xs text-slate-500 font-medium mt-1">
+                                    {activeTimedPaper
+                                        ? `Progress: ${activeRecovery?.questionIds?.length || 0} questions assigned · Saved locally.`
+                                        : 'Experience standard exam timing with immediate mark breakdown and step feedback.'}
+                                </p>
+                                <div className="mt-3.5 flex items-center gap-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => startRevision(activeTimedPaper || pathwayExams[0]?.id)}
+                                        className="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-black text-xs py-2.5 px-4 rounded-xl shadow-xs transition-all flex items-center justify-center gap-1.5"
+                                    >
+                                        <span>{activeTimedPaper ? 'Resume Timed Exam' : 'Start Timed Exam'}</span>
+                                        <ArrowRight className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => navigate('/exam-papers')}
+                                        className="bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 font-bold text-xs py-2.5 px-3.5 rounded-xl transition-colors"
+                                    >
+                                        Paper Bank
+                                    </button>
+                                </div>
+                            </div>
                         </div>
 
-                        {/* Pathway Switcher Pills */}
-                        <div className="flex flex-wrap gap-2 sm:gap-2.5 shrink-0">
-                            {PATHWAYS.map(item => (
-                                <button
-                                    key={item.id}
-                                    onClick={() => setPathway(item.id)}
-                                    className={`px-4 py-2.5 rounded-2xl text-left transition-all flex items-center gap-2.5 ${
-                                        pathway === item.id
-                                            ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/25 scale-[1.02]'
-                                            : 'bg-slate-100 hover:bg-slate-200/80 text-slate-700 border border-slate-200'
-                                    }`}
+                        {/* 4 Launchpad Micro-pills */}
+                        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-4 mt-2 border-t border-slate-100">
+                            <button
+                                onClick={openAudioRevision}
+                                className="p-2.5 rounded-xl bg-slate-50 hover:bg-emerald-50 border border-slate-200/80 hover:border-emerald-300 text-left transition-colors group"
+                            >
+                                <Headphones className="w-4 h-4 text-emerald-600 mb-1 group-hover:scale-110 transition-transform" />
+                                <p className="text-xs font-black text-slate-900 leading-tight">Listen &amp; Learn</p>
+                                <p className="text-[10px] text-slate-500">Audio notes</p>
+                            </button>
+                            <button
+                                onClick={() => startRevision(pathwayExams[0]?.id)}
+                                className="p-2.5 rounded-xl bg-slate-50 hover:bg-indigo-50 border border-slate-200/80 hover:border-indigo-300 text-left transition-colors group"
+                            >
+                                <Clock className="w-4 h-4 text-indigo-600 mb-1 group-hover:scale-110 transition-transform" />
+                                <p className="text-xs font-black text-slate-900 leading-tight">Timed Papers</p>
+                                <p className="text-[10px] text-slate-500">Exam mode</p>
+                            </button>
+                            <button
+                                onClick={openAskAkili}
+                                className="p-2.5 rounded-xl bg-slate-50 hover:bg-sky-50 border border-slate-200/80 hover:border-sky-300 text-left transition-colors group"
+                            >
+                                <Bot className="w-4 h-4 text-sky-600 mb-1 group-hover:scale-110 transition-transform" />
+                                <p className="text-xs font-black text-slate-900 leading-tight">Ask Akili</p>
+                                <p className="text-[10px] text-slate-500">Step tutor</p>
+                            </button>
+                            <button
+                                onClick={openNotebook}
+                                className="p-2.5 rounded-xl bg-slate-50 hover:bg-purple-50 border border-slate-200/80 hover:border-purple-300 text-left transition-colors group"
+                            >
+                                <Notebook className="w-4 h-4 text-purple-600 mb-1 group-hover:scale-110 transition-transform" />
+                                <p className="text-xs font-black text-slate-900 leading-tight">Notebook</p>
+                                <p className="text-[10px] text-slate-500">Flashcards</p>
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* RIGHT COLUMN (5 Cols): Live Vector SVG Question & Rubric Spotlight */}
+                    <div className="lg:col-span-5 rounded-3xl bg-white border border-slate-200/90 p-5 sm:p-6 shadow-xs flex flex-col justify-between">
+                        <div>
+                            {/* Spotlight Header */}
+                            <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-3">
+                                <span className="inline-flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-indigo-700">
+                                    <Sparkles className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+                                    Vector SVG &amp; Marking Rubric
+                                </span>
+                                <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                    Official KNEC Standard
+                                </span>
+                            </div>
+
+                            {/* Sample Circle Theorem / Electric Circuit Vector SVG */}
+                            <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-3 flex flex-col items-center">
+                                <svg
+                                    viewBox="0 0 340 160"
+                                    className="w-full h-auto max-h-36 object-contain"
+                                    xmlns="http://www.w3.org/2000/svg"
                                 >
-                                    <div className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs ${
-                                        pathway === item.id ? 'bg-white/20 text-white' : 'bg-white text-indigo-700 shadow-xs'
-                                    }`}>
-                                        {item.id.slice(0, 2)}
+                                    <circle cx="140" cy="80" r="55" fill="#f1f5f9" stroke="#1e293b" strokeWidth="2.5" />
+                                    <circle cx="140" cy="80" r="3" fill="#4338ca" />
+                                    <text x="132" y="75" fontSize="11" fontWeight="bold" fill="#312e81">O</text>
+                                    <line x1="280" y1="80" x2="140" y2="25" stroke="#0284c7" strokeWidth="2" />
+                                    <line x1="280" y1="80" x2="140" y2="135" stroke="#0284c7" strokeWidth="2" />
+                                    <line x1="140" y1="80" x2="140" y2="25" stroke="#e11d48" strokeWidth="1.5" strokeDasharray="3 3" />
+                                    <line x1="140" y1="80" x2="140" y2="135" stroke="#e11d48" strokeWidth="1.5" strokeDasharray="3 3" />
+                                    <rect x="140" y="25" width="8" height="8" fill="none" stroke="#e11d48" strokeWidth="1.2" />
+                                    <rect x="140" y="127" width="8" height="8" fill="none" stroke="#e11d48" strokeWidth="1.2" />
+                                    <text x="286" y="84" fontSize="11" fontWeight="bold" fill="#0f172a">T</text>
+                                    <text x="135" y="18" fontSize="11" fontWeight="bold" fill="#0f172a">A</text>
+                                    <text x="135" y="152" fontSize="11" fontWeight="bold" fill="#0f172a">B</text>
+                                    <text x="245" y="74" fontSize="10" fontWeight="bold" fill="#475569">48°</text>
+                                </svg>
+                                <p className="text-[11px] font-bold text-slate-800 text-center mt-1">
+                                    Question: TA &amp; TB are tangents. Calculate angle AOB. <span className="text-indigo-600">(3 Marks)</span>
+                                </p>
+                            </div>
+
+                            {/* Step-by-Step Marking Breakdown */}
+                            <div className="mt-3 space-y-1.5">
+                                <p className="text-[10px] font-black uppercase text-slate-400 tracking-wider">Akili AI Marking Rubric:</p>
+                                <div className="flex items-start gap-2 bg-emerald-50/70 border border-emerald-200/80 p-2 rounded-xl text-xs">
+                                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                                    <div className="text-[11px] text-slate-800 leading-tight">
+                                        <span className="font-bold">Step 1:</span> Radii OA ⊥ TA, OB ⊥ TB (tangent theorem, 90°)
+                                        <span className="ml-1 text-[10px] font-black text-emerald-700 bg-white px-1.5 py-0.2 rounded border border-emerald-300">[1 mk]</span>
                                     </div>
-                                    <div>
-                                        <span className="block text-xs font-black leading-tight">{item.label}</span>
-                                        <span className={`block text-[10px] font-semibold ${pathway === item.id ? 'text-indigo-100' : 'text-slate-500'}`}>
-                                            {item.badge}
-                                        </span>
+                                </div>
+                                <div className="flex items-start gap-2 bg-emerald-50/70 border border-emerald-200/80 p-2 rounded-xl text-xs">
+                                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                                    <div className="text-[11px] text-slate-800 leading-tight">
+                                        <span className="font-bold">Step 2:</span> Angles in quad OATB = 360° (360° - 180° - 48°)
+                                        <span className="ml-1 text-[10px] font-black text-emerald-700 bg-white px-1.5 py-0.2 rounded border border-emerald-300">[1 mk]</span>
                                     </div>
-                                </button>
-                            ))}
+                                </div>
+                                <div className="flex items-start gap-2 bg-emerald-50/70 border border-emerald-200/80 p-2 rounded-xl text-xs">
+                                    <CheckCircle className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                                    <div className="text-[11px] text-slate-800 leading-tight">
+                                        <span className="font-bold">Step 3:</span> Angle AOB = 132° (final answer with units)
+                                        <span className="ml-1 text-[10px] font-black text-emerald-700 bg-white px-1.5 py-0.2 rounded border border-emerald-300">[1 mk]</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                            <span className="text-[11px] text-slate-500 font-medium">Clear coordinate geometry, zero AI distortion.</span>
+                            <button
+                                type="button"
+                                onClick={() => startRevision(pathwayExams[0]?.id)}
+                                className="text-xs font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                            >
+                                <span>Try Interactive Practice</span>
+                                <ArrowRight className="w-3.5 h-3.5" />
+                            </button>
                         </div>
                     </div>
                 </div>
 
-                {/* 24-Hour Pass & Purchased Papers Shelf */}
-                {purchasedPapersList.length > 0 && (
+                {/* MY REVISION DESK & UNLOCKED PAPERS / BUNDLES SHELF */}
+                {purchasedPapersList.length > 0 ? (
                     <div className="rounded-3xl bg-gradient-to-r from-emerald-950 via-teal-950 to-indigo-950 border border-emerald-500/40 p-5 sm:p-6 text-white shadow-md">
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                             <div>
                                 <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[10px] font-black uppercase tracking-wider mb-1">
                                     <Sparkles className="w-3 h-3 text-emerald-400" /> Free 24h AI Revision Pass Active
                                 </div>
-                                <h2 className="text-lg sm:text-xl font-black text-white">Your Unlocked Revision Papers</h2>
+                                <h2 className="text-lg sm:text-xl font-black text-white">Your Unlocked Revision Papers &amp; Bundles</h2>
                                 <p className="text-xs text-emerald-100/80">Interactive timed practice, instant step-by-step Akili marking, and official schemes are ready.</p>
                             </div>
                             <span className="text-xs font-bold bg-white/10 px-3 py-1.5 rounded-xl border border-white/15 self-start sm:self-auto text-emerald-200">
@@ -448,120 +695,41 @@ export const RevisionPortal: React.FC = () => {
                             ))}
                         </div>
                     </div>
+                ) : (
+                    <div className="rounded-2xl border border-indigo-200 bg-white p-4 sm:p-5 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-2xs">
+                        <div className="flex items-start gap-3">
+                            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-200 text-indigo-600 flex items-center justify-center shrink-0">
+                                <BookmarkCheck className="w-5 h-5" />
+                            </div>
+                            <div>
+                                <h3 className="text-sm font-black text-slate-900">
+                                    Unlock Any KNEC Paper for KES {EXAM_PAPER_PRICE_KES} or Get a 7-Subject Bundle for KES {EXAM_BUNDLE_PRICE_KES}
+                                </h3>
+                                <p className="text-xs text-slate-500 mt-0.5">
+                                    Every paper unlock includes the complete official marking scheme + 24 Hours Unlimited AI Tutor Pass for your phone.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                            <button
+                                type="button"
+                                onClick={() => setShowPhoneRestoreModal(true)}
+                                className="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black transition-colors"
+                            >
+                                Restore Purchases
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => navigate('/exam-papers')}
+                                className="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-black transition-colors shadow-xs"
+                            >
+                                Browse Paper Bank &rarr;
+                            </button>
+                        </div>
+                    </div>
                 )}
 
-                {/* 4 Compact Revision Launchpads */}
-                <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
-                    {/* 1. Listen & Learn */}
-                    <div
-                        onClick={openAudioRevision}
-                        className="group cursor-pointer rounded-2xl bg-white border border-emerald-200/80 hover:border-emerald-500 p-4 shadow-xs hover:shadow-md transition-all hover:-translate-y-0.5 flex flex-col justify-between"
-                    >
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="w-9 h-9 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold border border-emerald-100">
-                                    <Headphones className="w-4 h-4" />
-                                </span>
-                                <span className="text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-md">
-                                    Audio
-                                </span>
-                            </div>
-                            <h3 className="text-sm font-black text-slate-900 group-hover:text-emerald-700 transition-colors">
-                                Listen &amp; Learn
-                            </h3>
-                            <p className="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-2">
-                                Audio lessons and formula recaps on the go.
-                            </p>
-                        </div>
-                        <div className="mt-3 flex items-center gap-1 text-[11px] font-black text-emerald-700">
-                            <span>Listen now</span>
-                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                        </div>
-                    </div>
-
-                    {/* 2. Timed Exam Past Papers */}
-                    <div
-                        onClick={() => startRevision(pathwayExams[0]?.id)}
-                        className="group cursor-pointer rounded-2xl bg-white border border-indigo-200/80 hover:border-indigo-500 p-4 shadow-xs hover:shadow-md transition-all hover:-translate-y-0.5 flex flex-col justify-between"
-                    >
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold border border-indigo-100">
-                                    <Clock className="w-4 h-4" />
-                                </span>
-                                <span className="text-[10px] font-black uppercase text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-md">
-                                    Timed
-                                </span>
-                            </div>
-                            <h3 className="text-sm font-black text-slate-900 group-hover:text-indigo-700 transition-colors">
-                                Timed Past Papers
-                            </h3>
-                            <p className="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-2">
-                                Attempt published papers with a timer and any available marking guide.
-                            </p>
-                        </div>
-                        <div className="mt-3 flex items-center gap-1 text-[11px] font-black text-indigo-700">
-                            <span>Attempt paper</span>
-                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                        </div>
-                    </div>
-
-                    {/* 3. Ask Akili AI Tutor */}
-                    <div
-                        onClick={openAskAkili}
-                        className="group cursor-pointer rounded-2xl bg-white border border-sky-200/80 hover:border-sky-500 p-4 shadow-xs hover:shadow-md transition-all hover:-translate-y-0.5 flex flex-col justify-between"
-                    >
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="w-9 h-9 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center font-bold border border-sky-100">
-                                    <Bot className="w-4 h-4" />
-                                </span>
-                                <span className="text-[10px] font-black uppercase text-sky-700 bg-sky-50 px-2 py-0.5 rounded-md">
-                                    AI Tutor
-                                </span>
-                            </div>
-                            <h3 className="text-sm font-black text-slate-900 group-hover:text-sky-700 transition-colors">
-                                Ask Akili AI
-                            </h3>
-                            <p className="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-2">
-                                Step-by-step solutions for lost marks.
-                            </p>
-                        </div>
-                        <div className="mt-3 flex items-center gap-1 text-[11px] font-black text-sky-700">
-                            <span>Ask Akili</span>
-                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                        </div>
-                    </div>
-
-                    {/* 4. Candidate Notebook */}
-                    <div
-                        onClick={openNotebook}
-                        className="group cursor-pointer rounded-2xl bg-white border border-purple-200/80 hover:border-purple-500 p-4 shadow-xs hover:shadow-md transition-all hover:-translate-y-0.5 flex flex-col justify-between"
-                    >
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <span className="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center font-bold border border-purple-100">
-                                    <Notebook className="w-4 h-4" />
-                                </span>
-                                <span className="text-[10px] font-black uppercase text-purple-700 bg-purple-50 px-2 py-0.5 rounded-md">
-                                    Offline
-                                </span>
-                            </div>
-                            <h3 className="text-sm font-black text-slate-900 group-hover:text-purple-700 transition-colors">
-                                Study Notebook
-                            </h3>
-                            <p className="text-[11px] text-slate-500 font-medium mt-0.5 line-clamp-2">
-                                Saved notes &amp; flashcard review.
-                            </p>
-                        </div>
-                        <div className="mt-3 flex items-center gap-1 text-[11px] font-black text-purple-700">
-                            <span>Open notes</span>
-                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
-                        </div>
-                    </div>
-                </div>
-
-                {/* Published Candidate Exam Library */}
+                {/* PUBLISHED CANDIDATE EXAM LIBRARY */}
                 <div className="space-y-4 pt-2">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 pb-3 border-b border-slate-200">
                         <div>
@@ -590,7 +758,7 @@ export const RevisionPortal: React.FC = () => {
                                 onClick={() => navigate('/exam-papers')}
                                 className="px-3.5 py-1.5 rounded-xl bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 text-xs font-black transition-all shadow-2xs shrink-0"
                             >
-                                All Papers &rarr;
+                                Full Paper Bank &rarr;
                             </button>
                         </div>
                     </div>
@@ -598,113 +766,122 @@ export const RevisionPortal: React.FC = () => {
                     {/* Filter Bar: Subjects & Years */}
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none flex-1">
-                            {FILTER_SUBJECTS.map(subj => {
-                                const isSelected = selectedSubject === subj;
-                                return (
-                                    <button
-                                        key={subj}
-                                        onClick={() => setSelectedSubject(subj)}
-                                        className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
-                                            isSelected
-                                                ? 'bg-slate-900 text-white shadow-xs'
-                                                : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'
-                                        }`}
-                                    >
-                                        {subj}
-                                    </button>
-                                );
-                            })}
+                            {FILTER_SUBJECTS.map(subject => (
+                                <button
+                                    key={subject}
+                                    onClick={() => setSelectedSubject(subject)}
+                                    className={`px-3 py-1 rounded-xl text-xs font-bold transition-all shrink-0 ${
+                                        selectedSubject === subject
+                                            ? 'bg-slate-900 text-white shadow-2xs'
+                                            : 'bg-white hover:bg-slate-100 text-slate-600 border border-slate-200'
+                                    }`}
+                                >
+                                    {subject}
+                                </button>
+                            ))}
                         </div>
 
-                        {/* Year Pills */}
                         {availableYears.length > 2 && (
-                            <div className="flex items-center gap-1 shrink-0 overflow-x-auto pb-1">
-                                <span className="text-[10px] font-black uppercase text-slate-400 mr-1">Year:</span>
-                                {availableYears.map(yr => (
+                            <div className="flex items-center gap-1 shrink-0">
+                                <span className="text-[11px] font-bold text-slate-400 uppercase mr-1">Year:</span>
+                                {availableYears.slice(0, 5).map(year => (
                                     <button
-                                        key={yr}
-                                        onClick={() => setSelectedYear(yr)}
-                                        className={`px-2.5 py-0.5 rounded-lg text-xs font-bold transition-all ${
-                                            selectedYear === yr
+                                        key={year}
+                                        onClick={() => setSelectedYear(year)}
+                                        className={`px-2 py-0.5 rounded-lg text-xs font-bold transition-colors ${
+                                            selectedYear === year
                                                 ? 'bg-indigo-600 text-white'
-                                                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                : 'text-slate-500 hover:text-slate-900'
                                         }`}
                                     >
-                                        {yr}
+                                        {year}
                                     </button>
                                 ))}
                             </div>
                         )}
                     </div>
 
-                    {/* Compact Visual Exam Grid (4 columns on desktop, 2-3 on tablet/mobile) */}
+                    {/* Paper Cards Grid */}
                     {loadingExams ? (
-                        <div className="flex justify-center items-center py-16 gap-3 text-slate-500 text-xs font-bold">
-                            <Loader2 className="w-5 h-5 animate-spin text-indigo-600" />
-                            Loading candidate papers...
-                        </div>
-                    ) : catalogError ? (
-                        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-8 text-center" role="alert">
-                            <h3 className="text-sm font-black text-rose-900">Paper catalogue unavailable</h3>
-                            <p className="mt-2 text-xs text-rose-800">{catalogError}</p>
-                            <button type="button" onClick={() => setCatalogAttempt(value => value + 1)} className="mt-4 min-h-10 rounded-xl bg-rose-700 px-4 text-xs font-black text-white">Retry</button>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {[1, 2, 3, 4, 5, 6].map(i => (
+                                <div key={i} className="h-44 rounded-2xl bg-white border border-slate-200 animate-pulse p-4 flex flex-col justify-between">
+                                    <div className="space-y-2">
+                                        <div className="w-16 h-4 bg-slate-200 rounded" />
+                                        <div className="w-48 h-5 bg-slate-200 rounded" />
+                                    </div>
+                                    <div className="w-full h-8 bg-slate-200 rounded" />
+                                </div>
+                            ))}
                         </div>
                     ) : pathwayExams.length > 0 ? (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4">
-                            {pathwayExams.map(exam => {
-                                const colors = SUBJECT_COLORS[exam.subject] || SUBJECT_COLORS.default;
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            {pathwayExams.map(paper => {
+                                const subjectColor = SUBJECT_COLORS[paper.subject] || SUBJECT_COLORS.default;
+                                const isUnlocked = purchasedPaperIds.includes(String(paper.id));
+                                const paperBundle = findBundleForPaper(paper.id, allBundles);
+
                                 return (
                                     <motion.div
-                                        key={exam.id}
-                                        initial={{ opacity: 0, y: 6 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        onClick={() => setSelectedPaperModal(exam)}
-                                        className="group cursor-pointer rounded-2xl bg-white hover:bg-slate-50/80 p-4 border border-slate-200/90 hover:border-indigo-500 shadow-2xs hover:shadow-md transition-all flex flex-col justify-between"
+                                        key={paper.id}
+                                        whileHover={{ y: -2 }}
+                                        className="group rounded-2xl bg-white border border-slate-200 hover:border-indigo-400/80 p-4 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
                                     >
                                         <div>
-                                            {/* Header tags */}
-                                            <div className="flex items-center justify-between gap-1.5 mb-2.5">
-                                                <div className="flex items-center gap-1.5 flex-wrap">
-                                                    <span className={`px-2 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${colors.bg} ${colors.text} ${colors.border}`}>
-                                                        {exam.subject || 'General'}
-                                                    </span>
-                                                    {purchasedPaperIds.includes(String(exam.id)) && (
-                                                        <span className="px-1.5 py-0.5 rounded-md text-[9px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300">
-                                                            24h Pass
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className={`px-2.5 py-0.5 rounded-md text-[10px] font-black uppercase tracking-wider border ${subjectColor.bg} ${subjectColor.text} ${subjectColor.border}`}>
+                                                    {paper.subject}
+                                                </span>
+                                                <div className="flex items-center gap-1.5">
+                                                    {paper.year && (
+                                                        <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded">
+                                                            {paper.year}
                                                         </span>
                                                     )}
-                                                </div>
-                                                <div className="flex items-center gap-1.5 text-[10px] font-bold text-slate-500">
-                                                    {exam.duration_minutes && (
-                                                        <span className="flex items-center gap-0.5">
-                                                            <Clock className="w-3 h-3 text-slate-400" /> {exam.duration_minutes}m
-                                                        </span>
-                                                    )}
-                                                    {exam.year && (
-                                                        <span className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-600">
-                                                            {exam.year}
+                                                    {isUnlocked && (
+                                                        <span className="text-[10px] font-black uppercase text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                                                            Unlocked
                                                         </span>
                                                     )}
                                                 </div>
                                             </div>
 
-                                            {/* Paper Title */}
-                                            <h3 className="text-xs sm:text-sm font-black text-slate-900 group-hover:text-indigo-600 transition-colors leading-snug line-clamp-2">
-                                                {exam.title}
+                                            <h3 className="text-sm font-black text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2 leading-snug">
+                                                {paper.title}
                                             </h3>
 
-                                            {/* Secondary info */}
-                                            <p className="mt-1 text-[11px] font-semibold text-slate-500">
-                                                {exam.grade} {exam.total_marks ? `· ${exam.total_marks} marks` : ''}
-                                            </p>
+                                            <div className="flex flex-wrap items-center gap-3 mt-2 text-[11px] font-semibold text-slate-500">
+                                                {paper.duration_minutes && (
+                                                    <span className="flex items-center gap-1">
+                                                        <Clock className="w-3 h-3 text-slate-400" />
+                                                        {paper.duration_minutes}m
+                                                    </span>
+                                                )}
+                                                <span className="flex items-center gap-1 text-emerald-700">
+                                                    <CheckCircle2 className="w-3 h-3 text-emerald-600" />
+                                                    Official Scheme
+                                                </span>
+                                                {paperBundle && (
+                                                    <span className="text-[10px] font-bold text-indigo-600">
+                                                        In Set: {paperBundle.bundleCode}
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
 
                                         {/* Action footer */}
-                                        <div className="mt-3.5 pt-2.5 border-t border-slate-100 flex items-center justify-between text-xs font-black text-indigo-600 group-hover:text-indigo-700">
-                                            <span className="flex items-center gap-1">
-                                                <Sparkles className="w-3.5 h-3.5" /> Practice / Preview
+                                        <div className="mt-3.5 pt-2.5 border-t border-slate-100 flex items-center justify-between">
+                                            <span className="text-[11px] font-black text-slate-700">
+                                                {isUnlocked ? 'Ready to Practise' : `KES ${EXAM_PAPER_PRICE_KES}`}
                                             </span>
-                                            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                                            <button
+                                                type="button"
+                                                onClick={() => setSelectedPaperModal(paper)}
+                                                className="text-xs font-black text-indigo-600 hover:text-indigo-800 flex items-center gap-1"
+                                            >
+                                                <span>{isUnlocked ? 'Launch Exam' : 'Preview & Attempt'}</span>
+                                                <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
+                                            </button>
                                         </div>
                                     </motion.div>
                                 );
@@ -766,6 +943,86 @@ export const RevisionPortal: React.FC = () => {
                 </div>
 
             </main>
+
+            {/* Phone Number 24h Pass Restore Modal */}
+            <AnimatePresence>
+                {showPhoneRestoreModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden border border-slate-200 p-6"
+                        >
+                            <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                                <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                        <Phone className="w-4 h-4" />
+                                    </div>
+                                    <h3 className="text-sm font-black text-slate-900">Restore 24-Hour Pass &amp; Papers</h3>
+                                </div>
+                                <button
+                                    onClick={() => setShowPhoneRestoreModal(false)}
+                                    className="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            </div>
+
+                            <p className="text-xs text-slate-600 mt-3 leading-relaxed">
+                                Enter the M-Pesa phone number used when buying any exam paper or bundle. We will restore your papers and your active 24-Hour AI Revision Pass on this device.
+                            </p>
+
+                            <form onSubmit={handleRestorePhoneSubmit} className="mt-4 space-y-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                                        M-Pesa Phone Number
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        placeholder="0722... or 254..."
+                                        value={phoneInput}
+                                        onChange={(e) => setPhoneInput(e.target.value)}
+                                        className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-slate-900 outline-none focus:border-indigo-600 transition"
+                                        autoFocus
+                                    />
+                                </div>
+
+                                {phoneRestoreMessage && (
+                                    <div className="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-bold text-emerald-800 flex items-center gap-2">
+                                        <CheckCircle className="w-4 h-4 text-emerald-600 shrink-0" />
+                                        <span>{phoneRestoreMessage}</span>
+                                    </div>
+                                )}
+
+                                {phoneRestoreError && (
+                                    <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs font-bold text-rose-800 flex items-center gap-2">
+                                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                                        <span>{phoneRestoreError}</span>
+                                    </div>
+                                )}
+
+                                <div className="flex items-center gap-2 pt-2">
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPhoneRestoreModal(false)}
+                                        className="flex-1 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-black"
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={restoringPhone || !phoneInput.trim()}
+                                        className="flex-1 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white text-xs font-black shadow-xs flex items-center justify-center gap-1"
+                                    >
+                                        {restoringPhone ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Restore Access'}
+                                    </button>
+                                </div>
+                            </form>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
 
             {/* Paper Quick Action & Preview Modal */}
             <AnimatePresence>
