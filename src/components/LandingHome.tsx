@@ -1120,6 +1120,11 @@ const AskAkiliDemo: React.FC<Props & { compact?: boolean }> = (props) => {
   const openQuestion = (override?: string) => {
     const cleaned = (override || question).trim();
     if (!cleaned && !attachedFile) return;
+    try {
+      if (cleaned) {
+        sessionStorage.setItem('soma_pending_hero_question', cleaned);
+      }
+    } catch { /* ignore */ }
     props.onTrack('ask_akili_home_question_submitted', {
       source: 'landing_hero',
       question_length: cleaned.length,
@@ -1259,7 +1264,15 @@ const AskAkiliDemo: React.FC<Props & { compact?: boolean }> = (props) => {
           <input
             type="text"
             value={question}
-            onChange={(e) => setQuestion(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setQuestion(val);
+              try {
+                if (val.trim()) {
+                  sessionStorage.setItem('soma_pending_hero_question', val.trim());
+                }
+              } catch { /* ignore */ }
+            }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 e.preventDefault();

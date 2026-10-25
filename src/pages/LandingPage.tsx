@@ -316,11 +316,42 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
         }
     };
 
+    const handleOpenAuthForQuestion = (mode: 'login' | 'register', qOverride?: string) => {
+        const questionToCarry = (qOverride || questionInput).trim() || (() => {
+            try { return sessionStorage.getItem('soma_pending_hero_question') || ''; } catch { return ''; }
+        })();
+
+        if (questionToCarry) {
+            try {
+                sessionStorage.setItem('soma_pending_hero_question', questionToCarry);
+            } catch { /* ignore */ }
+            setPendingRoute('/learner');
+            setPendingRouteState({ pendingHeroQuestion: questionToCarry });
+        }
+        setRole(UserRole.LEARNER);
+        setShowDetailedView(false);
+
+        if (mode === 'register') {
+            setRegistrationRole('STUDENT');
+            setShowRegistration(true);
+        } else {
+            setLoginTab('STUDENT');
+            setShowLogin(true);
+        }
+    };
+
     const handleOpenDetailedView = async (questionOverride?: string, fileOverride?: File) => {
         const activeQuestion = (questionOverride || questionInput).trim();
         const previousQuestion = questionInput.trim();
         if (!activeQuestion && !fileOverride) return;
         setQuestionInput(activeQuestion);
+        if (activeQuestion) {
+            try {
+                sessionStorage.setItem('soma_pending_hero_question', activeQuestion);
+            } catch { /* ignore */ }
+            setPendingRoute('/learner');
+            setPendingRouteState({ pendingHeroQuestion: activeQuestion });
+        }
         setPendingHeroFile(fileOverride || null);
         trackFunnelEvent('detailed_view_clicked', {
             source: 'landing_hero',
@@ -791,14 +822,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
             setPendingRouteState(null);
             return;
         }
+
+        let pendingStoredQuestion: string | null = null;
+        try { pendingStoredQuestion = sessionStorage.getItem('soma_pending_hero_question'); } catch { /* ignore */ }
+        const fallbackQuestion = questionInput.trim() || pendingStoredQuestion;
+
         if (isClaimingOffer) {
             // Navigate to the appropriate dashboard with openSubscription flag
             const target = role === UserRole.TEACHER ? '/teacher' : (role === UserRole.SCHOOL ? '/school' : '/learner');
-            navigate(target, { state: { openSubscription: true } });
+            const state: Record<string, unknown> = { openSubscription: true };
+            if (target === '/learner' && fallbackQuestion) {
+                state.pendingHeroQuestion = fallbackQuestion;
+            }
+            navigate(target, { state });
             setIsClaimingOffer(false);
         } else {
             const target = role === UserRole.TEACHER ? '/teacher' : (role === UserRole.SCHOOL ? '/school' : '/learner');
-            navigate(target);
+            navigate(target, target === '/learner' && fallbackQuestion ? { state: { pendingHeroQuestion: fallbackQuestion } } : undefined);
         }
     };
 
@@ -1084,7 +1124,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                 onPreviewMarkingScheme={handlePreviewMarkingSchemeFromHome}
                 onPricing={() => navigate('/pricing')}
                 latestPapers={latestPapers}
-                onSignIn={() => { setLoginTab('STUDENT'); setShowLogin(true); }}
+                onSignIn={() => {
+                    const q = questionInput.trim() || (() => {
+                        try { return sessionStorage.getItem('soma_pending_hero_question') || ''; } catch { return ''; }
+                    })();
+                    if (q) {
+                        setPendingRoute('/learner');
+                        setPendingRouteState({ pendingHeroQuestion: q });
+                    }
+                    setLoginTab('STUDENT');
+                    setShowLogin(true);
+                }}
                 onDashboard={() => navigate(role === UserRole.TEACHER ? '/teacher' : role === UserRole.SCHOOL ? '/school' : role === UserRole.PARENT ? '/parent' : '/learner')}
                 onTrack={trackFunnelEvent}
             />
@@ -1307,13 +1357,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                             <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">Create a free account to get 10 answers per day — no card needed.</p>
                                                             <div className="mt-3 flex flex-col sm:flex-row gap-2">
                                                                 <button
-                                                                    onClick={() => { trackFunnelEvent('hero_limit_register_clicked', { source: 'landing_hero' }); setShowRegistration(true); }}
+                                                                    onClick={() => { trackFunnelEvent('hero_limit_register_clicked', { source: 'landing_hero' }); handleOpenAuthForQuestion('register'); }}
                                                                     className="flex-1 min-h-[38px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs font-black transition-colors flex items-center justify-center gap-1"
                                                                 >
                                                                     Register Free <ArrowRight className="w-3 h-3" />
                                                                 </button>
                                                                 <button
-                                                                    onClick={() => { setShowLogin(true); }}
+                                                                    onClick={() => { handleOpenAuthForQuestion('login'); }}
                                                                     className="flex-1 min-h-[38px] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-xs font-black transition-colors"
                                                                 >
                                                                     Continue Learning
@@ -2495,8 +2545,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                             <button onClick={() => { setShowDetailedView(false); navigate('/pricing'); }} className="flex-1 min-h-[46px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-sm transition-colors">See Learner Plans</button>
                                         ) : (
                                             <>
-                                                <button onClick={() => { setShowDetailedView(false); setShowRegistration(true); }} className="flex-1 min-h-[46px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-sm transition-colors">Register Free</button>
-                                                <button onClick={() => { setShowDetailedView(false); setShowLogin(true); }} className="flex-1 min-h-[46px] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-xl font-black text-sm transition-colors">Continue Learning</button>
+                                                <button onClick={() => handleOpenAuthForQuestion('register')} className="flex-1 min-h-[46px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-sm transition-colors">Register Free</button>
+                                                <button onClick={() => handleOpenAuthForQuestion('login')} className="flex-1 min-h-[46px] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-800 dark:text-slate-200 rounded-xl font-black text-sm transition-colors">Continue Learning</button>
                                             </>
                                         )}
                                     </div>
@@ -2650,8 +2700,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                                                 </div>
                                             </div>
                                             <div className="flex flex-wrap gap-2">
-                                                <button onClick={() => { setShowDetailedView(false); setShowRegistration(true); }} className="flex-1 min-h-[40px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs transition-colors">Register Free</button>
-                                                <button onClick={() => { setShowDetailedView(false); setShowLogin(true); }} className="flex-1 min-h-[40px] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 rounded-xl font-black text-xs transition-colors">Continue Learning</button>
+                                                <button onClick={() => handleOpenAuthForQuestion('register')} className="flex-1 min-h-[40px] bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-black text-xs transition-colors">Register Free</button>
+                                                <button onClick={() => handleOpenAuthForQuestion('login')} className="flex-1 min-h-[40px] border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-900 text-slate-700 dark:text-slate-300 rounded-xl font-black text-xs transition-colors">Continue Learning</button>
                                                 <button
                                                     type="button"
                                                     onClick={() => {
@@ -2789,8 +2839,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                         setPendingRoute(null);
                         setPendingRouteState(null);
                     } else {
+                        let pendingStoredQuestion: string | null = null;
+                        try { pendingStoredQuestion = sessionStorage.getItem('soma_pending_hero_question'); } catch { /* ignore */ }
+                        const fallbackQuestion = questionInput.trim() || pendingStoredQuestion;
+
                         const target = tab === 'TEACHER' ? '/teacher' : (tab === 'SCHOOL' ? '/school' : '/learner');
-                        navigate(target);
+                        navigate(target, target === '/learner' && fallbackQuestion ? { state: { pendingHeroQuestion: fallbackQuestion } } : undefined);
                     }
                 }}
                 onSwitchToRegister={(role) => {

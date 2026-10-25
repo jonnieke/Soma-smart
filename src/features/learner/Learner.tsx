@@ -2124,13 +2124,26 @@ Stay anchored to this context unless I ask for something broader.`;
     }
 
     // Faded Solution / Full Solution Modal Check
-    if (state?.pendingHeroQuestion) {
-      const shouldAutoStartPractice = Boolean(state.autoStartPractice);
-      heroQuestionRetryRef.current = { question: state.pendingHeroQuestion, autoStartPractice: shouldAutoStartPractice };
-      setFadedSolutionData({ query: state.pendingHeroQuestion, answer: null, isGenerating: true, show: !shouldAutoStartPractice });
+    const storedHeroQuestion = (() => {
+      try {
+        const item = sessionStorage.getItem('soma_pending_hero_question');
+        if (item) {
+          sessionStorage.removeItem('soma_pending_hero_question');
+          return item;
+        }
+      } catch { /* ignore */ }
+      return null;
+    })();
+
+    const resolvedHeroQuestion = state?.pendingHeroQuestion || storedHeroQuestion;
+
+    if (resolvedHeroQuestion) {
+      const shouldAutoStartPractice = Boolean(state?.autoStartPractice);
+      heroQuestionRetryRef.current = { question: resolvedHeroQuestion, autoStartPractice: shouldAutoStartPractice };
+      setFadedSolutionData({ query: resolvedHeroQuestion, answer: null, isGenerating: true, show: !shouldAutoStartPractice });
       
       const fetchHeroAnswer = async () => {
-          const qText = state.pendingHeroQuestion || '';
+          const qText = resolvedHeroQuestion || '';
           let answerText = '';
 
           try {
