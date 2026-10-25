@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Link } from 'react-router-dom';
 import studyIllustration from '../assets/images/landing-study-illustration.webp';
 import './LandingHome.css';
@@ -177,7 +177,7 @@ const DEFAULT_TRENDING_POOL_CARDS = [
     grade: 'Grade 9',
     subject: 'Mathematics',
     topic: 'Simultaneous Linear Equations',
-    badgeLabel: 'Practice Drill · Grade 9 Mathematics',
+    badgeLabel: 'Practice Drill Â· Grade 9 Mathematics',
     summaryPreview: '3 KNEC-style structured questions covering substitution, elimination, and word problem formation.',
     reuseCount: 42,
     itemType: 'PRACTICE_DRILL' as const,
@@ -187,7 +187,7 @@ const DEFAULT_TRENDING_POOL_CARDS = [
     grade: 'Form 4',
     subject: 'Biology',
     topic: 'Photosynthesis Light & Dark Stage [KNEC Marking Points]',
-    badgeLabel: 'Akili Breakdown · Form 4 Biology',
+    badgeLabel: 'Akili Breakdown Â· Form 4 Biology',
     summaryPreview: 'Photolysis of water in the grana vs. carbon dioxide fixation in the stroma with full 1-mark point breakdown.',
     reuseCount: 68,
     itemType: 'TOPIC_EXPLANATION' as const,
@@ -196,13 +196,19 @@ const DEFAULT_TRENDING_POOL_CARDS = [
     id: 'starter-chem-paper-pass',
     grade: 'Form 4',
     subject: 'Chemistry',
-    topic: 'KCSE Chemistry Paper 1 (KES 20 · Instant M-Pesa)',
+    topic: 'KCSE Chemistry Paper 1 (KES 20 Â· Instant M-Pesa)',
     badgeLabel: 'Past Paper + 24h AI Pass',
     summaryPreview: 'Download the full question paper + marking scheme and unlock 24 hours of unlimited AI revision across all subjects.',
     reuseCount: 95,
     itemType: 'REVISION_PAPER' as const,
   },
 ];
+
+const focusAskBox = () => {
+  const box = document.getElementById('soma-ask');
+  box?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  window.setTimeout(() => box?.querySelector<HTMLTextAreaElement | HTMLInputElement>('textarea, input[type="text"]')?.focus(), 350);
+};
 
 export const LandingHome: React.FC<Props> = (props) => {
   const [menuOpen, setMenuOpen] = React.useState(false);
@@ -238,7 +244,7 @@ export const LandingHome: React.FC<Props> = (props) => {
       if (res.found && res.passActive) {
         setRestoreNotice({
           tone: 'ok',
-          text: `✅ 24h Unlimited AI & Revision Pass active (+254${res.last9} · ${res.hoursRemaining}h left). Ask homework below or jump to any tool:`,
+          text: `✅ 24h Pass active (+254${res.last9} · ${res.hoursRemaining}h left).`,
         });
       } else if (res.found) {
         setRestoreNotice({
@@ -252,22 +258,46 @@ export const LandingHome: React.FC<Props> = (props) => {
         });
       }
     } catch {
-      setRestoreNotice({
-        tone: 'err',
-        text: 'Could not verify phone right now.',
-      });
+      setRestoreNotice({ tone: 'err', text: 'Could not verify phone right now.' });
     } finally {
       setRestoreLoading(false);
     }
   };
 
+  // Three doors only: Homework, Revision, Past papers.
   const navigation = <>
-    <Link to="/free-pool">Learner’s Pool (Free)</Link>
-    <button onClick={() => props.onExamPapers()}>Past papers (KES 20)</button>
-    <Link to="/learning-videos">Learning videos</Link>
-    <button onClick={props.onTeacher}>For teachers</button>
-    <button onClick={props.onPricing}>Pricing</button>
+    <button onClick={() => { setMenuOpen(false); focusAskBox(); }}>Homework</button>
+    <button onClick={props.onRevision}>Revision</button>
+    <button onClick={() => props.onExamPapers()}>Past papers</button>
   </>;
+
+  const doors = [
+    {
+      title: 'Homework help',
+      text: 'Type, snap or speak a question. Get it explained step by step.',
+      Icon: Bot,
+      tone: 'bg-blue-50 text-blue-600',
+      cta: 'Ask Akili',
+      onClick: focusAskBox,
+    },
+    {
+      title: 'Revise a topic',
+      text: 'Timed practice, weak-topic drills and free shared revision.',
+      Icon: Notebook,
+      tone: 'bg-violet-50 text-violet-600',
+      cta: 'Start revising',
+      onClick: props.onRevision,
+    },
+    {
+      title: 'Past papers',
+      text: 'KNEC papers with marking schemes. KES 20 each, or KES 100 a set.',
+      Icon: FileText,
+      tone: 'bg-emerald-50 text-emerald-600',
+      cta: 'Find a paper',
+      onClick: () => props.onExamPapers(),
+    },
+  ];
+
   return <div className="soma-landing">
     <header className="soma-header">
       <Link to="/" className="soma-brand" aria-label="Soma AI homepage"><img src={logoImg} alt="" width="48" height="48" /><span>Soma AI</span></Link>
@@ -286,84 +316,20 @@ export const LandingHome: React.FC<Props> = (props) => {
             {restoreLoading ? '...' : 'Restore'}
           </button>
         </form>
-        <button className="soma-outline soma-signin" onClick={props.isRegistered ? props.onDashboard : props.onSignIn}>{props.isRegistered ? 'My dashboard' : 'Sign in'}</button>
+        <button className="soma-outline soma-signin" onClick={props.isRegistered ? props.onDashboard : props.onSignIn}>{props.isRegistered ? 'My desk' : 'Sign in'}</button>
         <button className="soma-menu-toggle" aria-label="Toggle menu" aria-expanded={menuOpen} aria-controls="soma-mobile-menu" onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button>
       </div>
     </header>
     {restoreNotice && (
-      <div
-        role="status"
-        style={{
-          background: restoreNotice.tone === 'ok' ? '#ecfdf5' : '#fffbeb',
-          color: restoreNotice.tone === 'ok' ? '#065f46' : '#92400e',
-          borderBottom: '1px solid #d1fae5',
-          padding: '8px 5%',
-          fontSize: '12px',
-          fontWeight: 700,
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: '10px',
-        }}
-      >
+      <div role="status" className={`soma-restore-notice soma-restore-notice--${restoreNotice.tone}`}>
         <span>{restoreNotice.text}</span>
         {restoreNotice.tone === 'ok' && (
-          <span style={{ display: 'inline-flex', flexWrap: 'wrap', gap: '8px', alignItems: 'center' }}>
-            <button
-              type="button"
-              onClick={props.onStartLearning}
-              style={{
-                background: '#059669',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '999px',
-                padding: '3px 10px',
-                fontSize: '11px',
-                fontWeight: 800,
-                cursor: 'pointer',
-              }}
-            >
-              Open Classroom →
-            </button>
-            <button
-              type="button"
-              onClick={props.onRevision}
-              style={{
-                background: '#ffffff',
-                color: '#065f46',
-                border: '1px solid #a7f3d0',
-                borderRadius: '999px',
-                padding: '3px 10px',
-                fontSize: '11px',
-                fontWeight: 800,
-                cursor: 'pointer',
-              }}
-            >
-              Revision Hub →
-            </button>
-            <button
-              type="button"
-              onClick={() => props.onExamPapers()}
-              style={{
-                background: '#ffffff',
-                color: '#065f46',
-                border: '1px solid #a7f3d0',
-                borderRadius: '999px',
-                padding: '3px 10px',
-                fontSize: '11px',
-                fontWeight: 800,
-                cursor: 'pointer',
-              }}
-            >
-              Past Papers →
-            </button>
-          </span>
+          <button type="button" onClick={props.onDashboard}>Open my desk →</button>
         )}
       </div>
     )}
     {menuOpen && <nav id="soma-mobile-menu" className="soma-mobile-nav" aria-label="Mobile navigation" onClick={() => setMenuOpen(false)}>{navigation}</nav>}
-    <div>
+    <div className="soma-landing-body">
       <section className="soma-hero" aria-labelledby="soma-headline">
         <div className="soma-hero-copy">
           <div className="soma-eyebrow-pill">
@@ -371,56 +337,45 @@ export const LandingHome: React.FC<Props> = (props) => {
             <span className="soma-eyebrow-grades">Grades 1–12</span>
           </div>
           <h1 id="soma-headline">Understand more.<br />Any homework or past<br />paper—step by step.</h1>
-          <div className="soma-hero-input-wrap">
+          <div id="soma-ask" className="soma-hero-input-wrap">
             <AskAkiliDemo {...props} compact />
           </div>
-          <div className="soma-hero-actions-row">
-            <button className="soma-primary" onClick={() => { props.onTrack('start_learning_free_clicked', { source: 'landing_hero' }); props.onStartLearning(); }}>Start learning <ArrowRight size={20} /></button>
-            <button className="soma-secondary-action" onClick={props.onLibrary}><BookOpen size={18} /><span>Read notes</span></button>
-            <button className="soma-secondary-action" onClick={props.onRevision}><Notebook size={18} /><span>Practise a topic</span></button>
-            <button className="soma-secondary-action" onClick={() => props.onExamPapers()}><FileText size={18} /><span>Find past papers</span></button>
-          </div>
           <p className="soma-hero-trust-line">
-            <span>✨ 100% Free Learner’s Revision Pool</span>
+            <span>✨ First answer free, no sign-up</span>
             <span className="soma-trust-divider">|</span>
-            <span>📄 KES 20 Past Paper = 24h Full AI Revision Pass</span>
+            <span>📄 KES 20 past paper = 24h full AI pass</span>
           </p>
         </div>
         <div className="soma-hero-art">
           <div className="soma-breakdown-preview-card" aria-label="Akili Step-by-Step Breakdown Preview">
             <div className="soma-breakdown-header">
               <div>
-                <span className="soma-breakdown-kicker">Live Exam Guru Preview · 1/3 Free Value</span>
+                <span className="soma-breakdown-kicker">What you get · 1/3 free</span>
                 <h2>Akili Step-by-Step Breakdown</h2>
               </div>
               <span className="soma-breakdown-badge">KCSE · KJSEA</span>
             </div>
             <p className="soma-breakdown-problem">
-              <strong>Question:</strong> Find the gradient and y-intercept of the line <code>2y - 6x = 8</code> and sketch its graph [3 mks]
+              <strong>Question:</strong> Find the gradient and y-intercept of the line <code>2y - 6x = 8</code> [3 mks]
             </p>
             <div className="soma-breakdown-visible-step">
               <span className="soma-step-number">1</span>
               <div>
                 <strong>Step 1: Rearrange into y = mx + c form [1 mk]</strong>
-                <p>Add <code>6x</code> to both sides: <code>2y = 6x + 8</code>. Divide every term by 2 to get <code>y = 3x + 4</code>. Therefore, gradient <strong>m = 3</strong> and y-intercept <strong>c = (0, 4)</strong>.</p>
+                <p>Add <code>6x</code> to both sides, then divide by 2: <code>y = 3x + 4</code>. Gradient <strong>m = 3</strong>, y-intercept <strong>c = (0, 4)</strong>.</p>
               </div>
             </div>
             <div className="soma-breakdown-frosted-wrap">
               <div className="soma-breakdown-blurred-steps" aria-hidden="true">
-                <div className="soma-blurred-line"><span>2</span> Step 2: Find the x-intercept by setting y = 0 → 3x + 4 = 0 [1 mk]</div>
-                <div className="soma-blurred-line"><span>3</span> Step 3: Plot (0, 4) and (-4/3, 0) and label the line 2y - 6x = 8 [1 mk]</div>
+                <div className="soma-blurred-line"><span>2</span> Step 2: Find the x-intercept by setting y = 0 [1 mk]</div>
+                <div className="soma-blurred-line"><span>3</span> Step 3: Plot both intercepts and label the line [1 mk]</div>
               </div>
               <div className="soma-breakdown-paywall-card">
-                <p>
-                  Unlock full KNEC marking scheme + <strong>24h Unlimited AI Revision</strong> — Buy any Past Paper (<strong>KES 20 via M-Pesa</strong>)
-                </p>
+                <p>Unlock every step + <strong>24h Unlimited AI</strong> with any past paper (<strong>KES 20 via M-Pesa</strong>)</p>
                 <div className="soma-breakdown-paywall-actions">
                   <button type="button" onClick={() => props.onExamPapers()} className="soma-paywall-btn-primary">
-                    Unlock with KES 20 Past Paper <ArrowRight size={15} />
+                    Unlock with a past paper <ArrowRight size={15} />
                   </button>
-                  <Link to="/free-pool" className="soma-paywall-btn-secondary" style={{ textDecoration: 'none' }}>
-                    Try Free Pool First
-                  </Link>
                 </div>
               </div>
             </div>
@@ -428,22 +383,29 @@ export const LandingHome: React.FC<Props> = (props) => {
         </div>
       </section>
 
-      <section
-        aria-labelledby="soma-pool-strip-title"
-        className="soma-pool-showcase"
-      >
+      <section className="soma-doors" aria-labelledby="soma-doors-title">
+        <h2 id="soma-doors-title">What do you need today?</h2>
+        <div className="soma-doors-grid">
+          {doors.map(({ title, text, Icon, tone, cta, onClick }) => (
+            <button key={title} type="button" className="soma-door" onClick={onClick}>
+              <span className={`soma-door-icon ${tone}`}><Icon size={26} aria-hidden="true" /></span>
+              <strong>{title}</strong>
+              <span>{text}</span>
+              <em>{cta} <ArrowRight size={16} aria-hidden="true" /></em>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section aria-labelledby="soma-pool-strip-title" className="soma-pool-showcase">
         <div className="soma-pool-showcase-inner">
           <div className="soma-pool-showcase-header">
             <div>
-              <h2 id="soma-pool-strip-title">
-                🔥 Trending in the Learner’s Revision Pool · 100% Free to Practise
-              </h2>
-              <p>
-                Study notes, worked examples, and practice drills generated by fellow candidates across Kenya — free for everyone at zero AI cost.
-              </p>
+              <h2 id="soma-pool-strip-title">🔥 Trending in the Learner’s Pool · free to practise</h2>
+              <p>Worked examples and drills from fellow candidates across Kenya.</p>
             </div>
             <Link to="/free-pool" className="soma-pool-explore-btn">
-              Explore Free Revision Pool <ArrowRight size={16} />
+              Explore free pool <ArrowRight size={16} />
             </Link>
           </div>
           <div className="soma-pool-grid">
@@ -453,11 +415,7 @@ export const LandingHome: React.FC<Props> = (props) => {
                 ? '/exam-papers'
                 : `/free-pool?grade=${encodeURIComponent(item.grade)}&subject=${encodeURIComponent(item.subject)}&pool=${encodeURIComponent(item.id)}`;
               return (
-                <Link
-                  key={item.id}
-                  to={targetHref}
-                  className="soma-pool-card"
-                >
+                <Link key={item.id} to={targetHref} className="soma-pool-card">
                   <div>
                     <div className="soma-pool-card-meta">
                       <span className="soma-pool-card-tag">
@@ -468,11 +426,7 @@ export const LandingHome: React.FC<Props> = (props) => {
                     <p>{item.summaryPreview}</p>
                   </div>
                   <div className="soma-pool-card-footer">
-                    <span>
-                      {isPaperCard
-                        ? 'KES 20 · Instant M-Pesa · Restore on any device'
-                        : `${item.reuseCount} learners revised · Free`}
-                    </span>
+                    <span>{isPaperCard ? 'KES 20 · Instant M-Pesa' : `${item.reuseCount} learners revised · Free`}</span>
                     <ArrowRight size={15} />
                   </div>
                 </Link>
@@ -481,14 +435,19 @@ export const LandingHome: React.FC<Props> = (props) => {
           </div>
         </div>
       </section>
-
-      <section aria-label="Latest past papers" className="soma-paper-ribbon"><ExamPaperTickerBelt papers={props.latestPapers} onPaperClick={props.onExamPapers} /></section>
-      <section className="soma-teacher-strip">
-        <Users size={40} aria-hidden="true" /><div><h2>Teaching today?</h2><p>Prepare notes, assessments, or record a live Darasa class into the Learner’s Pool.</p></div>
-        <button className="soma-outline" onClick={props.onTeacher}>Open Teacher Studio <ArrowRight size={20} /></button>
-      </section>
     </div>
-    <footer className="soma-footer"><span>Soma AI</span><nav aria-label="Footer navigation"><button onClick={props.onParent}>For parents</button><button onClick={props.onContact}>Help</button><button onClick={props.onPrivacy}>Privacy</button><button onClick={props.onTerms}>Terms</button></nav></footer>
+    <footer className="soma-footer">
+      <span>Soma AI</span>
+      <nav aria-label="Footer navigation">
+        <button onClick={props.onParent}>For parents</button>
+        <button onClick={props.onTeacher}>For teachers</button>
+        <Link to="/learning-videos">Learning videos</Link>
+        <button onClick={props.onPricing}>Pricing</button>
+        <button onClick={props.onContact}>Help</button>
+        <button onClick={props.onPrivacy}>Privacy</button>
+        <button onClick={props.onTerms}>Terms</button>
+      </nav>
+    </footer>
   </div>;
 };
 
@@ -764,9 +723,9 @@ export const LegacyLandingHome: React.FC<Props> = (props) => {
                 <span className="w-1/3 bg-emerald-600" />
               </span>
               <span>Built for Kenyan learners</span>
-              <span>·</span>
+              <span>Â·</span>
               <span>Low-data friendly</span>
-              <span>·</span>
+              <span>Â·</span>
               <span>Parent progress reports</span>
             </div>
           </div>
@@ -1115,10 +1074,10 @@ const LandingFooter: React.FC<{
       </div>
 
       <div className="mt-10 border-t border-slate-800/80 pt-6 text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-3">
-        <p>© {new Date().getFullYear()} Soma AI. Built with pride for Kenyan Education.</p>
+        <p>Â© {new Date().getFullYear()} Soma AI. Built with pride for Kenyan Education.</p>
         <p className="flex items-center gap-4">
           <a href="/contact" className="hover:text-slate-400 transition-colors">Contact Support</a>
-          <span>·</span>
+          <span>Â·</span>
           <a href="/pricing" className="hover:text-slate-400 transition-colors">M-Pesa Pricing</a>
         </p>
       </div>
@@ -1895,7 +1854,7 @@ const TeacherComposer: React.FC<{
     const roughExcerpt = preview.slice(0, quarterLength);
     const finalSpace = roughExcerpt.lastIndexOf(' ');
     const cleanEnd = finalSpace > quarterLength * 0.7 ? finalSpace : quarterLength;
-    return `${preview.slice(0, cleanEnd).trimEnd()}…`;
+    return `${preview.slice(0, cleanEnd).trimEnd()}â€¦`;
   }, [preview]);
 
   const draft = (): TeacherComposerDraft => ({
@@ -1926,7 +1885,7 @@ const TeacherComposer: React.FC<{
     const request = draft();
     setIsGenerating(true);
     setPreview('');
-    setMessage('Creating a short sample for you…');
+    setMessage('Creating a short sample for youâ€¦');
     onTrack('teacher_composer_preview_requested', {
       intent: intent.toLowerCase(),
       source: source.toLowerCase(),
@@ -2066,7 +2025,7 @@ const TeacherComposer: React.FC<{
               <input ref={uploadRef} type="file" aria-label="Attach notes or work" accept="image/*,.pdf,.doc,.docx,.ppt,.pptx,.txt" className="hidden" onChange={(event) => chooseFile(event.target.files?.[0], 'UPLOAD')} />
             </div>
             <button type="button" onClick={() => { void submit(); }} disabled={isGenerating} aria-describedby="teacher-composer-status" className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-6 text-sm font-black text-white shadow-lg shadow-indigo-200 transition hover:bg-indigo-700 disabled:cursor-wait disabled:opacity-70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-indigo-600 focus-visible:ring-offset-2">
-              {isGenerating ? 'Creating sample…' : preview ? 'View sample' : 'Create sample'} <Sparkles className="h-4 w-4" />
+              {isGenerating ? 'Creating sampleâ€¦' : preview ? 'View sample' : 'Create sample'} <Sparkles className="h-4 w-4" />
             </button>
           </div>
 

@@ -38,7 +38,7 @@ const props = () => ({
   onPrivacy: vi.fn(),
   onTerms: vi.fn(),
 });
-it('keeps the homepage focused and routes the primary actions', () => {
+it('keeps the homepage focused on one action and three doors', () => {
   const p = props();
   render(
     <MemoryRouter>
@@ -46,18 +46,28 @@ it('keeps the homepage focused and routes the primary actions', () => {
     </MemoryRouter>
   );
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Understand more.');
+  // Header offers exactly the three learner doors.
+  const nav = screen.getByRole('navigation', { name: 'Main navigation' });
+  expect(nav.querySelectorAll('button')).toHaveLength(3);
+  // Secondary audiences live in the footer, not as page sections.
   expect(screen.getByRole('link', { name: 'Learning videos' })).toHaveAttribute(
     'href',
     '/learning-videos'
   );
-  fireEvent.click(screen.getByRole('button', { name: 'Start learning' }));
-  expect(p.onStartLearning).toHaveBeenCalledOnce();
-  fireEvent.click(screen.getByRole('button', { name: 'Open Teacher Studio' }));
+  fireEvent.click(screen.getByRole('button', { name: 'For teachers' }));
   expect(p.onTeacher).toHaveBeenCalledOnce();
-  fireEvent.click(screen.getByRole('button', { name: 'Read notes' }));
-  expect(p.onLibrary).toHaveBeenCalledOnce();
-  expect(screen.queryByText('Quick syllabus topics')).not.toBeInTheDocument();
-  expect(screen.getByRole('region', { name: 'Latest past papers' })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole('button', { name: 'For parents' }));
+  expect(p.onParent).toHaveBeenCalledOnce();
+  // Doors route to the right place.
+  fireEvent.click(screen.getByRole('button', { name: /Revise a topic/ }));
+  expect(p.onRevision).toHaveBeenCalledOnce();
+  fireEvent.click(screen.getByRole('button', { name: /Find a paper/ }));
+  expect(p.onExamPapers).toHaveBeenCalledOnce();
+  // Clutter removed.
+  expect(screen.queryByRole('button', { name: 'Start learning' })).not.toBeInTheDocument();
+  expect(screen.queryByText('Teaching today?')).not.toBeInTheDocument();
+  expect(screen.queryByRole('region', { name: 'Latest past papers' })).not.toBeInTheDocument();
+  expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
 });
 it('keeps the real Ask Akili submission and camera controls', () => {
   const p = props();

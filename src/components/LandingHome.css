@@ -610,3 +610,115 @@
     gap: 12px;
   }
 }
+
+/* ---- Simplified journey: three doors + restore notice ---- */
+.soma-restore-notice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 8px 5%;
+  font-size: 12px;
+  font-weight: 700;
+  border-bottom: 1px solid #d1fae5;
+}
+.soma-restore-notice--ok {
+  background: #ecfdf5;
+  color: #065f46;
+}
+.soma-restore-notice--err {
+  background: #fffbeb;
+  color: #92400e;
+}
+.soma-restore-notice button {
+  background: #059669;
+  color: #fff;
+  border-radius: 999px;
+  padding: 3px 12px;
+  font-size: 11px;
+  font-weight: 800;
+}
+.soma-doors {
+  padding: 40px 5% 8px;
+  max-width: 1180px;
+  margin: 0 auto;
+}
+.soma-doors h2 {
+  font:
+    bold clamp(24px, 3vw, 32px) Georgia,
+    serif;
+  color: #0f172a;
+  text-align: center;
+  margin: 0 0 22px;
+}
+.soma-doors-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+.soma-door {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  text-align: left;
+  padding: 22px;
+  background: #ffffff;
+  border: 1px solid #e4e0d9;
+  border-radius: 18px;
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.5;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    border-color 0.15s ease;
+}
+.soma-door:hover {
+  transform: translateY(-2px);
+  border-color: #065f46;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+.soma-door strong {
+  font-size: 19px;
+  color: #0f172a;
+}
+.soma-door em {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: auto;
+  padding-top: 6px;
+  font-style: normal;
+  font-weight: 800;
+  color: #065f46;
+}
+.soma-door-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+}
+.soma-footer nav {
+  flex-wrap: wrap;
+  gap: 8px 20px;
+}
+.soma-footer nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+@media (max-width: 760px) {
+  .soma-doors {
+    padding: 28px 16px 0;
+  }
+  .soma-doors-grid {
+    grid-template-columns: 1fr;
+  }
+  .soma-landing {
+    padding-bottom: 72px;
+  }
+}

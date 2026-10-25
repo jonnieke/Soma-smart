@@ -1,7 +1,7 @@
 import React, { Suspense } from 'react';
 import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
-import { BookOpen, FileText, GraduationCap, Home, Shield, Users } from 'lucide-react';
+import { BookOpen, FileText, GraduationCap, Home, Shield, Sparkles, Users } from 'lucide-react';
 import { ConnectivityBanner } from './components/ConnectivityBanner';
 import { SessionConflictModal } from './components/SessionConflictModal';
 import { SubscriptionExpiredModal } from './components/SubscriptionExpiredModal';
@@ -191,6 +191,70 @@ const GlobalNavigation: React.FC = () => {
     );
 };
 
+/**
+ * Four-tab mobile bar for the learner journey: Ask, Revise, Papers, My Desk.
+ * Hidden on desktop, on the learner workspace (which has its own navigation),
+ * and on focused reading/exam screens.
+ */
+const MobileBottomNav: React.FC = () => {
+    const navigate = useNavigate();
+    const { pathname } = useLocation();
+
+    const hidden =
+        pathname.startsWith('/learner') ||
+        /^\/exam-papers\/[^/]+\/read/.test(pathname) ||
+        !(
+            pathname === '/' ||
+            pathname.startsWith('/revision') ||
+            pathname.startsWith('/free-pool') ||
+            pathname.startsWith('/learner-pool') ||
+            pathname.startsWith('/exam-papers')
+        );
+    if (hidden) return null;
+
+    const goAsk = () => {
+        if (pathname === '/') {
+            document.getElementById('soma-ask')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
+        navigate('/');
+    };
+
+    const tabs = [
+        { label: 'Ask', icon: Sparkles, active: pathname === '/', onClick: goAsk },
+        {
+            label: 'Revise',
+            icon: BookOpen,
+            active: pathname.startsWith('/revision') || pathname.startsWith('/free-pool') || pathname.startsWith('/learner-pool'),
+            onClick: () => navigate('/revision'),
+        },
+        { label: 'Papers', icon: FileText, active: pathname.startsWith('/exam-papers'), onClick: () => navigate('/exam-papers') },
+        { label: 'My Desk', icon: GraduationCap, active: false, onClick: () => navigate('/learner') },
+    ];
+
+    return (
+        <nav
+            aria-label="Learner navigation"
+            className="fixed inset-x-0 bottom-0 z-[95] grid grid-cols-4 border-t border-slate-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden dark:border-slate-800 dark:bg-slate-950/95"
+        >
+            {tabs.map(({ label, icon: Icon, active, onClick }) => (
+                <button
+                    key={label}
+                    type="button"
+                    onClick={onClick}
+                    aria-current={active ? 'page' : undefined}
+                    className={`flex min-h-[56px] flex-col items-center justify-center gap-0.5 text-[11px] font-bold transition ${
+                        active ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-500 hover:text-slate-900 dark:text-slate-400'
+                    }`}
+                >
+                    <Icon className="h-5 w-5" aria-hidden="true" />
+                    {label}
+                </button>
+            ))}
+        </nav>
+    );
+};
+
 const App: React.FC = () => {
     const navigate = useNavigate();
     const location = useLocation();
@@ -290,6 +354,7 @@ const App: React.FC = () => {
                 <ConnectivityBanner />
                 <GlobalNavigation />
                 <TeacherWorkspaceNavigation />
+                <MobileBottomNav />
                 {!hideGlobalAssistant && (
                     <Suspense fallback={null}>
                         <AskSomo />
