@@ -1,724 +1,1217 @@
-.soma-landing {
-  background: #fbf9f4;
+/* ==========================================================================
+   Soma AI Landing Page - Exact Reference Redesign Styles
+   Clean, modern, editorial SaaS layout for Kenyan CBC/KPSEA/KCSE platform
+   ========================================================================== */
+
+.soma-app-root {
+  background-color: #ffffff;
   color: #0f172a;
-  font-family: Arial, sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
-.soma-landing button,
-.soma-landing a {
+
+.soma-app-root button,
+.soma-app-root a {
   touch-action: manipulation;
+  cursor: pointer;
 }
-.soma-landing :is(button, a, input):focus-visible {
-  outline: 3px solid #065f46;
-  outline-offset: 3px;
+
+.soma-app-root :is(button, a, input):focus-visible {
+  outline: 2px solid #2563eb;
+  outline-offset: 2px;
 }
-.soma-header {
-  min-height: 82px;
-  padding: 12px 5%;
+
+/* ==========================================================================
+   1. TOP NAVIGATION BAR
+   ========================================================================== */
+.soma-nav-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background-color: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.soma-nav-container {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 14px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  border-bottom: 1px solid #e7e2d8;
-  background: #fbf9f4;
-}
-.soma-brand {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font:
-    bold 30px Georgia,
-    serif;
-  color: #0f172a;
-  white-space: nowrap;
-}
-.soma-brand img {
-  object-fit: contain;
-}
-.soma-desktop-nav {
-  display: flex;
-  align-items: center;
   gap: 24px;
-  font-size: 15px;
-  font-weight: 700;
-  color: #1e293b;
 }
-.soma-desktop-nav > * {
-  padding: 10px 0;
+
+.soma-nav-brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.soma-brand-sparkle {
+  color: #0284c7;
+  font-size: 26px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.soma-brand-name {
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+  color: #0f172a;
+}
+
+.soma-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.soma-nav-link {
+  background: none;
+  border: none;
+  font-size: 15px;
+  font-weight: 600;
+  color: #334155;
+  padding: 6px 0;
   transition: color 0.15s ease;
 }
-.soma-desktop-nav > *:hover {
-  color: #065f46;
+
+.soma-nav-link:hover {
+  color: #2563eb;
 }
-.soma-header-right {
+
+.soma-nav-right {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 16px;
 }
-.soma-pass-restore-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: #ffffff;
-  border: 1px solid #d6d1c4;
-  border-radius: 999px;
-  padding: 5px 6px 5px 14px;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.04);
-}
-.soma-pass-label {
-  font-size: 12px;
-  font-weight: 700;
-  color: #334155;
-  white-space: nowrap;
-}
-.soma-pass-restore-pill input {
-  border: none;
-  background: transparent;
-  font-size: 12px;
-  color: #0f172a;
-  width: 138px;
-  outline: none;
-}
-.soma-pass-restore-pill input::placeholder {
-  color: #64748b;
-}
-.soma-pass-restore-pill button {
-  background: #065f46;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 800;
-  border-radius: 999px;
-  padding: 7px 14px;
-  min-height: 32px;
-  transition: background 0.15s ease;
-}
-.soma-pass-restore-pill button:hover:not(:disabled) {
-  background: #047857;
-}
-.soma-pass-restore-pill button:disabled {
-  opacity: 0.6;
-}
-.soma-outline {
-  border: 1px solid #cbd5e1;
-  border-radius: 12px;
-  min-height: 42px;
-  padding: 9px 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
+
+.soma-signin-pill {
+  border: 1.5px solid #2563eb;
+  background-color: #ffffff;
+  color: #2563eb;
   font-size: 14px;
   font-weight: 700;
-  background: #ffffff;
-  color: #0f172a;
+  border-radius: 12px;
+  padding: 8px 24px;
+  transition: all 0.15s ease;
 }
-.soma-menu-toggle,
-.soma-mobile-nav {
+
+.soma-signin-pill:hover {
+  background-color: #eff6ff;
+  border-color: #1d4ed8;
+  color: #1d4ed8;
+}
+
+.soma-nav-mobile-btn {
   display: none;
+  background: none;
+  border: none;
+  color: #1e293b;
+  padding: 6px;
 }
-.soma-hero {
-  max-width: 1440px;
-  margin: 0 auto;
-  padding: 38px 5% 44px;
-  display: grid;
-  grid-template-columns: 1.08fr 0.92fr;
-  gap: 40px;
-  align-items: center;
-}
-.soma-hero-copy {
-  position: relative;
-  z-index: 1;
-}
-.soma-eyebrow-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  background: #f5ebd6;
-  border: 1px solid #e6d5b8;
-  border-radius: 999px;
-  padding: 4px 6px 4px 14px;
-  margin-bottom: 18px;
-}
-.soma-eyebrow-exams {
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.03em;
-  color: #78350f;
-}
-.soma-eyebrow-grades {
-  background: #065f46;
-  color: #ffffff;
-  font-size: 11px;
-  font-weight: 800;
-  padding: 4px 10px;
-  border-radius: 999px;
-}
-.soma-hero h1 {
-  font:
-    bold clamp(38px, 4.1vw, 60px)/1.08 Georgia,
-    serif;
-  letter-spacing: -1.4px;
-  color: #0f172a;
-  margin: 0 0 22px;
-}
-.soma-hero-input-wrap {
-  max-width: 620px;
-  margin-bottom: 18px;
-}
-.soma-hero-actions-row {
+
+.soma-mobile-drawer {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 16px;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 24px 24px;
+  background-color: #ffffff;
+  border-bottom: 1px solid #e2e8f0;
 }
-.soma-primary {
-  display: inline-flex;
+
+.soma-mobile-drawer-link {
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  padding: 10px 0;
+  border-bottom: 1px solid #f8fafc;
+}
+
+.soma-mobile-pass-form {
+  padding-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.soma-restore-banner {
+  padding: 8px 24px;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  background: #065f46;
-  color: white;
-  border-radius: 12px;
-  min-height: 46px;
-  padding: 10px 22px;
-  font-size: 15px;
-  font-weight: 800;
-  transition: background 0.15s ease;
 }
-.soma-primary:hover {
-  background: #047857;
-}
-.soma-secondary-action {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  background: #ffffff;
-  border: 1px solid #dcd7cc;
-  color: #1e293b;
-  border-radius: 12px;
-  min-height: 44px;
-  padding: 9px 15px;
-  font-size: 13px;
-  font-weight: 700;
-  transition: border-color 0.15s ease, color 0.15s ease;
-}
-.soma-secondary-action:hover {
-  border-color: #065f46;
+
+.soma-restore-banner--ok {
+  background-color: #ecfdf5;
   color: #065f46;
 }
-.soma-hero-trust-line {
+
+.soma-restore-banner--err {
+  background-color: #fff1f2;
+  color: #9f1239;
+}
+
+/* ==========================================================================
+   MAIN CONTENT & SECTIONS
+   ========================================================================== */
+.soma-main-content {
+  flex: 1;
+  max-width: 1320px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 24px 24px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 48px;
+}
+
+/* ==========================================================================
+   2. HERO SECTION
+   ========================================================================== */
+.soma-hero-section {
+  padding-top: 16px;
+  padding-bottom: 8px;
+}
+
+.soma-hero-grid {
+  display: grid;
+  grid-template-columns: 1.15fr 0.95fr 1.05fr;
+  align-items: center;
+  gap: 28px;
+}
+
+.soma-hero-copy-column {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.soma-hero-headline {
+  font-size: 44px;
+  line-height: 1.14;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  color: #0f172a;
+  margin: 0;
+}
+
+.soma-hero-subtitle {
+  font-size: 16px;
+  line-height: 1.6;
+  color: #475569;
+  margin: 0;
+  max-width: 440px;
+}
+
+.soma-hero-tagline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.soma-tag-ask {
+  color: #2563eb;
+}
+
+.soma-tag-listen {
+  color: #059669;
+}
+
+.soma-tag-practise {
+  color: #7c3aed;
+}
+
+.soma-tag-remember {
+  color: #0f172a;
+}
+
+.soma-hero-cta-group {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
-  font-size: 13px;
+  gap: 14px;
+  padding-top: 4px;
+}
+
+.soma-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #2563eb;
+  color: #ffffff;
+  font-size: 15px;
   font-weight: 700;
-  color: #334155;
-  margin: 0;
+  padding: 12px 24px;
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 4px 14px rgba(37, 99, 235, 0.25);
+  transition: all 0.15s ease;
 }
-.soma-trust-divider {
-  color: #cbd5e1;
+
+.soma-btn-primary:hover {
+  background-color: #1d4ed8;
+  transform: translateY(-1px);
 }
-.soma-hero-art {
+
+.soma-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background-color: #ffffff;
+  color: #2563eb;
+  font-size: 15px;
+  font-weight: 700;
+  padding: 12px 20px;
+  border-radius: 12px;
+  border: 1.5px solid #bfdbfe;
+  transition: all 0.15s ease;
+}
+
+.soma-btn-secondary:hover {
+  background-color: #eff6ff;
+  border-color: #93c5fd;
+}
+
+.soma-hero-trust-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #475569;
+  font-weight: 500;
+  padding-top: 4px;
+}
+
+.soma-trust-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.soma-flag {
+  font-size: 14px;
+}
+
+.soma-dot {
+  color: #94a3b8;
+}
+
+/* Center Emotional Photo */
+.soma-hero-photo-wrap {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.soma-hero-center-photo {
+  width: 100%;
+  max-width: 340px;
+  height: auto;
+  border-radius: 20px;
+  object-fit: cover;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+}
+
+/* Right Interactive Ask Akili Widget */
+.soma-hero-widget-wrap {
+  display: flex;
+  justify-content: center;
+}
+
+.soma-widget-card {
+  width: 100%;
+  max-width: 410px;
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 16px 36px -10px rgba(15, 23, 42, 0.12), 0 0 1px 1px rgba(15, 23, 42, 0.04);
+  overflow: hidden;
+}
+
+.soma-widget-header {
+  background-color: #0b1e38;
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #ffffff;
+}
+
+.soma-widget-header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.soma-widget-avatar-wrap {
+  width: 32px;
+  height: 32px;
+  border-radius: 999px;
+  background-color: #1e3a8a;
   display: flex;
   align-items: center;
   justify-content: center;
+  overflow: hidden;
+  border: 1.5px solid #38bdf8;
 }
-.soma-breakdown-preview-card {
+
+.soma-widget-avatar {
   width: 100%;
-  max-width: 520px;
-  background: #ffffff;
-  border: 1px solid #e4e0d6;
-  border-radius: 24px;
-  padding: 24px;
-  box-shadow: 0 20px 42px rgba(15, 23, 42, 0.08);
+  height: 100%;
+  object-fit: cover;
 }
-.soma-breakdown-header {
+
+.soma-widget-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+.soma-widget-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.soma-widget-icon-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  padding: 4px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+
+.soma-widget-icon-btn:hover {
+  color: #ffffff;
+}
+
+.soma-widget-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.soma-widget-input-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 6px 10px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.soma-widget-input-pill:focus-within {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.soma-widget-input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 13px;
+  color: #0f172a;
+}
+
+.soma-widget-input::placeholder {
+  color: #94a3b8;
+}
+
+.soma-widget-tool-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  padding: 4px;
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+}
+
+.soma-widget-tool-btn:hover {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+.soma-widget-ask-btn {
+  background-color: #2563eb;
+  color: #ffffff;
+  border: none;
+  font-size: 12px;
+  font-weight: 800;
+  border-radius: 8px;
+  padding: 6px 12px;
+  transition: background 0.15s ease;
+}
+
+.soma-widget-ask-btn:hover {
+  background-color: #1d4ed8;
+}
+
+.soma-widget-attachment-badge {
+  background-color: #ecfdf5;
+  color: #065f46;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.soma-widget-sample-bubble {
+  width: 100%;
+  text-align: left;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  transition: background-color 0.15s ease;
+}
+
+.soma-widget-sample-bubble:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.soma-widget-answer-card {
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 14px;
+  padding: 14px;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 14px;
 }
-.soma-breakdown-kicker {
-  display: block;
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: #047857;
-  margin-bottom: 3px;
+
+.soma-widget-answer-text {
+  flex: 1;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: #1e293b;
 }
-.soma-breakdown-header h2 {
-  font-size: 19px;
+
+.soma-widget-leaf-graphic {
+  flex-shrink: 0;
+  padding-top: 2px;
+}
+
+.soma-widget-actions-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.soma-widget-action-btn {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.soma-widget-action-btn:hover {
+  background-color: #f8fafc;
+  border-color: #cbd5e1;
+}
+
+.soma-widget-action-btn--active {
+  background-color: #eff6ff;
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.soma-widget-action-btn--playing {
+  background-color: #ecfdf5;
+  border-color: #86efac;
+  color: #065f46;
+}
+
+.soma-action-icon {
+  font-size: 15px;
   font-weight: 900;
+  color: #2563eb;
+}
+
+/* ==========================================================================
+   3. "WHAT SOMAAI HELPS WITH" (4 HORIZONTAL CARDS)
+   ========================================================================== */
+.soma-features-section {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.soma-section-title {
+  text-align: center;
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
   color: #0f172a;
   margin: 0;
 }
-.soma-breakdown-badge {
-  background: #ecfdf5;
-  color: #065f46;
-  border: 1px solid #a7f3d0;
-  border-radius: 999px;
-  padding: 4px 10px;
-  font-size: 11px;
-  font-weight: 800;
-  white-space: nowrap;
+
+.soma-four-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
 }
-.soma-breakdown-problem {
-  font-size: 13px;
-  line-height: 1.5;
-  color: #334155;
-  background: #f8fafc;
+
+.soma-four-card {
+  background-color: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 10px 12px;
-  margin: 0 0 12px;
-}
-.soma-breakdown-visible-step {
+  border-radius: 18px;
+  padding: 20px 18px;
   display: flex;
   align-items: flex-start;
-  gap: 10px;
-  background: #ecfdf5;
-  border: 1px solid #a7f3d0;
-  border-radius: 14px;
-  padding: 12px 14px;
-  margin-bottom: 12px;
+  gap: 14px;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
-.soma-step-number {
-  width: 24px;
-  height: 24px;
-  border-radius: 7px;
-  background: #065f46;
-  color: #ffffff;
-  font-size: 12px;
-  font-weight: 900;
-  display: inline-flex;
+
+.soma-four-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
+  border-color: #cbd5e1;
+}
+
+.soma-card-icon-wrap {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin-top: 1px;
 }
-.soma-breakdown-visible-step strong {
-  font-size: 13px;
-  color: #064e3b;
+
+.soma-icon-blue {
+  background-color: #e0f2fe;
 }
-.soma-breakdown-visible-step p {
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: #065f46;
-  margin: 4px 0 0;
+
+.soma-icon-green {
+  background-color: #dcfce7;
 }
-.soma-breakdown-frosted-wrap {
-  position: relative;
-  border-radius: 16px;
-  border: 1px solid #e2e8f0;
-  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
-  padding: 14px;
-  overflow: hidden;
+
+.soma-icon-purple {
+  background-color: #f3e8ff;
 }
-.soma-breakdown-blurred-steps {
-  filter: blur(3.5px);
-  opacity: 0.45;
-  user-select: none;
-  pointer-events: none;
+
+.soma-icon-amber {
+  background-color: #fef3c7;
+}
+
+.soma-card-content {
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 4px;
 }
-.soma-blurred-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 700;
-  color: #334155;
-}
-.soma-blurred-line span {
-  width: 20px;
-  height: 20px;
-  border-radius: 999px;
-  background: #065f46;
-  color: #fff;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 11px;
-}
-.soma-breakdown-paywall-card {
-  position: relative;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(8px);
-  border: 1px solid #cbd5e1;
-  border-radius: 14px;
-  padding: 14px;
-  text-align: center;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
-}
-.soma-breakdown-paywall-card p {
-  font-size: 13px;
-  line-height: 1.45;
-  color: #0f172a;
-  margin: 0 0 12px;
-}
-.soma-breakdown-paywall-actions {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
-}
-.soma-paywall-btn-primary {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #065f46;
-  color: #ffffff;
-  font-size: 12px;
+
+.soma-card-heading {
+  font-size: 15px;
   font-weight: 800;
-  padding: 9px 14px;
-  border-radius: 10px;
-}
-.soma-paywall-btn-primary:hover {
-  background: #047857;
-}
-.soma-paywall-btn-secondary {
-  display: inline-flex;
-  align-items: center;
-  background: #f1f5f9;
   color: #0f172a;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 9px 12px;
-  border-radius: 10px;
-}
-.soma-pool-showcase {
-  padding: 20px 5% 40px;
-  border-top: 1px solid #eae5dc;
-  border-bottom: 1px solid #eae5dc;
-  background: #fbf9f4;
-}
-.soma-pool-showcase-inner {
-  max-width: 1440px;
-  margin: 0 auto;
-}
-.soma-pool-showcase-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 14px;
-  margin-bottom: 20px;
-}
-.soma-pool-showcase-header h2 {
-  font-size: clamp(20px, 2.2vw, 26px);
-  font-weight: 900;
-  color: #0f172a;
-  margin: 0 0 4px;
-}
-.soma-pool-showcase-header p {
-  font-size: 14px;
-  color: #475569;
   margin: 0;
 }
-.soma-pool-explore-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: #065f46;
-  color: #ffffff;
-  padding: 10px 18px;
-  border-radius: 999px;
+
+.soma-card-desc {
   font-size: 13px;
-  font-weight: 800;
-  text-decoration: none;
-  white-space: nowrap;
+  line-height: 1.5;
+  color: #64748b;
+  margin: 0;
 }
-.soma-pool-explore-btn:hover {
-  background: #047857;
+
+/* ==========================================================================
+   4. SPLIT ROW: "POWERFUL TOOLS" + "FOR TEACHERS"
+   ========================================================================== */
+.soma-split-row-section {
+  width: 100%;
 }
-.soma-pool-grid {
+
+.soma-split-row-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+.soma-learner-tools-card {
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
   gap: 18px;
 }
-.soma-pool-card {
+
+.soma-sub-section-title {
+  font-size: 19px;
+  font-weight: 900;
+  color: #0f172a;
+  margin: 0;
+}
+
+.soma-learner-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 10px;
+}
+
+.soma-tool-item {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.soma-tool-item:hover {
+  transform: translateY(-2px);
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.soma-tool-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.soma-tool-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.soma-tool-desc {
+  font-size: 11px;
+  line-height: 1.4;
+  color: #64748b;
+  margin: 0;
+}
+
+/* For Teachers Suite Box */
+.soma-teachers-suite-card {
+  background-color: #f2faf5;
+  border: 1px solid #d1fae5;
+  border-radius: 24px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.soma-teachers-suite-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.soma-teachers-suite-title {
+  font-size: 19px;
+  font-weight: 900;
+  color: #047857;
+  margin: 0;
+}
+
+.soma-teachers-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+.soma-teacher-item {
+  background-color: #ffffff;
+  border: 1px solid #d1fae5;
+  border-radius: 16px;
+  padding: 16px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.15s ease;
+}
+
+.soma-teacher-item:hover {
+  transform: translateY(-2px);
+  border-color: #a7f3d0;
+  box-shadow: 0 4px 12px rgba(4, 120, 87, 0.08);
+}
+
+.soma-teacher-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background-color: #ecfdf5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.soma-teacher-item-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+}
+
+.soma-teacher-item-desc {
+  font-size: 11px;
+  line-height: 1.4;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ==========================================================================
+   5. SPLIT ROW: "FOR PARENTS" + "SIMPLE AFFORDABLE PRICING"
+   ========================================================================== */
+.soma-parent-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  padding: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+
+.soma-parent-left-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 110px;
+}
+
+.soma-parent-badge-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background-color: #fef3c7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.soma-parent-title {
+  font-size: 16px;
+  font-weight: 900;
+  color: #b45309;
+  margin: 0;
+}
+
+.soma-parent-tagline {
+  font-size: 11px;
+  line-height: 1.4;
+  color: #64748b;
+  margin: 0;
+}
+
+.soma-parent-report-card {
+  flex: 1;
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.soma-report-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 6px;
+}
+
+.soma-report-title {
+  font-size: 12px;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.soma-report-date {
+  font-size: 10.5px;
+  font-weight: 500;
+  color: #94a3b8;
+}
+
+.soma-report-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.soma-report-metric {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.soma-metric-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.soma-metric-value-big {
+  font-size: 24px;
+  font-weight: 900;
+  color: #2563eb;
+  line-height: 1;
+}
+
+.soma-metric-sub {
+  font-size: 9.5px;
+  color: #94a3b8;
+}
+
+.soma-metric-tag {
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1.25;
+}
+
+.soma-tag-green {
+  color: #059669;
+}
+
+.soma-tag-orange {
+  color: #ea580c;
+}
+
+.soma-tag-blue {
+  color: #2563eb;
+}
+
+.soma-parent-photo-wrap {
+  width: 105px;
+  height: 110px;
+  border-radius: 16px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.soma-parent-photo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* Pricing Card Box */
+.soma-pricing-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  padding: 24px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  background: #ffffff;
-  border: 1px solid #e4e0d6;
+}
+
+.soma-pricing-tiers-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.soma-pricing-tier-box {
   border-radius: 18px;
-  padding: 20px;
-  text-decoration: none;
-  color: #0f172a;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.04);
-  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
-}
-.soma-pool-card:hover {
-  transform: translateY(-2px);
-  border-color: #065f46;
-  box-shadow: 0 12px 26px rgba(6, 95, 70, 0.09);
-}
-.soma-pool-card-meta {
-  margin-bottom: 8px;
-}
-.soma-pool-card-tag {
-  font-size: 11px;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #047857;
-}
-.soma-pool-card h3 {
-  font-size: 17px;
-  font-weight: 800;
-  line-height: 1.35;
-  color: #0f172a;
-  margin: 0 0 8px;
-}
-.soma-pool-card p {
-  font-size: 13px;
-  line-height: 1.5;
-  color: #475569;
-  margin: 0;
-}
-.soma-pool-card-footer {
-  margin-top: 16px;
-  padding-top: 12px;
-  border-top: 1px solid #f1f5f9;
+  padding: 16px 12px;
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: space-between;
+  justify-content: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+  border: 1px solid transparent;
+}
+
+.soma-tier-blue {
+  background-color: #eff6ff;
+  border-color: #dbeafe;
+}
+
+.soma-tier-blue:hover {
+  border-color: #93c5fd;
+  transform: translateY(-2px);
+}
+
+.soma-tier-green {
+  background-color: #f0fdf4;
+  border-color: #dcfce7;
+}
+
+.soma-tier-green:hover {
+  border-color: #86efac;
+  transform: translateY(-2px);
+}
+
+.soma-tier-purple {
+  background-color: #faf5ff;
+  border-color: #f3e8ff;
+}
+
+.soma-tier-purple:hover {
+  border-color: #d8b4fe;
+  transform: translateY(-2px);
+}
+
+.soma-tier-label {
   font-size: 12px;
   font-weight: 700;
+  color: #475569;
+}
+
+.soma-tier-price {
+  font-size: 22px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.soma-tier-highlight {
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.25;
+}
+
+.soma-tier-desc {
+  font-size: 11px;
+  line-height: 1.35;
   color: #64748b;
+  margin-top: 2px;
 }
-.soma-paper-ribbon {
-  overflow: hidden;
+
+/* ==========================================================================
+   6. BOTTOM TRUST & QUALITY ASSURANCE STRIP (4 COLUMNS)
+   ========================================================================== */
+.soma-trust-strip-section {
+  border-top: 1px solid #f1f5f9;
+  padding-top: 28px;
 }
-.soma-teacher-strip {
-  background: #e8edde;
-  padding: 28px 5%;
+
+.soma-trust-strip-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.soma-trust-col {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.soma-trust-col-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background-color: #eff6ff;
   display: flex;
   align-items: center;
-  gap: 24px;
+  justify-content: center;
+  flex-shrink: 0;
 }
-.soma-teacher-strip > svg {
-  color: #065f46;
+
+.soma-trust-col-title {
+  font-size: 14px;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0 0 2px 0;
 }
-.soma-teacher-strip h2 {
-  font:
-    bold 26px Georgia,
-    serif;
-  margin-bottom: 4px;
-}
-.soma-teacher-strip p {
-  font-size: 16px;
-  color: #334155;
+
+.soma-trust-col-desc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: #64748b;
   margin: 0;
 }
-.soma-teacher-strip button {
-  margin-left: auto;
-  white-space: nowrap;
+
+/* ==========================================================================
+   FOOTER
+   ========================================================================== */
+.soma-footer-bottom {
+  border-top: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  padding: 24px;
 }
-.soma-footer {
-  padding: 24px 5%;
+
+.soma-footer-inner {
+  max-width: 1320px;
+  margin: 0 auto;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
 }
-.soma-footer > span {
-  font:
-    bold 22px Georgia,
-    serif;
-}
-.soma-footer nav {
+
+.soma-footer-brand {
   display: flex;
-  gap: 24px;
-  color: #43506d;
+  align-items: center;
+  gap: 8px;
   font-size: 14px;
 }
-.soma-footer button {
-  min-height: 44px;
+
+.soma-footer-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
 }
-@media (max-width: 1100px) {
-  .soma-pass-label {
-    display: none;
-  }
-  .soma-hero {
-    grid-template-columns: 1fr;
-    gap: 28px;
-  }
-  .soma-pool-grid {
-    grid-template-columns: 1fr;
-  }
+
+.soma-footer-links button,
+.soma-footer-links a {
+  background: none;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #64748b;
+  text-decoration: none;
+  padding: 4px 0;
+  transition: color 0.15s ease;
 }
-@media (max-width: 760px) {
-  .soma-header {
-    min-height: 70px;
-    gap: 10px;
-    padding: 10px 16px;
+
+.soma-footer-links button:hover,
+.soma-footer-links a:hover {
+  color: #2563eb;
+}
+
+/* ==========================================================================
+   RESPONSIVE BREAKPOINTS
+   ========================================================================== */
+@media (max-width: 1080px) {
+  .soma-hero-grid {
+    grid-template-columns: 1fr;
+    gap: 36px;
   }
-  .soma-brand {
-    font-size: 24px;
-    gap: 6px;
-  }
-  .soma-brand img {
-    width: 38px;
-    height: 38px;
-  }
-  .soma-desktop-nav,
-  .soma-pass-restore-pill {
-    display: none;
-  }
-  .soma-menu-toggle {
-    display: flex;
+
+  .soma-hero-copy-column {
+    text-align: center;
     align-items: center;
+  }
+
+  .soma-hero-cta-group,
+  .soma-hero-trust-bar,
+  .soma-hero-tagline {
     justify-content: center;
-    width: 42px;
-    height: 42px;
   }
-  .soma-mobile-nav {
-    display: flex;
-    flex-direction: column;
-    padding: 12px 20px;
-    border-bottom: 1px solid #e4e0d9;
+
+  .soma-hero-center-photo {
+    max-width: 380px;
   }
-  .soma-mobile-nav > * {
-    padding: 12px;
-    text-align: left;
+
+  .soma-split-row-grid {
+    grid-template-columns: 1fr;
   }
-  .soma-hero {
-    padding: 24px 16px 32px;
+
+  .soma-four-cards-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
-  .soma-pool-showcase {
-    padding: 24px 16px;
-  }
-  .soma-teacher-strip {
-    padding: 24px 16px;
-    flex-wrap: wrap;
-  }
-  .soma-teacher-strip button {
-    width: 100%;
-    margin-left: 0;
-  }
-  .soma-footer {
-    padding: 20px 16px;
-    flex-wrap: wrap;
-    gap: 12px;
+
+  .soma-trust-strip-grid {
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 
-/* ---- Simplified journey: three doors + restore notice ---- */
-.soma-restore-notice {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  padding: 8px 5%;
-  font-size: 12px;
-  font-weight: 700;
-  border-bottom: 1px solid #d1fae5;
-}
-.soma-restore-notice--ok {
-  background: #ecfdf5;
-  color: #065f46;
-}
-.soma-restore-notice--err {
-  background: #fffbeb;
-  color: #92400e;
-}
-.soma-restore-notice button {
-  background: #059669;
-  color: #fff;
-  border-radius: 999px;
-  padding: 3px 12px;
-  font-size: 11px;
-  font-weight: 800;
-}
-.soma-doors {
-  padding: 40px 5% 8px;
-  max-width: 1180px;
-  margin: 0 auto;
-}
-.soma-doors h2 {
-  font:
-    bold clamp(24px, 3vw, 32px) Georgia,
-    serif;
-  color: #0f172a;
-  text-align: center;
-  margin: 0 0 22px;
-}
-.soma-doors-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 16px;
-}
-.soma-door {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 8px;
-  text-align: left;
-  padding: 22px;
-  background: #ffffff;
-  border: 1px solid #e4e0d9;
-  border-radius: 18px;
-  color: #475569;
-  font-size: 14px;
-  line-height: 1.5;
-  transition:
-    transform 0.15s ease,
-    box-shadow 0.15s ease,
-    border-color 0.15s ease;
-}
-.soma-door:hover {
-  transform: translateY(-2px);
-  border-color: #065f46;
-  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-}
-.soma-door strong {
-  font-size: 19px;
-  color: #0f172a;
-}
-.soma-door em {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  margin-top: auto;
-  padding-top: 6px;
-  font-style: normal;
-  font-weight: 800;
-  color: #065f46;
-}
-.soma-door-icon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-}
-.soma-footer nav {
-  flex-wrap: wrap;
-  gap: 8px 20px;
-}
-.soma-footer nav a {
-  display: inline-flex;
-  align-items: center;
-  min-height: 44px;
-}
-@media (max-width: 760px) {
-  .soma-doors {
-    padding: 28px 16px 0;
+@media (max-width: 768px) {
+  .soma-nav-links {
+    display: none;
   }
-  .soma-doors-grid {
+
+  .soma-nav-mobile-btn {
+    display: inline-flex;
+  }
+
+  .soma-hero-headline {
+    font-size: 32px;
+  }
+
+  .soma-four-cards-grid {
     grid-template-columns: 1fr;
   }
-  .soma-landing {
-    padding-bottom: 72px;
+
+  .soma-learner-tools-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .soma-teachers-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .soma-pricing-tiers-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .soma-parent-card {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .soma-parent-photo-wrap {
+    width: 100%;
+    height: 160px;
+  }
+
+  .soma-trust-strip-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .soma-footer-inner {
+    flex-direction: column;
+    align-items: flex-start;
   }
 }
