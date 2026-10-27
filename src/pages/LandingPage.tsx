@@ -377,7 +377,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ authError: initialAuth
                     contents: [{
                         role: 'user',
                         parts: [
-                            { text: `Read the attached ${isPdf ? 'PDF' : 'image'} homework question and provide a learner-friendly answer with clear working and key exam points. If the attachment is unclear, say exactly what is unreadable rather than guessing. Question: ${activeQuestion || 'Explain the attached homework question'}` },
+                            { text: `Read the attached ${isPdf ? 'PDF' : 'image'} homework question carefully.
+
+**KENYAN CURRICULUM (CBC & KCSE) STEP-BY-STEP SOLVING**:
+1. **HANDWRITING & DIAGRAMS**: If the problem contains handwritten text, student working, geometry figures (circle theorems, triangles, bearings, angles), coordinate graphs, electrical circuits, or biology diagrams:
+   - First state the identified question, given measurements, angles, and labeled vertices.
+   - If a handwritten number or diagram label is faint or ambiguous, clearly state your stated assumption (e.g., "Assuming angle ABC = 60° as drawn") so the student can verify against their physical exercise book.
+   - Quote any geometric theorem or law applied (e.g. "Angles on a straight line sum to 180°", "Pythagoras Theorem").
+2. **STEP-BY-STEP METHOD**: Show all working and formulas used. Break down intermediate steps with clear KNEC-style marking points [e.g. 1 mk, 2 mks].
+3. **CLEAR CONCLUSION**: Highlight the final answer clearly with proper units.
+
+Question/Topic: ${activeQuestion || 'Solve and explain the attached homework question step by step'}` },
                             { inlineData: { data: base64Data, mimeType: isPdf ? 'application/pdf' : fileOverride.type } }
                         ]
                     }]

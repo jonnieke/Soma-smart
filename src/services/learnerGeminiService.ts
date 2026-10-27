@@ -570,8 +570,11 @@ export const explainImage = async (
     Analyze this image carefully. It is likely a textbook page, homework question, or student notes.
     1. Extract the main topic and identify the underlying subject.
     2. ${langInstruction}
-    3. **IMAGE QUESTION SOLVING**: Read ALL text, diagrams, and numbers from the image accurately. Double-check your reading before formulating an answer.
-    4. **TEACH THE METHOD**: For a specific exercise, use a changed but closely similar worked example. Do not reveal the exact exercise's final answer.
+    3. **IMAGE & DIAGRAM INTERPRETATION**: Read ALL text, diagrams, and numbers accurately. If the image contains hand-drawn geometry (circle theorems, angles, vectors), graphs, circuits, or chemical equations:
+       - Declare the detected labels, angles, and given values at the start.
+       - If any handwritten label or exponent is smudged or ambiguous, state the stated assumption explicitly (e.g. "Assuming angle ABC = 45° as drawn") so the student can verify.
+       - Quote the relevant geometric theorem or scientific law applied (e.g. "Angle at center is twice angle at circumference", "Ohm's Law V = IR").
+    4. **TEACH THE METHOD**: Provide structured step-by-step working with intermediate steps and KNEC marking points [1 mk], followed by guided practice. Do not just state a raw ungrounded number.
     5. **FORMAT**: Use neat bullet points for steps, lists, or distinct ideas. Keep paragraphs short and visually appealing.
     6. Explain the content in ${level === 'Simple' ? 'very simple language for a young student' : 'exam-ready academic language'}.
     7. Suggest 3 short related topics for further learning.
