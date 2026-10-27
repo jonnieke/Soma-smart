@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import './LandingHome.css';
 import {
+  AlertCircle,
   ArrowRight,
   BarChart3,
   BookMarked,
@@ -9,16 +10,20 @@ import {
   Bot,
   Camera,
   CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
   Clock,
   FilePlus2,
   FileText,
   Headphones,
   HelpCircle,
+  KeyRound,
   Library,
   Menu,
   Mic,
   MoreVertical,
   Notebook,
+  Phone,
   Search,
   ShieldCheck,
   Sparkles,
@@ -33,7 +38,7 @@ import logoImg from '../assets/images/main_logo.png';
 import heroBoyMotherImg from '../assets/images/hero_boy_mother_mock.png';
 import parentStudyImg from '../assets/images/parent_study_mock.png';
 import somoBuddyAvatar from '../assets/images/somo_buddy_avatar.png';
-import { examPaperBankService } from '../services/examPaperBankService';
+import { examPaperBankService, PhoneRestoreSession } from '../services/examPaperBankService';
 
 export type LandingHomeProps = {
   isRegistered: boolean;
@@ -65,8 +70,90 @@ export type LandingHomeProps = {
     title: string;
     subject: string;
     grade: string;
+    exam_body?: string | null;
+    duration_minutes?: number | null;
+    total_marks?: number | null;
+    source?: string | null;
+    exam_type?: string | null;
+    created_at?: string | null;
+    published_at?: string | null;
+    homepage_featured?: boolean | null;
+    file_url?: string | null;
+    file_path?: string | null;
+    has_marking_scheme?: boolean | null;
+    marking_scheme_url?: string | null;
+    markingSchemeUrl?: string | null;
   }>;
 };
+
+export const DEFAULT_FALLBACK_PAPERS = [
+  {
+    id: 'kcse-2023-math-alt-a-p1',
+    title: 'KCSE 2023 Mathematics Alt A Paper 1',
+    subject: 'Mathematics',
+    grade: 'Form 4',
+    exam_body: 'KNEC',
+    duration_minutes: 150,
+    total_marks: 100,
+    source: 'KNEC National Examination',
+    homepage_featured: true,
+  },
+  {
+    id: 'kcse-2023-chem-p1',
+    title: 'KCSE 2023 Chemistry Paper 1 (Theory)',
+    subject: 'Chemistry',
+    grade: 'Form 4',
+    exam_body: 'KNEC',
+    duration_minutes: 120,
+    total_marks: 80,
+    source: 'KNEC National Examination',
+    homepage_featured: true,
+  },
+  {
+    id: 'kpsea-2023-int-sci',
+    title: 'KPSEA 2023 Integrated Science & Technology',
+    subject: 'Science',
+    grade: 'Grade 6',
+    exam_body: 'KNEC',
+    duration_minutes: 100,
+    total_marks: 50,
+    source: 'KNEC CBC Assessment',
+    homepage_featured: false,
+  },
+  {
+    id: 'kcse-2023-bio-p1',
+    title: 'KCSE 2023 Biology Paper 1 (Theory)',
+    subject: 'Biology',
+    grade: 'Form 4',
+    exam_body: 'KNEC',
+    duration_minutes: 120,
+    total_marks: 80,
+    source: 'KNEC National Examination',
+    homepage_featured: false,
+  },
+  {
+    id: 'grade9-kjsea-math-pilot',
+    title: 'KJSEA Grade 9 Mathematics National Pilot Paper',
+    subject: 'Mathematics',
+    grade: 'Grade 9',
+    exam_body: 'KNEC',
+    duration_minutes: 120,
+    total_marks: 100,
+    source: 'KNEC KJSEA Assessment',
+    homepage_featured: false,
+  },
+  {
+    id: 'kcse-2023-eng-p2',
+    title: 'KCSE 2023 English Paper 2 (Comprehension & Literature)',
+    subject: 'English',
+    grade: 'Form 4',
+    exam_body: 'KNEC',
+    duration_minutes: 150,
+    total_marks: 80,
+    source: 'KNEC National Examination',
+    homepage_featured: false,
+  },
+];
 
 export const AskAkiliHeroWidget: React.FC<LandingHomeProps> = (props) => {
   const [question, setQuestion] = React.useState('');
@@ -468,6 +555,7 @@ export const AskAkiliDemo = AskAkiliHeroWidget;
 
 export const LandingHome: React.FC<LandingHomeProps> = (props) => {
   const [mobileMenuOpen, setMobileMenuOpen] = React.useState(false);
+  const [isClearModalOpen, setIsClearModalOpen] = React.useState(false);
   const [restorePhone, setRestorePhone] = React.useState(
     () => examPaperBankService?.readPhoneSession?.()?.last9 || ''
   );
@@ -476,14 +564,41 @@ export const LandingHome: React.FC<LandingHomeProps> = (props) => {
     tone: 'ok' | 'err';
     text: string;
   } | null>(null);
+  const [clearSession, setClearSession] = React.useState<PhoneRestoreSession | null>(null);
+  const [clearError, setClearError] = React.useState<string | null>(null);
 
-  const handlePhoneRestore = async (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!restorePhone.trim() || restoreLoading) return;
+  const carouselRef = React.useRef<HTMLDivElement | null>(null);
+
+  const scrollCarousel = (direction: -1 | 1) => {
+    const node = carouselRef.current;
+    if (!node) return;
+    const card = node.querySelector<HTMLElement>('[data-paper-card]');
+    const step = card?.offsetWidth ? card.offsetWidth + 16 : 310;
+    node.scrollBy({ left: direction * step, behavior: 'smooth' });
+  };
+
+  const carouselPapers = React.useMemo(() => {
+    const list = [...(props.latestPapers || [])];
+    if (list.length >= 4) return list.slice(0, 8);
+    const merged = [...list];
+    for (const def of DEFAULT_FALLBACK_PAPERS) {
+      if (merged.length >= 6) break;
+      if (!merged.some((p) => String(p.id) === String(def.id) || p.title.toLowerCase() === def.title.toLowerCase())) {
+        merged.push(def as any);
+      }
+    }
+    return merged;
+  }, [props.latestPapers]);
+
+  const executePhoneRestore = async (phoneToRestore: string) => {
+    const cleanNumber = phoneToRestore.trim();
+    if (!cleanNumber) return;
     setRestoreLoading(true);
     setRestoreNotice(null);
+    setClearError(null);
     try {
-      const res = await examPaperBankService.restoreByPhone(restorePhone.trim());
+      const res = await examPaperBankService.restoreByPhone(cleanNumber);
+      setClearSession(res);
       if (res.found && res.passActive) {
         setRestoreNotice({
           tone: 'ok',
@@ -500,11 +615,28 @@ export const LandingHome: React.FC<LandingHomeProps> = (props) => {
           text: 'No pass found for that number yet. Buy any KES 20 past paper to unlock a 24h Pass.',
         });
       }
-    } catch {
-      setRestoreNotice({ tone: 'err', text: 'Could not verify phone right now.' });
+      return res;
+    } catch (err: any) {
+      const msg = err?.message || 'Could not verify phone number right now.';
+      setClearError(msg);
+      setRestoreNotice({ tone: 'err', text: msg });
+      return null;
     } finally {
       setRestoreLoading(false);
     }
+  };
+
+  const handleHeaderQuickRestore = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!restorePhone.trim() || restoreLoading) return;
+    await executePhoneRestore(restorePhone);
+    setIsClearModalOpen(true);
+  };
+
+  const handleModalPhoneClear = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!restorePhone.trim() || restoreLoading) return;
+    await executePhoneRestore(restorePhone);
   };
 
   const scrollToHeroInput = () => {
@@ -539,6 +671,13 @@ export const LandingHome: React.FC<LandingHomeProps> = (props) => {
             <button
               type="button"
               className="soma-nav-link"
+              onClick={() => props.onExamPapers()}
+            >
+              Past Papers
+            </button>
+            <button
+              type="button"
+              className="soma-nav-link"
               onClick={props.onTeacher}
             >
               Teachers
@@ -569,8 +708,38 @@ export const LandingHome: React.FC<LandingHomeProps> = (props) => {
             </button>
           </nav>
 
-          {/* Right Action: Sign In Pill & Mobile Menu Button */}
+          {/* Right Action: Pass Clear Pill & Sign In */}
           <div className="soma-nav-right">
+            <form
+              className="soma-header-pass-form"
+              onSubmit={handleHeaderQuickRestore}
+              aria-label="Restore 24h Pass by phone"
+            >
+              <button
+                type="button"
+                onClick={() => setIsClearModalOpen(true)}
+                className="soma-header-pass-label-btn"
+                title="Clear revision pass by phone"
+              >
+                Have a 24h Pass?
+              </button>
+              <input
+                type="tel"
+                value={restorePhone}
+                onChange={(e) => setRestorePhone(e.target.value)}
+                placeholder="Phone (07...)"
+                aria-label="Enter phone number to restore 24h pass"
+                className="soma-header-pass-input"
+              />
+              <button
+                type="submit"
+                disabled={restoreLoading || !restorePhone.trim()}
+                className="soma-header-pass-btn"
+              >
+                {restoreLoading ? '...' : 'Clear'}
+              </button>
+            </form>
+
             <button
               type="button"
               className="soma-signin-pill"
@@ -601,6 +770,16 @@ export const LandingHome: React.FC<LandingHomeProps> = (props) => {
               }}
             >
               Learners
+            </button>
+            <button
+              type="button"
+              className="soma-mobile-drawer-link"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                props.onExamPapers();
+              }}
+            >
+              Past Papers
             </button>
             <button
               type="button"
@@ -643,15 +822,15 @@ export const LandingHome: React.FC<LandingHomeProps> = (props) => {
             >
               Pricing
             </button>
-            <form onSubmit={handlePhoneRestore} className="soma-mobile-pass-form">
-              <span className="text-xs font-bold text-slate-600">Have a 24h Pass?</span>
+            <form onSubmit={handleHeaderQuickRestore} className="soma-mobile-pass-form">
+              <span className="text-xs font-bold text-slate-600">Bought a paper? Clear 24h Pass</span>
               <div className="flex gap-2">
                 <input
                   type="tel"
                   value={restorePhone}
                   onChange={(e) => setRestorePhone(e.target.value)}
                   placeholder="07... or 01..."
-                  aria-label="Enter phone number to restore 24h pass"
+                  aria-label="Enter phone number to restore 24h pass (mobile)"
                   className="rounded-lg border border-slate-300 px-3 py-1.5 text-xs w-full"
                 />
                 <button
@@ -659,7 +838,7 @@ export const LandingHome: React.FC<LandingHomeProps> = (props) => {
                   disabled={restoreLoading || !restorePhone.trim()}
                   className="rounded-lg bg-emerald-700 text-white px-3 py-1.5 text-xs font-bold shrink-0"
                 >
-                  {restoreLoading ? '...' : 'Restore'}
+                  {restoreLoading ? '...' : 'Clear'}
                 </button>
               </div>
             </form>
@@ -669,11 +848,13 @@ export const LandingHome: React.FC<LandingHomeProps> = (props) => {
         {restoreNotice && (
           <div role="status" className={`soma-restore-banner soma-restore-banner--${restoreNotice.tone}`}>
             <span>{restoreNotice.text}</span>
-            {restoreNotice.tone === 'ok' && (
-              <button type="button" onClick={props.onDashboard} className="font-bold underline ml-2">
-                Open my desk →
-              </button>
-            )}
+            <button
+              type="button"
+              onClick={() => setIsClearModalOpen(true)}
+              className="font-bold underline ml-2 text-xs"
+            >
+              View Pass Details →
+            </button>
           </div>
         )}
       </header>
@@ -827,7 +1008,157 @@ export const LandingHome: React.FC<LandingHomeProps> = (props) => {
           </div>
         </section>
 
-        {/* 4. SPLIT ROW: "POWERFUL TOOLS FOR EVERY LEARNER" + "FOR TEACHERS" */}
+        {/* 4. PAPERS CAROUSEL SECTION */}
+        <section className="soma-carousel-section" aria-labelledby="soma-papers-carousel-title">
+          <div className="soma-carousel-header">
+            <div>
+              <span className="soma-carousel-kicker">
+                📄 KES 20 Past Paper = 24h Full AI Revision Pass
+              </span>
+              <h2 id="soma-papers-carousel-title" className="soma-carousel-title">
+                Official KCSE, KPSEA &amp; CBC Past Papers
+              </h2>
+              <p className="soma-carousel-subtitle">
+                Download verified KNEC question papers and official marking schemes. Every KES 20 paper clears your device for 24h unlimited AI revision.
+              </p>
+            </div>
+
+            <div className="soma-carousel-controls">
+              <button
+                type="button"
+                onClick={() => setIsClearModalOpen(true)}
+                className="soma-carousel-phone-clear-btn"
+                title="Clear access by phone"
+              >
+                <Phone className="h-4 w-4" />
+                <span>Clear by Phone</span>
+              </button>
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => scrollCarousel(-1)}
+                  className="soma-carousel-arrow-btn"
+                  aria-label="Scroll papers left"
+                  title="Previous papers"
+                >
+                  <ChevronLeft className="h-5 w-5" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => scrollCarousel(1)}
+                  className="soma-carousel-arrow-btn"
+                  aria-label="Scroll papers right"
+                  title="Next papers"
+                >
+                  <ChevronRight className="h-5 w-5" />
+                </button>
+              </div>
+            </div>
+          </div>
+
+          {/* Carousel Track */}
+          <div
+            ref={carouselRef}
+            className="soma-carousel-track"
+            tabIndex={0}
+            aria-label="Past papers carousel"
+          >
+            {carouselPapers.map((paper, index) => {
+              const isSpotlight = index === 0 || Boolean((paper as any).homepage_featured);
+              return (
+                <div
+                  key={paper.id}
+                  data-paper-card
+                  className="soma-paper-card"
+                >
+                  <div className="soma-paper-card-top">
+                    <span className={`soma-paper-badge ${isSpotlight ? 'soma-badge-spotlight' : 'soma-badge-regular'}`}>
+                      {isSpotlight ? 'Spotlight Paper' : 'Official KNEC'}
+                    </span>
+                    <span className="soma-paper-price-pill">
+                      KES 20 · 24h Pass
+                    </span>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => props.onExamPapers(paper.id)}
+                    className="soma-paper-card-title text-left"
+                  >
+                    {paper.title}
+                  </button>
+
+                  <div className="soma-paper-card-tags">
+                    <span className="soma-paper-tag">{paper.subject}</span>
+                    <span className="soma-paper-tag">{paper.grade}</span>
+                    {paper.duration_minutes ? (
+                      <span className="soma-paper-tag">
+                        <Clock className="h-3 w-3 inline mr-1" />
+                        {paper.duration_minutes} min
+                      </span>
+                    ) : null}
+                    {paper.total_marks ? (
+                      <span className="soma-paper-tag">{paper.total_marks} marks</span>
+                    ) : null}
+                  </div>
+
+                  <div className="soma-paper-card-footer">
+                    <button
+                      type="button"
+                      onClick={() => props.onExamPapers(paper.id)}
+                      className="soma-paper-action-open"
+                    >
+                      <span>Open paper</span>
+                      <ArrowRight className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={props.onRevision}
+                      className="soma-paper-action-revise"
+                    >
+                      Revise with Akili
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Quick Clear Banner underneath carousel */}
+          <div className="soma-carousel-clear-strip">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                <KeyRound className="h-5 w-5" />
+              </div>
+              <div>
+                <strong className="text-sm text-slate-900 block">
+                  Bought a paper via M-Pesa? Clear your account now.
+                </strong>
+                <span className="text-xs text-slate-500">
+                  Enter the phone number used at payment to immediately unlock your papers and 24h unlimited AI revision.
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsClearModalOpen(true)}
+                className="soma-clear-cta-btn"
+              >
+                Clear by Phone Number →
+              </button>
+              <button
+                type="button"
+                onClick={() => props.onExamPapers()}
+                className="soma-browse-all-papers-btn"
+              >
+                Browse All 200+ Papers
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* 5. SPLIT ROW: "POWERFUL TOOLS FOR EVERY LEARNER" + "FOR TEACHERS" */}
         <section className="soma-split-row-section" aria-label="Learner Tools and Teacher Suite">
           <div className="soma-split-row-grid">
             {/* Left Box: Powerful tools for every learner */}
@@ -970,7 +1301,7 @@ export const LandingHome: React.FC<LandingHomeProps> = (props) => {
           </div>
         </section>
 
-        {/* 5. SPLIT ROW: "FOR PARENTS" + "SIMPLE, AFFORDABLE PRICING" */}
+        {/* 6. SPLIT ROW: "FOR PARENTS" + "SIMPLE, AFFORDABLE PRICING" */}
         <section className="soma-split-row-section" aria-label="Parents and Pricing">
           <div className="soma-split-row-grid">
             {/* Left: For Parents with Weekly Progress Report */}
@@ -1042,7 +1373,7 @@ export const LandingHome: React.FC<LandingHomeProps> = (props) => {
                 >
                   <span className="soma-tier-label">Daily</span>
                   <span className="soma-tier-price text-blue-700">KES 20</span>
-                  <span className="soma-tier-desc">Learn for less, every day.</span>
+                  <span className="soma-tier-desc">Any past paper + 24h AI pass.</span>
                 </button>
 
                 {/* Monthly */}
@@ -1073,7 +1404,7 @@ export const LandingHome: React.FC<LandingHomeProps> = (props) => {
           </div>
         </section>
 
-        {/* 6. BOTTOM TRUST & QUALITY ASSURANCE STRIP (4 COLUMNS) */}
+        {/* 7. BOTTOM TRUST & QUALITY ASSURANCE STRIP (4 COLUMNS) */}
         <section className="soma-trust-strip-section" aria-label="Soma AI Highlights">
           <div className="soma-trust-strip-grid">
             <div className="soma-trust-col">
@@ -1130,6 +1461,7 @@ export const LandingHome: React.FC<LandingHomeProps> = (props) => {
           <nav className="soma-footer-links" aria-label="Footer navigation">
             <button type="button" onClick={props.onParent}>For parents</button>
             <button type="button" onClick={props.onTeacher}>For teachers</button>
+            <button type="button" onClick={() => props.onExamPapers()}>Past papers</button>
             <button type="button" onClick={props.onSomaGuide}>Exam calendar</button>
             <Link to="/learning-videos">Learning videos</Link>
             <button type="button" onClick={props.onPricing}>Pricing</button>
@@ -1139,6 +1471,202 @@ export const LandingHome: React.FC<LandingHomeProps> = (props) => {
           </nav>
         </div>
       </footer>
+
+      {/* 8. PHONE CLEAR MODAL WINDOW */}
+      {isClearModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="clear-phone-title"
+          className="soma-modal-backdrop"
+          onClick={() => setIsClearModalOpen(false)}
+        >
+          <div
+            className="soma-modal-window"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="soma-modal-header">
+              <div className="flex items-center gap-2.5">
+                <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                  <KeyRound className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 id="clear-phone-title" className="text-lg font-black text-slate-900 leading-snug">
+                    Clear &amp; Restore Past Paper Access
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    For learners &amp; parents who paid via M-Pesa
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsClearModalOpen(false)}
+                className="soma-modal-close-btn"
+                aria-label="Close modal window"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="soma-modal-body">
+              <p className="text-xs sm:text-sm text-slate-600 leading-relaxed mb-4">
+                Bought a past paper with M-Pesa (KES 20)? Enter your phone number below to immediately clear your device, unlock your purchased papers, and activate your 24-hour unlimited AI revision pass.
+              </p>
+
+              <form onSubmit={handleModalPhoneClear} className="space-y-3">
+                <div className="soma-modal-phone-input-wrap">
+                  <span className="soma-modal-phone-prefix">
+                    <span>🇰🇪</span> +254
+                  </span>
+                  <input
+                    type="tel"
+                    value={restorePhone}
+                    onChange={(e) => {
+                      setRestorePhone(e.target.value);
+                      setClearSession(null);
+                      setClearError(null);
+                    }}
+                    placeholder="07... or 01..."
+                    aria-label="Enter phone number to restore 24h pass (modal)"
+                    className="soma-modal-phone-input"
+                    autoFocus
+                  />
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={restoreLoading || !restorePhone.trim()}
+                  className="soma-modal-submit-btn"
+                >
+                  {restoreLoading ? 'Verifying payment...' : 'Clear My Access & Unlock Papers →'}
+                </button>
+              </form>
+
+              {clearError && (
+                <div role="status" className="soma-modal-error-box">
+                  <p className="font-bold flex items-center gap-1.5 text-rose-800">
+                    <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+                    {clearError}
+                  </p>
+                  <p className="text-slate-600">
+                    Need a past paper? Buy any KCSE/KPSEA past paper for KES 20 to immediately activate a 24h AI revision pass.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsClearModalOpen(false);
+                      props.onExamPapers();
+                    }}
+                    className="inline-flex items-center gap-1 font-bold text-blue-700 hover:underline pt-1"
+                  >
+                    Browse Past Papers Bank (KES 20) →
+                  </button>
+                </div>
+              )}
+
+              {clearSession && (
+                <div role="status" className="soma-modal-result-box">
+                  {clearSession.found && clearSession.passActive ? (
+                    <div className="soma-result-active">
+                      <div className="flex items-center gap-2 text-emerald-800 font-extrabold text-sm mb-1">
+                        <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+                        <span>✅ Cleared! 24h Pass is Active</span>
+                      </div>
+                      <p className="text-slate-700 font-medium">
+                        Welcome back! Your number <strong>+254{clearSession.last9}</strong> has <strong>{clearSession.hoursRemaining} hours</strong> of unlimited AI revision remaining and <strong>{clearSession.paperIds.length}</strong> unlocked paper(s).
+                      </p>
+                      <div className="flex flex-wrap gap-2 pt-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsClearModalOpen(false);
+                            props.onRevision();
+                          }}
+                          className="soma-modal-action-primary"
+                        >
+                          Go to Revision Hub →
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsClearModalOpen(false);
+                            props.onExamPapers();
+                          }}
+                          className="soma-modal-action-secondary"
+                        >
+                          View My Unlocked Papers
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsClearModalOpen(false);
+                            props.onDashboard();
+                          }}
+                          className="soma-modal-action-outline"
+                        >
+                          My Desk
+                        </button>
+                      </div>
+                    </div>
+                  ) : clearSession.found ? (
+                    <div className="soma-result-expired">
+                      <div className="flex items-center gap-2 text-amber-900 font-extrabold text-sm mb-1">
+                        <CheckCircle2 className="h-5 w-5 text-amber-600 shrink-0" />
+                        <span>✅ Past Papers Found</span>
+                      </div>
+                      <p className="text-slate-700">
+                        Your phone <strong>+254{clearSession.last9}</strong> has <strong>{clearSession.paperIds.length}</strong> purchased paper(s). Your 24h AI pass has expired, but all your purchased papers remain accessible.
+                      </p>
+                      <div className="flex flex-wrap gap-2 pt-3">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsClearModalOpen(false);
+                            props.onExamPapers();
+                          }}
+                          className="soma-modal-action-primary"
+                        >
+                          Open My Purchased Papers →
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setIsClearModalOpen(false);
+                            props.onExamPapers();
+                          }}
+                          className="soma-modal-action-secondary"
+                        >
+                          Renew 24h Pass (KES 20)
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="soma-result-notfound">
+                      <p className="font-bold text-slate-800 mb-1">
+                        No purchases found for +254{clearSession.last9}
+                      </p>
+                      <p className="text-slate-600 mb-3">
+                        Past papers are KES 20 via instant M-Pesa. Once bought, you can restore and clear access anytime with your phone number.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsClearModalOpen(false);
+                          props.onExamPapers();
+                        }}
+                        className="soma-modal-action-primary"
+                      >
+                        Browse Past Papers (KES 20) →
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

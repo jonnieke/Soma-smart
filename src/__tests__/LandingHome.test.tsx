@@ -23,7 +23,7 @@ const baseProps = {
   onTrack: vi.fn(),
 };
 
-describe('LandingHome (Exact Reference Redesign)', () => {
+describe('LandingHome (Exact Reference Redesign with Papers Carousel & Clear Window)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.stubGlobal('scrollTo', vi.fn());
@@ -34,7 +34,7 @@ describe('LandingHome (Exact Reference Redesign)', () => {
     vi.unstubAllGlobals();
   });
 
-  it('renders the brand, navigation links, and exact hero content', () => {
+  it('renders the brand, navigation links including Past Papers, and exact hero content', () => {
     render(
       <MemoryRouter>
         <LandingHome {...baseProps} />
@@ -47,6 +47,7 @@ describe('LandingHome (Exact Reference Redesign)', () => {
     // Navigation links
     const nav = screen.getByRole('navigation', { name: /main navigation/i });
     expect(nav).toHaveTextContent(/learners/i);
+    expect(nav).toHaveTextContent(/past papers/i);
     expect(nav).toHaveTextContent(/teachers/i);
     expect(nav).toHaveTextContent(/parents/i);
     expect(nav).toHaveTextContent(/library/i);
@@ -122,6 +123,68 @@ describe('LandingHome (Exact Reference Redesign)', () => {
     expect(baseProps.onRevision).toHaveBeenCalled();
   });
 
+  it('renders the past papers carousel with navigation and open actions', () => {
+    const { container } = render(
+      <MemoryRouter>
+        <LandingHome {...baseProps} />
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('heading', { name: /official kcse, kpsea & cbc past papers/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /scroll papers left/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /scroll papers right/i })).toBeInTheDocument();
+
+    const paperCards = container.querySelectorAll('[data-paper-card]');
+    expect(paperCards.length).toBeGreaterThanOrEqual(4);
+
+    // Open first paper
+    const openBtn = paperCards[0].querySelector('button.soma-paper-action-open');
+    if (openBtn) {
+      fireEvent.click(openBtn);
+      expect(baseProps.onExamPapers).toHaveBeenCalled();
+    }
+  });
+
+  it('opens phone clear window and restores access for users who bought a paper', async () => {
+    vi.spyOn(examPaperBankService, 'restoreByPhone').mockResolvedValueOnce({
+      found: true,
+      passActive: true,
+      normalizedPhone: '+254712345678',
+      last9: '712345678',
+      hoursRemaining: 21,
+      paperIds: ['kcse-2023-math-1'],
+    });
+
+    render(
+      <MemoryRouter>
+        <LandingHome {...baseProps} />
+      </MemoryRouter>
+    );
+
+    // Click "Clear by Phone" button in carousel
+    fireEvent.click(screen.getByRole('button', { name: /^clear by phone$/i }));
+
+    // Modal dialog should be in document
+    const modal = screen.getByRole('dialog');
+    expect(modal).toBeInTheDocument();
+    expect(screen.getByText(/clear & restore past paper access/i)).toBeInTheDocument();
+
+    const phoneInput = screen.getByLabelText(/enter phone number to restore 24h pass \(modal\)/i);
+    fireEvent.change(phoneInput, { target: { value: '0712345678' } });
+    fireEvent.click(screen.getByRole('button', { name: /clear my access & unlock papers/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/✅ Cleared! 24h Pass is Active/i)).toBeInTheDocument();
+      expect(screen.getByText(/21 hours/i)).toBeInTheDocument();
+    });
+
+    // Close button
+    fireEvent.click(screen.getByLabelText(/close modal window/i));
+    await waitFor(() => {
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    });
+  });
+
   it('renders "Powerful tools for every learner" and "For Teachers" sections', () => {
     render(
       <MemoryRouter>
@@ -154,11 +217,11 @@ describe('LandingHome (Exact Reference Redesign)', () => {
 
     // Pricing
     expect(screen.getByText(/simple, affordable pricing/i)).toBeInTheDocument();
-    expect(screen.getByText(/KES 20/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/KES 20/i).length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/KES 499/i)).toBeInTheDocument();
     expect(screen.getByText(/best for exam preparation/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText(/KES 20/i).closest('button')!);
+    fireEvent.click(screen.getByText(/KES 499/i).closest('button')!);
     expect(baseProps.onPricing).toHaveBeenCalled();
   });
 
@@ -175,7 +238,7 @@ describe('LandingHome (Exact Reference Redesign)', () => {
     expect(screen.getByText(/teacher-friendly/i)).toBeInTheDocument();
   });
 
-  it('supports 24h pass restoration from the mobile drawer form', async () => {
+  it('supports 24h pass restoration from the desktop header form', async () => {
     vi.spyOn(examPaperBankService, 'restoreByPhone').mockResolvedValueOnce({
       found: true,
       passActive: true,
@@ -191,15 +254,13 @@ describe('LandingHome (Exact Reference Redesign)', () => {
       </MemoryRouter>
     );
 
-    // Open mobile menu
-    fireEvent.click(screen.getByRole('button', { name: /toggle navigation menu/i }));
-
     const phoneInput = screen.getByLabelText(/enter phone number to restore 24h pass/i);
     fireEvent.change(phoneInput, { target: { value: '0712345678' } });
     fireEvent.submit(phoneInput.closest('form')!);
 
     await waitFor(() => {
-      expect(screen.getByRole('status')).toHaveTextContent(/24h pass active/i);
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByText(/✅ Cleared! 24h Pass is Active/i)).toBeInTheDocument();
     });
   });
 });

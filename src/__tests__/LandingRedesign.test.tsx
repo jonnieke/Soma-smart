@@ -53,9 +53,13 @@ it('renders the exact reference landing page layout and navigation', () => {
     'AI study help for CBC, KPSEA, and KCSE learners'
   );
 
-  // Header navigation links from reference image: Learners, Teachers, Parents, Library, Pricing
+  // Header navigation links: Learners, Past Papers, Teachers, Parents, Library, Pricing
   const nav = screen.getByRole('navigation', { name: 'Main navigation' });
-  expect(nav.querySelectorAll('button')).toHaveLength(5);
+  expect(nav.querySelectorAll('button')).toHaveLength(6);
+
+  // Past papers nav link routes to exam papers
+  fireEvent.click(screen.getByRole('button', { name: 'Past Papers' }));
+  expect(p.onExamPapers).toHaveBeenCalledOnce();
 
   // Secondary footer links
   expect(screen.getByRole('link', { name: 'Learning videos' })).toHaveAttribute(
