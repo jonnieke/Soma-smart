@@ -569,6 +569,7 @@ export function LearnerClassroom(props: LearnerClassroomProps) {
                 >
                   <input
                     type="tel"
+                    role="searchbox"
                     value={restorePhone}
                     onChange={(e) => setRestorePhone(e.target.value)}
                     placeholder="+2547..., 07..., or 712345678"

@@ -24,7 +24,7 @@ import { LogoutModal } from '../../components/LogoutModal';
 import { ParentPinModal } from '../../components/ParentPinModal';
 import { MarkdownText, Button, Card } from '../../components/Shared';
 import { LearnerClassroom } from './classroom/LearnerClassroom';
-import { initialClassroomLesson, starterClassroomLesson, protectingSoilLesson, nextClassroomTopic, isClassroomNoteSaved, isClassroomLimitError } from './classroom/classroomLessons';
+import { initialClassroomLesson, starterClassroomLesson, protectingSoilLesson, photosynthesisLesson, nextClassroomTopic, isClassroomNoteSaved, isClassroomLimitError } from './classroom/classroomLessons';
 import { heroAnswerContinuation } from './answer/heroAnswerContinuation';
 import { MasteryDashboard } from '../../components/MasteryDashboard';
 import {
@@ -4918,9 +4918,16 @@ ${explanation.explanation}
             handleSidebarTabChange('RESOURCES');
           }}
           onContinue={() => {
-            if (explanation) setMode('RESULT');
-            else if (lastHistoryTopic) void handlePromptSubmit(lastHistoryTopic);
-            else void handlePromptSubmit('Photosynthesis');
+            const targetTopic = lastHistoryTopic || 'Photosynthesis';
+            if (explanation && explanation.topic.toLowerCase() === targetTopic.toLowerCase()) {
+              setMode('RESULT');
+            } else if (targetTopic.toLowerCase() === 'photosynthesis') {
+              setExplanation(photosynthesisLesson);
+              setExplanationSubject('Science');
+              setMode('RESULT');
+            } else {
+              void handlePromptSubmit(targetTopic);
+            }
           }}
           onViewAll={() => handleSidebarTabChange('RESOURCES')}
           onOpenRevision={() => handleSidebarTabChange('SUBJECTS')}

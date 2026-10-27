@@ -1,6 +1,18 @@
 import type { ExplanationResult, LearnerActivity } from '../../../types';
 import { buildLessonNotebookEntry } from '../../../services/lessonNotebook';
 
+export const photosynthesisLesson: ExplanationResult = {
+  topic: 'Photosynthesis',
+  explanation:
+    'Photosynthesis is the process by which green plants make their own food using sunlight, water, and carbon dioxide.\n\n### How Photosynthesis Works\n1. **Sunlight:** Absorbed by the green pigment chlorophyll inside the chloroplasts.\n2. **Water ($H_2O$):** Taken in by roots from the soil and transported up to the leaves through xylem vessels.\n3. **Carbon Dioxide ($CO_2$):** Diffuses into the leaves from the atmosphere through microscopic openings called stomata.\n4. **Glucose Produced:** Chemical energy stored as starch for plant growth and energy.\n5. **Oxygen Released:** Oxygen gas is released as a vital byproduct into the air.\n\n### The Word Equation\n$$\\text{Carbon Dioxide} + \\text{Water} \\xrightarrow{\\text{Light + Chlorophyll}} \\text{Glucose} + \\text{Oxygen}$$',
+  summaryPoints: [
+    'Chlorophyll absorbs sunlight in the green parts of the plant.',
+    'Carbon dioxide and water produce glucose (food) and oxygen.',
+  ],
+  level: 'Simple',
+  relatedTopics: ['Leaf structure', 'Plant transport', 'Cellular respiration'],
+};
+
 export const starterClassroomLesson: ExplanationResult = {
   topic: 'Soil erosion',
   explanation:
