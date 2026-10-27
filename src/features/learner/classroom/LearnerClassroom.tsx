@@ -51,9 +51,12 @@ export type LearnerClassroomProps = {
   onSave: () => void;
   onNext: () => void;
   onVideos: () => void;
+  onAssignments?: () => void;
   media?: React.ReactNode;
   children?: React.ReactNode;
 };
+
+const MATH_SYMBOLS = ['+', '−', '×', '÷', '=', '≠', '≤', '≥', '²', '³', '√', 'π', 'θ', '½', '¼', '°'];
 
 export function LearnerClassroom(props: LearnerClassroomProps) {
   const answer = { ...props.answer, practice: safeLearnerPractice(props.answer.practice) };
@@ -65,6 +68,23 @@ export function LearnerClassroom(props: LearnerClassroomProps) {
   const [savedLocally, setSaved] = useState(false);
   const saved = props.saved ?? savedLocally;
   const [question, setQuestion] = useState('');
+  const questionTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const insertSymbol = (sym: string) => {
+    const el = questionTextareaRef.current;
+    if (!el) {
+      setQuestion(q => q + sym);
+      return;
+    }
+    const start = el.selectionStart ?? question.length;
+    const end = el.selectionEnd ?? question.length;
+    const updated = question.substring(0, start) + sym + question.substring(end);
+    setQuestion(updated);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + sym.length, start + sym.length);
+    });
+  };
   const [imageFailed, setImageFailed] = useState(false);
   const [restorePhone, setRestorePhone] = useState(
     () => examPaperBankService?.readPhoneSession?.()?.last9 || ''
@@ -149,6 +169,7 @@ export function LearnerClassroom(props: LearnerClassroomProps) {
           <button onClick={props.onSubjects}>Subjects</button>
           <button onClick={props.onNotes}>My notes</button>
           <button onClick={props.onPapers}>Past papers</button>
+          {props.onAssignments && <button onClick={props.onAssignments}>Class work</button>}
         </nav>
         <div className="classroom-account">
           <button
@@ -408,7 +429,25 @@ export function LearnerClassroom(props: LearnerClassroomProps) {
             >
               <h3>Bring a question from your book</h3>
               <p>Type it, scan it or tell me.</p>
+              <div className="classroom-homework-tip">
+                <span>📝 <strong>Homework mode:</strong> Akili shows full KNEC method marks [M1, A1] to write into your book.</span>
+              </div>
+              <div className="classroom-math-bar" aria-label="Quick math symbols">
+                <span className="classroom-math-label">Math:</span>
+                {MATH_SYMBOLS.map((sym) => (
+                  <button
+                    key={sym}
+                    type="button"
+                    className="classroom-math-btn"
+                    onClick={() => insertSymbol(sym)}
+                    aria-label={`Insert ${sym}`}
+                  >
+                    {sym}
+                  </button>
+                ))}
+              </div>
               <textarea
+                ref={questionTextareaRef}
                 aria-label="Ask Akili a question"
                 placeholder="What would you like help with?"
                 value={question}

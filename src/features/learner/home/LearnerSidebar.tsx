@@ -1,16 +1,18 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   BarChart3,
   BookMarked,
   BookOpen,
   CheckSquare,
+  ClipboardList,
   Gift,
   Home,
   Map,
   MessageCircle,
   Mic,
+  PenTool,
   ShieldCheck,
   Sparkles,
   UserCircle,
@@ -53,6 +55,8 @@ export const LearnerSidebar: React.FC<LearnerSidebarProps> = ({
   onPlans,
   onParent,
 }) => {
+  const navigate = useNavigate();
+
   const choose = (tab: SidebarTab) => {
     onTabChange(tab);
     if (window.innerWidth < 1024) onToggle();
@@ -60,10 +64,19 @@ export const LearnerSidebar: React.FC<LearnerSidebarProps> = ({
 
   const primary: SidebarAction[] = [
     { label: 'Home', icon: <Home />, tab: 'HOME' },
+    { label: 'Homework Help', icon: <PenTool />, tab: 'HOMEWORK' },
     { label: 'Subjects', icon: <BookOpen />, tab: 'RESOURCES' },
     { label: 'My notes', icon: <BookMarked />, tab: 'NOTEBOOK' },
   ];
   const more: SidebarAction[] = [
+    {
+      label: 'Class Assignments',
+      icon: <ClipboardList />,
+      action: () => {
+        navigate('/learner/assessments');
+        if (window.innerWidth < 1024) onToggle();
+      },
+    },
     { label: 'Practice papers', icon: <CheckSquare />, tab: 'SUBJECTS' },
     { label: 'My progress', icon: <BarChart3 />, tab: 'PROGRESS' },
     { label: 'Talk & Learn', icon: <Mic />, tab: 'TALKBACK' },
@@ -130,7 +143,7 @@ export const LearnerSidebar: React.FC<LearnerSidebarProps> = ({
       <nav aria-label="Learner navigation" className="fixed inset-x-0 bottom-0 z-40 flex border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden">
         {primary.map(item => (
           <button key={item.tab} type="button" onClick={() => item.tab && onTabChange(item.tab)} aria-current={item.tab === activeTab ? 'page' : undefined} className={`flex min-h-16 flex-1 flex-col items-center justify-center gap-1 text-xs font-semibold focus-visible:outline-indigo-600 ${item.tab === activeTab ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600'}`}>
-            <span className="[&>svg]:h-5 [&>svg]:w-5">{item.icon}</span>{item.label}
+            <span className="[&>svg]:h-5 [&>svg]:w-5">{item.icon}</span>{item.label === 'Homework Help' ? 'Homework' : item.label}
           </button>
         ))}
         <button type="button" onClick={onToggle} aria-label="More learner options" className="min-h-16 flex-1 text-xs font-semibold text-slate-600 focus-visible:outline-indigo-600">More</button>

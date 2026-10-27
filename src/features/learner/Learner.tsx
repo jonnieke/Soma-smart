@@ -2865,6 +2865,19 @@ Stay anchored to this context unless I ask for something broader.`;
       case 'HOME':
         runWithRecallExitGuard(() => setMode('MENU'));
         break;
+      case 'HOMEWORK':
+        runWithRecallExitGuard(() => {
+          setMode('MENU');
+          setTimeout(() => {
+            const form = document.querySelector<HTMLFormElement>('.classroom-question') ||
+                         document.getElementById('learner-homework-section');
+            form?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            const textarea = form?.querySelector<HTMLTextAreaElement>('textarea') ||
+                             document.getElementById('home-question');
+            if (textarea instanceof HTMLTextAreaElement) textarea.focus();
+          }, 150);
+        });
+        break;
       case 'SMART_TUTOR':
         runWithRecallExitGuard(() => setMode('SCAN_EXPLAIN'));
         break;
@@ -3912,6 +3925,7 @@ ${explanation.explanation}
       }
     },
     onVideos: () => navigate('/learning-videos'),
+    onAssignments: () => navigate('/learner/assessments'),
   });
 
   const renderMode = () => {

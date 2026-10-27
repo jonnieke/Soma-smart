@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ArrowRight, BookOpen, FileText, Menu, Mic, ScanLine, Upload, UserCircle } from 'lucide-react';
+import { ArrowRight, BookOpen, FileText, Menu, Mic, PenTool, ScanLine, Sparkles, Upload, UserCircle } from 'lucide-react';
 
 type LearnerHomeProps = {
   learnerName: string;
@@ -19,6 +19,8 @@ type LearnerHomeProps = {
   onOpenRevision: () => void;
 };
 
+const MATH_SYMBOLS = ['+', '−', '×', '÷', '=', '≠', '≤', '≥', '²', '³', '√', 'π', 'θ', '½', '¼', '°'];
+
 const buttonStyle = 'min-h-12 rounded-xl px-4 py-3 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300';
 
 export const LearnerHome: React.FC<LearnerHomeProps> = ({
@@ -34,6 +36,22 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
       questionRef.current?.focus();
     }
   }, [voiceTranscript]);
+
+  const insertSymbol = (sym: string) => {
+    const el = questionRef.current;
+    if (!el) {
+      setQuestion((q) => q + sym);
+      return;
+    }
+    const start = el.selectionStart ?? question.length;
+    const end = el.selectionEnd ?? question.length;
+    const updated = question.substring(0, start) + sym + question.substring(end);
+    setQuestion(updated);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + sym.length, start + sym.length);
+    });
+  };
 
   return (
     <div className="min-h-screen bg-[#faf9f6] text-slate-900">
@@ -85,21 +103,55 @@ export const LearnerHome: React.FC<LearnerHomeProps> = ({
           )}
         </section>
 
-        <section aria-labelledby="akili-heading" className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6">
-          <h2 id="akili-heading" className="text-xl font-bold">Need a hand? Ask Akili</h2>
-          <p className="mt-2 text-sm leading-6 text-slate-600">Bring a question from your book. We’ll work through it together.</p>
+        <section id="learner-homework-section" aria-labelledby="akili-heading" className="rounded-2xl border border-stone-200 bg-white p-5 sm:p-6 shadow-sm">
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-700">
+            <PenTool className="h-4 w-4" />
+            <span>Homework Help &amp; Problem Solving</span>
+          </div>
+          <h2 id="akili-heading" className="mt-1 text-xl font-bold">Need a hand? Ask Akili</h2>
+          <p className="mt-1 text-sm leading-6 text-slate-600">Bring a question from your book. We’ll show the step-by-step working to write in your exercise book.</p>
+          
           <div className="mt-4 grid grid-cols-2 gap-3">
             <button type="button" onClick={onScan} className={`${buttonStyle} flex items-center justify-center gap-2 border border-indigo-300 bg-indigo-50 text-indigo-900 hover:bg-indigo-100`}><ScanLine className="h-5 w-5 shrink-0" />Scan a question</button>
             <button type="button" onClick={onVoice} className={`${buttonStyle} flex items-center justify-center gap-2 border border-indigo-300 bg-indigo-50 text-indigo-900 hover:bg-indigo-100`}><Mic className="h-5 w-5 shrink-0" />Record a question</button>
           </div>
+          
           <form className="mt-4" onSubmit={(event) => { event.preventDefault(); if (question.trim()) onTeach(question.trim()); }}>
-            <label htmlFor="home-question" className="text-sm font-medium text-slate-700">Or type your question</label>
-            <textarea id="home-question" ref={questionRef} value={question} onChange={(event) => setQuestion(event.target.value)} rows={2} placeholder="What would you like help with?" className="mt-2 block w-full resize-y rounded-xl border border-stone-300 bg-white p-3 text-base outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" />
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <label htmlFor="home-question" className="text-sm font-medium text-slate-700">Or type your question</label>
+              
+              {/* Quick Math Symbols Bar */}
+              <div className="flex items-center gap-1 overflow-x-auto py-1 scrollbar-none" aria-label="Quick math symbols">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-600 pr-1 shrink-0">Math:</span>
+                {MATH_SYMBOLS.map((sym) => (
+                  <button
+                    key={sym}
+                    type="button"
+                    onClick={() => insertSymbol(sym)}
+                    className="h-6 min-w-6 px-1.5 rounded border border-stone-200 bg-stone-50 hover:bg-stone-100 hover:border-indigo-300 text-xs font-bold text-slate-700 transition shrink-0"
+                    aria-label={`Insert ${sym}`}
+                  >
+                    {sym}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <textarea id="home-question" ref={questionRef} value={question} onChange={(event) => setQuestion(event.target.value)} rows={2} placeholder="What would you like help with? e.g. Solve 2x + 3 = 11" className="mt-2 block w-full resize-y rounded-xl border border-stone-300 bg-white p-3 text-base outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" />
+            
             <div className="mt-3 flex flex-wrap items-center justify-between gap-2">
               <button type="button" onClick={onUpload} className={`${buttonStyle} inline-flex items-center gap-2 text-slate-600 hover:bg-stone-100`}><Upload className="h-4 w-4" />Upload a page</button>
               <button type="submit" disabled={!question.trim()} className={`${buttonStyle} inline-flex items-center gap-2 bg-indigo-700 text-white hover:bg-indigo-800 disabled:cursor-not-allowed disabled:opacity-50`}>Ask Akili<ArrowRight className="h-4 w-4" /></button>
             </div>
           </form>
+
+          {/* Friendly Guidance on Daily Limits */}
+          <div className="mt-4 rounded-xl border border-indigo-100 bg-indigo-50/60 p-3 text-xs text-indigo-900 flex items-start gap-2.5">
+            <Sparkles className="h-4 w-4 text-indigo-600 shrink-0 mt-0.5" />
+            <p className="leading-relaxed">
+              <strong>KNEC Step-by-Step Working:</strong> Akili shows formulas and method marks (<span className="font-semibold text-indigo-800">M1, A1</span>) for your exercise book. Free plan includes 3 daily deep solutions; unlock 24h unlimited access anytime for KES 20.
+            </p>
+          </div>
         </section>
 
         <button type="button" onClick={onOpenRevision} className="flex min-h-16 w-full items-center gap-3 rounded-xl p-3 text-left hover:bg-stone-100 focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-indigo-300">
