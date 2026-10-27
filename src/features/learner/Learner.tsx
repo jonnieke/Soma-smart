@@ -36,6 +36,7 @@ import { QuizReviewSummary, QuizRunner } from './QuizRunner';
 import { ThemeToggle } from '../../components/ThemeToggle';
 import { SidebarTab } from '../../components/DashboardSidebar';
 import { LearnerSidebar } from './home/LearnerSidebar';
+import { LearnerHome } from './home/LearnerHome';
 import { LearnerLibrary, recentStudyIds } from './home/LearnerLibrary';
 import { studyDocumentId, validateStudyGuide } from '../../services/studyGuideValidation';
 import { buildSubjectLessonRequest } from '../../services/learnerPractice';
@@ -4896,8 +4897,36 @@ ${explanation.explanation}
     }
 
     if (mode === 'MENU') {
+      const activeSubjects = ['Mathematics', 'English', 'Kiswahili', 'Science', 'Social Studies'];
+      const lastHistoryTopic = history.length > 0 ? history[history.length - 1]?.topic : (explanation?.topic && explanation.topic !== 'Soil erosion' ? explanation.topic : 'Photosynthesis');
+
       return (
-        <LearnerClassroom key={`${explanation?.topic}:${explanation?.explanation}`} {...classroomProps()} />
+        <LearnerHome
+          learnerName={studentProfile?.name || profile?.name || 'Amina'}
+          grade={studentProfile?.grade || explanationGrade || 'Grade 7'}
+          subjects={activeSubjects}
+          latestTopic={lastHistoryTopic}
+          onOpenMenu={() => setSidebarOpen(true)}
+          onProfile={() => runWithRecallExitGuard(() => setMode('PROFILE'))}
+          onTeach={(topic) => { setPromptText(topic); void handlePromptSubmit(topic); }}
+          onScan={() => void startCamera()}
+          onUpload={() => fileInputRef.current?.click()}
+          onVoice={() => { if (isRecording) stopRecording(); else void startVoiceQuestion(); }}
+          voiceTranscript={promptText || undefined}
+          onSubject={(subject) => {
+            setActiveLibrarySubject(subject);
+            handleSidebarTabChange('RESOURCES');
+          }}
+          onContinue={() => {
+            if (explanation) setMode('RESULT');
+            else if (lastHistoryTopic) void handlePromptSubmit(lastHistoryTopic);
+            else void handlePromptSubmit('Photosynthesis');
+          }}
+          onViewAll={() => handleSidebarTabChange('RESOURCES')}
+          onOpenRevision={() => handleSidebarTabChange('SUBJECTS')}
+          sessionsLeft={Math.max(0, 5 - usageCount)}
+          onPlans={() => runWithRecallExitGuard(() => setMode('PRICING'))}
+        />
       );
     }
 
@@ -7946,7 +7975,7 @@ ${explanation.explanation}
   return (
     <div className="relative min-h-screen bg-slate-50">
       {/* Sidebar */}
-      {mode !== 'MENU' && mode !== 'RESULT' && mode !== 'REVISION' && mode !== 'LIBRARY' && <LearnerSidebar
+      {mode !== 'RESULT' && mode !== 'REVISION' && mode !== 'LIBRARY' && <LearnerSidebar
         isOpen={sidebarOpen}
         onToggle={() => setSidebarOpen(!sidebarOpen)}
         activeTab={sidebarTab}
@@ -7960,7 +7989,7 @@ ${explanation.explanation}
       />}
 
       {/* Main Content */}
-      <div className={mode === 'MENU' || mode === 'RESULT' || mode === 'REVISION' || mode === 'LIBRARY' ? 'min-h-screen min-w-0' : 'lg:ml-[260px] min-h-screen overflow-x-hidden min-w-0 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0'}>
+      <div className={mode === 'RESULT' || mode === 'REVISION' || mode === 'LIBRARY' ? 'min-h-screen min-w-0' : 'lg:ml-[260px] min-h-screen overflow-x-hidden min-w-0 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0'}>
         {renderMode()}
       </div>
 

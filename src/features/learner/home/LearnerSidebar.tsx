@@ -63,12 +63,18 @@ export const LearnerSidebar: React.FC<LearnerSidebarProps> = ({
   };
 
   const primary: SidebarAction[] = [
-    { label: 'Home', icon: <Home />, tab: 'HOME' },
-    { label: 'Homework Help', icon: <PenTool />, tab: 'HOMEWORK' },
-    { label: 'Subjects', icon: <BookOpen />, tab: 'RESOURCES' },
-    { label: 'My notes', icon: <BookMarked />, tab: 'NOTEBOOK' },
+    { label: 'Learn', icon: <Home />, tab: 'HOME' },
+    { label: 'Practise', icon: <CheckSquare />, tab: 'SUBJECTS' },
+    { label: 'Library', icon: <BookOpen />, tab: 'RESOURCES' },
+    { label: 'My Progress', icon: <BarChart3 />, tab: 'PROGRESS' },
   ];
+
   const more: SidebarAction[] = [
+    { label: 'Notebook', icon: <BookMarked />, tab: 'NOTEBOOK' },
+    { label: 'Talk & Learn', icon: <Mic />, tab: 'TALKBACK' },
+    { label: 'Study Groups', icon: <Users />, tab: 'EXAM_ROOMS' },
+    { label: 'Quest Map', icon: <Map />, tab: 'QUEST_MAP' },
+    { label: 'Community', icon: <MessageCircle />, tab: 'COMMUNITY' },
     {
       label: 'Class Assignments',
       icon: <ClipboardList />,
@@ -77,30 +83,17 @@ export const LearnerSidebar: React.FC<LearnerSidebarProps> = ({
         if (window.innerWidth < 1024) onToggle();
       },
     },
-    { label: 'Practice papers', icon: <CheckSquare />, tab: 'SUBJECTS' },
-    { label: 'My progress', icon: <BarChart3 />, tab: 'PROGRESS' },
-    { label: 'Talk & Learn', icon: <Mic />, tab: 'TALKBACK' },
-    { label: 'Study Groups', icon: <Users />, tab: 'EXAM_ROOMS' },
-    { label: 'Quest Map', icon: <Map />, tab: 'QUEST_MAP' },
-    { label: 'Community', icon: <MessageCircle />, tab: 'COMMUNITY' },
   ];
+
   const account: SidebarAction[] = [
     { label: 'Profile', icon: <UserCircle />, action: onProfile },
     {
-      label: 'My plan',
-      icon: isPro ? <ShieldCheck /> : <Sparkles />,
+      label: 'Plans & Credits',
+      icon: <Sparkles />,
       action: onPlans,
-      badge: isPro ? (
-        <span className="flex h-5 items-center justify-center rounded-md bg-emerald-100 px-1.5 text-[10px] font-black text-emerald-800 uppercase">
-          PRO
-        </span>
-      ) : sessionsLeft <= 0 ? (
-        <span className="flex h-5 items-center justify-center rounded-md bg-rose-100 px-1.5 text-[10px] font-black text-rose-700">
-          0 Left
-        </span>
-      ) : (
-        <span className="flex h-5 items-center justify-center rounded-md bg-amber-100 px-1.5 text-[10px] font-black text-amber-800">
-          {sessionsLeft} Left
+      badge: (
+        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#EDE9FE] text-[11px] font-black text-[#5B3CEB]">
+          {sessionsLeft}
         </span>
       ),
       highlight: false,
@@ -110,31 +103,69 @@ export const LearnerSidebar: React.FC<LearnerSidebarProps> = ({
   ];
 
   const content = (
-    <div className="flex h-full flex-col bg-white text-[#151a42]">
-      <div className="flex items-center justify-between px-5 py-6">
+    <div className="flex h-full flex-col bg-white text-[#181829] border-r border-[#ECECF2]">
+      {/* Brand Logo matching reference */}
+      <div className="flex items-center justify-between px-5 py-5 border-b border-slate-100">
         <button type="button" onClick={() => choose('HOME')} className="flex items-center gap-3 text-left">
-          <img src={logo} alt="Soma AI" className="h-10 w-10 object-contain" width={40} height={40} />
+          <img
+            src="/learner-assets/soma-smart-owl.png"
+            alt="Soma Smart"
+            className="h-9 w-9 object-contain"
+            width={36}
+            height={36}
+            onError={(e) => { (e.currentTarget as HTMLImageElement).src = logo; }}
+          />
           <span>
-            <strong className="block text-[15px] font-black tracking-[0]">SOMA AI</strong>
-            <span className="block text-xs text-[#707893]">Learn with Akili</span>
+            <strong className="block text-[15px] font-black tracking-tight text-[#181829]">SOMA SMART</strong>
+            <span className="block text-[11px] font-medium text-[#7A8299]">Learn with Akili</span>
           </span>
         </button>
-        <button type="button" onClick={onToggle} className="flex h-10 w-10 items-center justify-center rounded-xl text-[#626b87] hover:bg-[#f4f0ff] lg:hidden" aria-label="Close learner navigation"><X className="h-5 w-5" /></button>
+        <button
+          type="button"
+          onClick={onToggle}
+          className="flex h-9 w-9 items-center justify-center rounded-xl text-[#626b87] hover:bg-[#f4f0ff] lg:hidden"
+          aria-label="Close learner navigation"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto px-3 pb-5">
+      <nav className="flex-1 overflow-y-auto px-3.5 py-4 space-y-4">
+        {/* Main Nav Items */}
         <NavGroup items={primary} activeTab={activeTab} onChoose={choose} />
-        <div className="mx-2 my-4 border-t border-[#e7e4f2]" />
-        <details open={more.some(item => item.tab === activeTab) || undefined}>
-          <summary className="min-h-12 cursor-pointer rounded-xl px-4 py-3 text-sm font-semibold text-slate-600 focus-visible:outline-indigo-600">More learning tools</summary>
-          <NavGroup items={more} activeTab={activeTab} onChoose={choose} />
-        </details>
-        <div className="mx-2 my-4 border-t border-[#e7e4f2]" />
-        <p className="px-3 pb-2 text-xs font-medium text-[#6c748f]">Account &amp; Plans</p>
-        <NavGroup items={account} activeTab={activeTab} onChoose={choose} />
-        <Link to="/contact" className="flex min-h-12 items-center gap-3 rounded-xl px-4 text-sm font-semibold text-slate-600 hover:bg-stone-100 focus-visible:outline-indigo-600"><MessageCircle className="h-5 w-5" />Help &amp; support</Link>
-      </nav>
 
+        {/* More Section */}
+        <div>
+          <p className="px-3.5 pb-2 text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF]">More</p>
+          <NavGroup items={more} activeTab={activeTab} onChoose={choose} />
+        </div>
+
+        {/* Account Section */}
+        <div>
+          <p className="px-3.5 pb-2 text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF]">Account</p>
+          <NavGroup items={account} activeTab={activeTab} onChoose={choose} />
+        </div>
+
+        {/* Bottom Invite Card matching reference */}
+        <div className="mt-4 rounded-2xl border border-[#EDE9FE] bg-gradient-to-b from-[#FAF8FF] to-white p-4 text-center shadow-sm relative overflow-hidden">
+          <img
+            src="/learner-assets/gift-box-invite.png"
+            alt="Invite a friend"
+            className="w-14 h-14 object-contain mx-auto mb-2"
+          />
+          <h4 className="font-bold text-sm text-[#181829]">Invite a friend</h4>
+          <p className="text-xs text-[#71778E] mt-1 leading-snug">
+            You both get bonus learning sessions!
+          </p>
+          <button
+            type="button"
+            onClick={() => choose('REFERRAL')}
+            className="w-full mt-3 py-2.5 px-3 bg-[#5B3CEB] hover:bg-[#4D2ED4] text-white text-xs font-bold rounded-xl transition shadow-sm"
+          >
+            Invite Now
+          </button>
+        </div>
+      </nav>
     </div>
   );
 
@@ -142,8 +173,8 @@ export const LearnerSidebar: React.FC<LearnerSidebarProps> = ({
     <>
       <nav aria-label="Learner navigation" className="fixed inset-x-0 bottom-0 z-40 flex border-t border-stone-200 bg-white pb-[env(safe-area-inset-bottom)] lg:hidden">
         {primary.map(item => (
-          <button key={item.tab} type="button" onClick={() => item.tab && onTabChange(item.tab)} aria-current={item.tab === activeTab ? 'page' : undefined} className={`flex min-h-16 flex-1 flex-col items-center justify-center gap-1 text-xs font-semibold focus-visible:outline-indigo-600 ${item.tab === activeTab ? 'text-indigo-700 bg-indigo-50' : 'text-slate-600'}`}>
-            <span className="[&>svg]:h-5 [&>svg]:w-5">{item.icon}</span>{item.label === 'Homework Help' ? 'Homework' : item.label}
+          <button key={item.tab} type="button" onClick={() => item.tab && onTabChange(item.tab)} aria-current={item.tab === activeTab ? 'page' : undefined} className={`flex min-h-16 flex-1 flex-col items-center justify-center gap-1 text-xs font-semibold focus-visible:outline-indigo-600 ${item.tab === activeTab ? 'text-[#5B3CEB] bg-[#EDE9FE]' : 'text-slate-600'}`}>
+            <span className="[&>svg]:h-5 [&>svg]:w-5">{item.icon}</span>{item.label}
           </button>
         ))}
         <button type="button" onClick={onToggle} aria-label="More learner options" className="min-h-16 flex-1 text-xs font-semibold text-slate-600 focus-visible:outline-indigo-600">More</button>
@@ -169,16 +200,15 @@ const NavGroup: React.FC<{ items: SidebarAction[]; activeTab: SidebarTab; onChoo
           type="button"
           onClick={() => item.tab ? onChoose(item.tab) : item.action?.()}
           aria-current={active ? 'page' : undefined}
-          className={`relative flex min-h-12 w-full items-center gap-3 rounded-xl px-4 text-sm font-semibold transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200 ${
+          className={`relative flex min-h-11 w-full items-center gap-3 rounded-xl px-3.5 text-sm transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-violet-200 ${
             item.highlight
-              ? 'bg-amber-50/70 text-amber-900 border border-amber-200/80 hover:bg-amber-100/70'
+              ? 'bg-amber-50/70 text-amber-900 border border-amber-200/80 hover:bg-amber-100/70 font-semibold'
               : active
-              ? 'bg-[#f1edff] text-[#6938ef]'
-              : 'text-[#343c60] hover:bg-[#faf9ff]'
+              ? 'bg-[#EDE9FE] text-[#5B3CEB] font-bold shadow-xs'
+              : 'text-[#4A5068] hover:bg-[#F5F4FA] font-medium'
           }`}
         >
-          {active && <span className="absolute -left-3 h-8 w-1 rounded-r-full bg-[#6938ef]" />}
-          <span className={`[&>svg]:h-5 [&>svg]:w-5 ${active ? 'text-[#6938ef]' : 'text-[#69728f]'}`}>{item.icon}</span>
+          <span className={`[&>svg]:h-5 [&>svg]:w-5 ${active ? 'text-[#5B3CEB]' : 'text-[#6B7280]'}`}>{item.icon}</span>
           <span className="truncate">{item.label}</span>
           {item.badge && <span className="ml-auto shrink-0">{item.badge}</span>}
         </button>
