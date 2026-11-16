@@ -5,6 +5,10 @@
 ## Core Product Areas
 
 - Learner dashboard: https://www.somaai.co.ke/learner
+- Exam paper bank: https://www.somaai.co.ke/exam-papers
+- Free revision pool: https://www.somaai.co.ke/free-pool
+- Academic guide & KNEC calendar: https://www.somaai.co.ke/guide
+- Join a teacher class: https://www.somaai.co.ke/join
 - Teacher workspace: https://www.somaai.co.ke/teacher
 - Parent portal: https://www.somaai.co.ke/parent
 - School dashboard: https://www.somaai.co.ke/school

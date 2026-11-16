@@ -4,7 +4,16 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { ExamPaperReaderPage } from '../pages/ExamPaperReaderPage';
 const { getAccess } = vi.hoisted(() => ({ getAccess: vi.fn() }));
-vi.mock('../services/examPaperBankService', () => ({ examPaperBankService: { getAccess } }));
+vi.mock('../services/examPaperBankService', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../services/examPaperBankService')>();
+  return {
+    ...actual,
+    examPaperBankService: {
+      ...actual.examPaperBankService,
+      getAccess,
+    },
+  };
+});
 vi.mock('../context/AppContext', () => ({ useApp: () => ({ isPro: true }) }));
 const setup = () => render(<MemoryRouter><ExamPaperReaderPage /></MemoryRouter>);
 beforeEach(() => vi.resetAllMocks());

@@ -91,12 +91,21 @@ export const SomaGuidePage: React.FC = () => {
     const [selectedCategory, setSelectedCategory] = useState<'ALL' | 'KCSE' | 'KPSEA' | 'CBC'>('ALL');
     const [activeCandidate, setActiveCandidate] = useState<'KCSE' | 'KPSEA'>('KCSE');
 
-    // Calculate dynamic countdown days
-    const candidateCountdownDays = useMemo(() => {
-        const targetDate = activeCandidate === 'KCSE' ? new Date('2026-11-02') : new Date('2026-10-26');
+    // Calculate dynamic countdown days rolling forward after each year's exam window
+    const { candidateCountdownDays, candidateYear } = useMemo(() => {
         const today = new Date();
+        const baseYear = today.getFullYear();
+        const month = activeCandidate === 'KCSE' ? 10 : 9; // Nov (10) or Oct (9)
+        const day = activeCandidate === 'KCSE' ? 2 : 26;
+        let targetDate = new Date(baseYear, month, day);
+        if (targetDate.getTime() <= today.getTime()) {
+            targetDate = new Date(baseYear + 1, month, day);
+        }
         const diffTime = targetDate.getTime() - today.getTime();
-        return Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+        return {
+            candidateCountdownDays: Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24))),
+            candidateYear: targetDate.getFullYear(),
+        };
     }, [activeCandidate]);
 
     const filteredNews = useMemo(() => {
@@ -113,7 +122,7 @@ export const SomaGuidePage: React.FC = () => {
                 <meta name="keywords" content="Soma Guide, KCSE 2026 calendar, KPSEA exam dates Kenya, KNEC timetable, CBC syllabus notes, KCSE revision strategy, Kenyan school calendar" />
 
                 {/* AIO & Search Engine Optimization */}
-                <meta name="smart-search-index" content="index" />
+                <meta name="ai-search-index" content="index" />
                 <meta name="ai-knowledge-base" content="official-guide" />
                 <meta name="educational-framework" content="KCSE, KPSEA, CBC, KNEC" />
                 <meta name="target-audience" content="Learners, Candidates, Teachers, Parents" />
@@ -210,7 +219,7 @@ export const SomaGuidePage: React.FC = () => {
                                         : 'text-slate-600 hover:text-slate-900'
                                 }`}
                             >
-                                KCSE 2026 (Form 4)
+                                KCSE {candidateYear} (Form 4)
                             </button>
                             <button
                                 onClick={() => setActiveCandidate('KPSEA')}
@@ -220,7 +229,7 @@ export const SomaGuidePage: React.FC = () => {
                                         : 'text-slate-600 hover:text-slate-900'
                                 }`}
                             >
-                                KPSEA 2026 (Grade 6)
+                                KPSEA {candidateYear} (Grade 6)
                             </button>
                         </div>
                     </div>
@@ -236,12 +245,12 @@ export const SomaGuidePage: React.FC = () => {
                                     {activeCandidate} National Assessment
                                 </span>
                                 <h3 className="text-base font-black text-slate-900">
-                                    {activeCandidate === 'KCSE' ? 'KCSE National Examinations 2026' : 'KPSEA Grade 6 National Assessment 2026'}
+                                    {activeCandidate === 'KCSE' ? `KCSE National Examinations ${candidateYear}` : `KPSEA Grade 6 National Assessment ${candidateYear}`}
                                 </h3>
                                 <p className="text-xs text-slate-600">
                                     {activeCandidate === 'KCSE'
-                                        ? 'Scheduled for November 2026 across all secondary examination centres.'
-                                        : 'Scheduled for October 2026 across primary assessment centres.'}
+                                        ? `Scheduled for November ${candidateYear} across all secondary examination centres.`
+                                        : `Scheduled for October ${candidateYear} across primary assessment centres.`}
                                 </p>
                             </div>
                         </div>

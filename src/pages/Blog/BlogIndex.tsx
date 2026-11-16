@@ -66,7 +66,7 @@ export const BlogIndex: React.FC = () => {
                 <meta name="keywords" content="KCSE study tips, KPSEA exam strategy, CBC Kenya educational insights, Soma AI journal" />
 
                 {/* AIO & Search Engine Optimization */}
-                <meta name="smart-search-index" content="index" />
+                <meta name="ai-search-index" content="index" />
                 <meta name="ai-knowledge-base" content="official-journal" />
                 <meta name="educational-framework" content="CBC, KCSE, KNEC" />
                 <meta name="robots" content="index, follow, max-image-preview:large" />

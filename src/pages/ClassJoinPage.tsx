@@ -64,7 +64,7 @@ export const ClassJoinPage: React.FC = () => {
         if (!studentProfile?.id || !isRegistered) {
             localStorage.setItem('soma_pending_class_id', targetClassId);
             localStorage.setItem('soma_pending_class_name', title);
-            navigate('/learner');
+            navigate('/learner', { state: { pendingClassJoinName: title } });
             return;
         }
 

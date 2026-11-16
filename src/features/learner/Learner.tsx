@@ -4898,11 +4898,11 @@ ${explanation.explanation}
 
     if (mode === 'MENU') {
       const activeSubjects = ['Mathematics', 'English', 'Kiswahili', 'Science', 'Social Studies'];
-      const lastHistoryTopic = history.length > 0 ? history[history.length - 1]?.topic : (explanation?.topic && explanation.topic !== 'Soil erosion' ? explanation.topic : 'Photosynthesis');
+      const lastHistoryTopic = history.length > 0 ? history[history.length - 1]?.topic : (explanation?.topic && explanation.topic !== 'Soil erosion' ? explanation.topic : undefined);
 
       return (
         <LearnerHome
-          learnerName={studentProfile?.name || profile?.name || 'Amina'}
+          learnerName={studentProfile?.name || profile?.name || 'Learner'}
           grade={studentProfile?.grade || explanationGrade || 'Grade 7'}
           subjects={activeSubjects}
           latestTopic={lastHistoryTopic}
@@ -4918,20 +4918,23 @@ ${explanation.explanation}
             handleSidebarTabChange('RESOURCES');
           }}
           onContinue={() => {
-            const targetTopic = lastHistoryTopic || 'Photosynthesis';
-            if (explanation && explanation.topic.toLowerCase() === targetTopic.toLowerCase()) {
+            if (!lastHistoryTopic) return;
+            if (explanation && explanation.topic.toLowerCase() === lastHistoryTopic.toLowerCase()) {
               setMode('RESULT');
-            } else if (targetTopic.toLowerCase() === 'photosynthesis') {
+            } else if (lastHistoryTopic.toLowerCase() === 'photosynthesis') {
               setExplanation(photosynthesisLesson);
               setExplanationSubject('Science');
               setMode('RESULT');
             } else {
-              void handlePromptSubmit(targetTopic);
+              void handlePromptSubmit(lastHistoryTopic);
             }
           }}
           onViewAll={() => handleSidebarTabChange('RESOURCES')}
           onOpenRevision={() => handleSidebarTabChange('SUBJECTS')}
+          onAssignments={() => navigate('/learner/assessments')}
+          onJoinClass={() => navigate('/join')}
           sessionsLeft={Math.max(0, 5 - usageCount)}
+          hasUnlimitedPass={isPro || hasActive24hPhonePass()}
           onPlans={() => runWithRecallExitGuard(() => setMode('PRICING'))}
         />
       );
@@ -7755,9 +7758,9 @@ ${explanation.explanation}
                               startStudySession(item);
                             }}
                             isLoading={loading && currentDocument?.id === item.id}
-                            icon={isSyllabus ? <Library className="w-3 h-3" /> : usageCount >= 5 && !isPro ? <Lock className="w-3 h-3" /> : <Sparkles className="w-3 h-3" />}
+                            icon={isSyllabus ? <Library className="w-3 h-3" /> : usageCount >= 5 && !isPro && !hasActive24hPhonePass() ? <Lock className="w-3 h-3" /> : <Sparkles className="w-3 h-3" />}
                           >
-                            {isSyllabus ? 'Open Guide' : usageCount >= 5 && !isPro ? 'Limit Reached' : 'Study'}
+                            {isSyllabus ? 'Open Guide' : usageCount >= 5 && !isPro && !hasActive24hPhonePass() ? 'Limit Reached' : 'Study'}
                           </Button>
                           <Button
                             variant="ghost"

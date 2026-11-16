@@ -770,8 +770,8 @@ Question/Topic: ${activeQuestion || 'Solve and explain the attached homework que
                 <meta name="keywords" content="Soma AI, KCSE revision, KPSEA past papers, CBC notes, Kenyan learner app, teacher lesson notes, parent progress tracking" />
 
                 {/* AIO/SEO specific meta tags */}
-                <meta name="smart-search-index" content="index" />
-                <meta name="smart-knowledge-base" content="official" />
+                <meta name="ai-search-index" content="index" />
+                <meta name="ai-knowledge-base" content="official" />
                 <meta name="educational-framework" content="CBE, 8-4-4, KCSE, KPSEA, KJSEA" />
                 <meta name="target-audience" content="Learners, Teachers, Parents, School Administrators" />
                 <meta name="core-features" content="Smart Exam Assistant, Instant Explanations, Auto-Grading, Topical Quizzes, CBE Notes" />
@@ -794,21 +794,7 @@ Question/Topic: ${activeQuestion || 'Solve and explain the attached homework que
 
                 <link rel="canonical" href="https://www.somaai.co.ke/" />
 
-                {/* Structured Data / AIO */}
-                <script type="application/ld+json">
-                    {JSON.stringify({
-                        "@context": "https://schema.org",
-                        "@type": "EducationalOrganization",
-                        "name": "Soma AI",
-                        "url": "https://www.somaai.co.ke",
-                        "logo": "https://www.somaai.co.ke/favicon.png",
-                        "description": "Study support for Kenyan learners, teachers and parents across KCSE, KPSEA and CBC.",
-                        "sameAs": [
-                            "https://twitter.com/somasmart",
-                            "https://facebook.com/somasmart"
-                        ]
-                    })}
-                </script>
+                {/* Structured Data / AIO (EducationalOrganization, WebSite, Course, FAQPage live in index.html) */}
                 <script type="application/ld+json">
                     {JSON.stringify({
                         "@context": "https://schema.org",
@@ -822,38 +808,6 @@ Question/Topic: ${activeQuestion || 'Solve and explain the attached homework que
                             "priceCurrency": "KES"
                         },
                         "description": "Direct answers, exam prep, official notes, past papers, audio learning and progress tracking."
-                    })}
-                </script>
-                <script type="application/ld+json">
-                    {JSON.stringify({
-                        "@context": "https://schema.org",
-                        "@type": "FAQPage",
-                        "mainEntity": [
-                            {
-                                "@type": "Question",
-                                "name": "What does Soma AI do?",
-                                "acceptedAnswer": {
-                                    "@type": "Answer",
-                                    "text": "It helps Kenyan learners, teachers and parents with direct answers, exam prep, official notes, past papers, audio learning and progress tracking."
-                                }
-                            },
-                            {
-                                "@type": "Question",
-                                "name": "Can teachers use Soma AI?",
-                                "acceptedAnswer": {
-                                    "@type": "Answer",
-                                    "text": "Yes. Teachers can create notes, lesson flow, quizzes, Darasa recaps and marking feedback."
-                                }
-                            },
-                            {
-                                "@type": "Question",
-                                "name": "Does the library include notes and past papers?",
-                                "acceptedAnswer": {
-                                    "@type": "Answer",
-                                    "text": "Yes. Logged-in learners can access official notes, syllabus guides and KCSE/KPSEA past papers inside the library."
-                                }
-                            }
-                        ]
                     })}
                 </script>
             </Helmet>

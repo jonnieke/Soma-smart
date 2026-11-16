@@ -11,10 +11,17 @@ const service = vi.hoisted(() => ({
   getAccess: vi.fn(),
   initiatePurchase: vi.fn(),
 }));
-vi.mock('../services/examPaperBankService', () => ({
-  EXAM_PAPER_PRICE_KES: 20,
-  examPaperBankService: service,
-}));
+vi.mock('../services/examPaperBankService', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../services/examPaperBankService')>();
+  return {
+    ...actual,
+    EXAM_PAPER_PRICE_KES: 20,
+    examPaperBankService: {
+      ...actual.examPaperBankService,
+      ...service,
+    },
+  };
+});
 vi.mock('../context/AppContext', () => ({ useApp: () => ({ isPro: false }) }));
 vi.mock('../components/ExamPaperTickerBelt', () => ({ FALLBACK_LATEST_PAPERS: [] }));
 const setup = (entry = '/exam-papers') =>

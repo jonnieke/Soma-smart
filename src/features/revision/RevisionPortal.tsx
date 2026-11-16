@@ -386,8 +386,31 @@ export const RevisionPortal: React.FC = () => {
                         ))}
                     </div>
 
-                    {/* Right Controls: Phone Pass Badge & Account */}
+                    {/* Right Controls: Navigation, Phone Pass Badge & Account */}
                     <div className="flex items-center gap-2 sm:gap-3">
+                        <nav aria-label="Revision quick navigation" className="hidden lg:flex items-center gap-1.5 mr-1">
+                            <button
+                                type="button"
+                                onClick={() => navigate('/')}
+                                className="rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-950 transition"
+                            >
+                                Home
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => navigate('/learner')}
+                                className="rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-950 transition"
+                            >
+                                My classroom
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => navigate('/exam-papers')}
+                                className="rounded-xl px-2.5 py-1.5 text-xs font-bold text-slate-600 hover:bg-slate-100 hover:text-slate-950 transition"
+                            >
+                                Past papers
+                            </button>
+                        </nav>
                         {phoneSession && phoneSession.passActive ? (
                             <div className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-800 text-xs font-black shadow-2xs">
                                 <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />

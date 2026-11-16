@@ -4,7 +4,13 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { MemoryRouter } from 'react-router-dom';
 import { PaperBankCatalog, paperLevel, paperSubject } from '../components/PaperBankCatalog';
 import type { ExamPaperBankItem } from '../services/examPaperBankService';
-vi.mock('../services/examPaperBankService', () => ({ EXAM_PAPER_PRICE_KES: 20 }));
+vi.mock('../services/examPaperBankService', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../services/examPaperBankService')>();
+  return {
+    ...actual,
+    EXAM_PAPER_PRICE_KES: 20,
+  };
+});
 
 const papers: ExamPaperBankItem[] = [
   {
@@ -75,7 +81,7 @@ describe('paper bank redesign', () => {
   it('renders actual catalog results and clear prices', () => {
     setup();
     expect(screen.getByRole('status').textContent).toBe('3 papers');
-    expect(screen.getAllByText('KES 20')).toHaveLength(2);
+    expect(screen.getAllByText(/KES 20\s*\(1 paper\)/)).toHaveLength(2);
   });
   it('searches ignoring case and surrounding whitespace', () => {
     setup();

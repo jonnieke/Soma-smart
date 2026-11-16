@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   examDigitizerService,
   sanitizeSvg,
@@ -7,6 +7,11 @@ import {
 describe('Exam Paper Digitizer & Verification Engine', () => {
   beforeEach(() => {
     localStorage.clear();
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new Error('Offline test fetch'));
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('sanitizes and validates self-contained SVG code', () => {

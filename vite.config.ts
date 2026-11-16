@@ -21,7 +21,7 @@ export default defineConfig(({ mode }) => {
         includeAssets: ['favicon.png', 'apple-touch-icon.png', 'masked-icon.svg'],
         manifest: {
           name: 'Soma AI',
-          short_name: 'Somo',
+          short_name: 'Soma AI',
           description: 'The ultimate AI learning companion',
           theme_color: '#4f46e5',
           icons: [
@@ -41,8 +41,23 @@ export default defineConfig(({ mode }) => {
           skipWaiting: true,
           clientsClaim: true,
           cleanupOutdatedCaches: true,
-          // Precache assets to ensure the shell loads offline
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff,woff2}']
+          // Precache core learner shell without forcing heavy admin/enterprise/export bundles onto mobile data
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff2}'],
+          globIgnores: [
+            '**/Admin*.js',
+            '**/School*.js',
+            '**/Teacher*.js',
+            '**/Institution*.js',
+            '**/Partner*.js',
+            '**/Developer*.js',
+            '**/Organization*.js',
+            '**/Research*.js',
+            '**/Creator*.js',
+            '**/Publisher*.js',
+            '**/jspdf*.js',
+            '**/paperDocxExport*.js',
+            '**/html2canvas*.js',
+          ],
         }
       })
     ],

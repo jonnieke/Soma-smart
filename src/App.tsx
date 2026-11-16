@@ -58,6 +58,8 @@ const CampusPage = React.lazy(() => safeImport(() => import('./pages/CampusPage'
 const BlogIndex = React.lazy(() => safeImport(() => import('./pages/Blog/BlogIndex').then(module => ({ default: module.BlogIndex }))));
 const BlogPost = React.lazy(() => safeImport(() => import('./pages/Blog/BlogPost').then(module => ({ default: module.BlogPost }))));
 const ContactUsPage = React.lazy(() => safeImport(() => import('./pages/ContactUsPage').then(module => ({ default: module.ContactUsPage }))));
+const NotFoundPage = React.lazy(() => safeImport(() => import('./pages/NotFoundPage').then(module => ({ default: module.NotFoundPage }))));
+const CurriculumSeoPage = React.lazy(() => safeImport(() => import('./pages/CurriculumSeoPage').then(module => ({ default: module.CurriculumSeoPage }))));
 const AskSomo = React.lazy(() => safeImport(() => import('./components/AskSomo').then(module => ({ default: module.AskSomo }))));
 
 // Phase 4 — Marketplace & District
@@ -209,7 +211,14 @@ const MobileBottomNav: React.FC = () => {
             pathname === '/' ||
             pathname.startsWith('/revision') ||
             pathname.startsWith('/free-pool') ||
-            pathname.startsWith('/exam-papers')
+            pathname.startsWith('/exam-papers') ||
+            pathname.startsWith('/guide') ||
+            pathname.startsWith('/join') ||
+            pathname.startsWith('/class') ||
+            pathname === '/ai-tutor-kenya' ||
+            pathname === '/kcse-past-papers' ||
+            pathname === '/kpsea-past-papers' ||
+            pathname === '/cbc-notes-kenya'
         );
     if (hidden) return null;
 
@@ -621,7 +630,13 @@ const App: React.FC = () => {
                             <Route path="/blog/:slug" element={<BlogPost />} />
                             <Route path="/contact" element={<ContactUsPage />} />
                             <Route path="/contact-us" element={<ContactUsPage />} />
-                            <Route path="*" element={<Navigate to="/" replace />} />
+                            <Route path="/ai-tutor-kenya" element={<CurriculumSeoPage guideKey="/ai-tutor-kenya" />} />
+                            <Route path="/kcse-past-papers" element={<CurriculumSeoPage guideKey="/kcse-past-papers" />} />
+                            <Route path="/kpsea-past-papers" element={<CurriculumSeoPage guideKey="/kpsea-past-papers" />} />
+                            <Route path="/cbc-notes-kenya" element={<CurriculumSeoPage guideKey="/cbc-notes-kenya" />} />
+                            <Route path="/lesson-plan-generator-kenya" element={<CurriculumSeoPage guideKey="/lesson-plan-generator-kenya" />} />
+                            <Route path="/schemes-of-work-generator-kenya" element={<CurriculumSeoPage guideKey="/schemes-of-work-generator-kenya" />} />
+                            <Route path="*" element={<NotFoundPage />} />
                         </Routes>
                     </main>
                 </Suspense>
