@@ -926,6 +926,8 @@ export const LandingHome: React.FC<LandingHomeProps> = (props) => {
                 src={heroBoyMotherImg}
                 alt="Kenyan student and mother learning together on tablet"
                 className="soma-hero-center-photo"
+                fetchPriority="high"
+                decoding="async"
               />
               <div className="hidden lg:block absolute -left-4 bottom-4 rounded-2xl border border-slate-200/90 bg-white/95 backdrop-blur-md p-3 shadow-lg max-w-[190px]">
                 <p className="text-[11px] font-black text-slate-900">Akili Instant Solution</p>
@@ -1375,6 +1377,8 @@ export const LandingHome: React.FC<LandingHomeProps> = (props) => {
                   src={parentStudyImg}
                   alt="Kenyan parents reviewing child study progress on tablet"
                   className="soma-parent-photo"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
             </div>
