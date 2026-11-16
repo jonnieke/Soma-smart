@@ -865,6 +865,10 @@ export const LandingHome: React.FC<LandingHomeProps> = (props) => {
           <div className="soma-hero-grid">
             {/* Left Copy Column */}
             <div className="soma-hero-copy-column">
+              <div className="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-200 bg-white/95 px-3 py-1 text-xs font-bold text-slate-800 shadow-2xs">
+                <span className="h-2 w-2 rounded-full bg-emerald-500" aria-hidden="true" />
+                <span>CBC · KPSEA · KCSE · KES 20/day via <span className="text-emerald-600 font-black">M-Pesa</span></span>
+              </div>
               <h1 className="soma-hero-headline">
                 AI study help for{' '}
                 <br />
@@ -917,12 +921,28 @@ export const LandingHome: React.FC<LandingHomeProps> = (props) => {
             </div>
 
             {/* Center Emotional Photo */}
-            <div className="soma-hero-photo-wrap">
+            <div className="soma-hero-photo-wrap relative">
               <img
                 src={heroBoyMotherImg}
                 alt="Kenyan student and mother learning together on tablet"
                 className="soma-hero-center-photo"
               />
+              <div className="hidden lg:block absolute -left-4 bottom-4 rounded-2xl border border-slate-200/90 bg-white/95 backdrop-blur-md p-3 shadow-lg max-w-[190px]">
+                <p className="text-[11px] font-black text-slate-900">Akili Instant Solution</p>
+                <div className="mt-1.5 space-y-1 text-[10px] font-semibold text-slate-600">
+                  <div className="flex items-center justify-between gap-2">
+                    <span>Step 1 · Method</span>
+                    <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[9px] font-bold text-slate-800">1 mk</span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <span>Step 2 · Answer</span>
+                    <span className="rounded border border-slate-200 bg-slate-50 px-1.5 py-0.5 font-mono text-[9px] font-bold text-slate-800">2 mks</span>
+                  </div>
+                </div>
+                <div className="mt-2 rounded-lg bg-emerald-500 px-2.5 py-1 text-center text-[10px] font-black text-white">
+                  WhatsApp Solution
+                </div>
+              </div>
             </div>
 
             {/* Right Interactive Ask Akili Widget */}
