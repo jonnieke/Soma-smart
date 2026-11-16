@@ -1,9 +1,9 @@
 .paper-bank {
-  --pb-ink: #091640;
-  --pb-blue: #3d46ce;
-  --pb-border: #dbe0ed;
+  --pb-ink: #0f172a;
+  --pb-blue: #4f46e5;
+  --pb-border: #e2e8f0;
   min-height: 100vh;
-  background: #fdfcf9;
+  background: #fbf9f4;
   color: var(--pb-ink);
   font-family: Inter, Arial, sans-serif;
 }
@@ -34,8 +34,9 @@
   color: inherit;
 }
 .pb-header {
-  background: #fffefa;
-  border-bottom: 1px solid #e9e7e4;
+  background: rgba(251, 249, 244, 0.94);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid #e7e2d8;
 }
 .pb-header-inner {
   max-width: 1440px;

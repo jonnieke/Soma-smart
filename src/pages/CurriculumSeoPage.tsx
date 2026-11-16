@@ -159,7 +159,7 @@ export const CurriculumSeoPage: React.FC<CurriculumSeoPageProps> = ({ guideKey }
     const canonicalUrl = `https://www.somaai.co.ke${guide.path}`;
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900">
+        <div className="min-h-screen bg-[#fbf9f4] text-slate-900">
             <Helmet>
                 <html lang="en" />
                 <title>{guide.title}</title>

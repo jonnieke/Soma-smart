@@ -105,7 +105,7 @@ export const ClassJoinPage: React.FC = () => {
     const teacherName = classroom?.profiles?.name || 'your teacher';
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+        <div className="min-h-screen bg-[#fbf9f4] flex items-center justify-center p-6">
             <Helmet>
                 <title>Join Class | Soma AI</title>
                 <meta name="theme-color" content="#25D366" />

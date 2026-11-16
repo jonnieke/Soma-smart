@@ -114,7 +114,7 @@ export const SomaGuidePage: React.FC = () => {
     }, [selectedCategory]);
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
+        <div className="min-h-screen bg-[#fbf9f4] text-slate-900 font-sans selection:bg-indigo-100 selection:text-indigo-900">
             <Helmet>
                 <html lang="en" />
                 <title>Soma Guide | KCSE, KPSEA &amp; CBC Academic Calendar &amp; Exam Updates Kenya</title>

@@ -344,7 +344,7 @@ export const RevisionPortal: React.FC = () => {
         : null;
 
     return (
-        <div className="min-h-screen bg-[#f8fafc] text-slate-900 font-sans selection:bg-indigo-500 selection:text-white pb-24">
+        <div className="min-h-screen bg-[#fbf9f4] text-slate-900 font-sans selection:bg-indigo-500 selection:text-white pb-24">
             <Helmet>
                 <html lang="en" />
                 <title>Candidates Exam Hub | KCSE, KPSEA &amp; CBC Revision — Soma AI</title>
@@ -358,7 +358,7 @@ export const RevisionPortal: React.FC = () => {
             </Helmet>
 
             {/* Top Navigation & Status Bar */}
-            <header className="sticky top-0 z-50 border-b border-slate-200/90 bg-white/95 backdrop-blur-xl px-4 py-2.5 sm:px-8 shadow-xs">
+            <header className="sticky top-0 z-50 border-b border-[#e7e2d8] bg-[#fbf9f4]/95 backdrop-blur-xl px-4 py-2.5 sm:px-8 shadow-xs">
                 <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
                     {/* Brand Logo & Hub Badge */}
                     <button

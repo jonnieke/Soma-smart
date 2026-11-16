@@ -7,7 +7,7 @@ export const NotFoundPage: React.FC = () => {
     const navigate = useNavigate();
 
     return (
-        <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+        <div className="min-h-screen bg-[#fbf9f4] flex items-center justify-center p-6">
             <Helmet>
                 <title>Page Not Found | Soma AI</title>
                 <meta name="robots" content="noindex, follow" />

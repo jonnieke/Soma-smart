@@ -82,7 +82,7 @@ export const ExamPaperPreviewPage: React.FC = () => {
     }step-by-step Akili guidance on Soma AI. Unlock for KES ${EXAM_PAPER_PRICE_KES}.`;
 
     return (
-        <div className="min-h-screen bg-slate-50 text-slate-900 pb-24">
+        <div className="min-h-screen bg-[#fbf9f4] text-slate-900 pb-24">
             <Helmet>
                 <html lang="en" />
                 <title>{`${title} | ${grade} ${subject} | Soma AI`}</title>
