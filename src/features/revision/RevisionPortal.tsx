@@ -77,17 +77,21 @@ const inferPathwayFromGrade = (grade?: string): CandidatePathway | null => {
     return null;
 };
 
-// Calculate days remaining to Kenyan exam seasons
-const getDaysToExam = (pathway: CandidatePathway): number => {
+const getExamTargetDate = (pathway: CandidatePathway): Date => {
     const now = new Date();
-    // Default national exam target dates (November)
     let target = new Date(now.getFullYear(), 10, 4);
     if (pathway === 'KPSEA') target = new Date(now.getFullYear(), 9, 28);
     if (pathway === 'KJSEA') target = new Date(now.getFullYear(), 10, 10);
     if (target.getTime() < now.getTime()) {
         target = new Date(now.getFullYear() + 1, target.getMonth(), target.getDate());
     }
-    const diff = target.getTime() - now.getTime();
+    return target;
+};
+
+// Calculate days remaining to Kenyan exam seasons
+const getDaysToExam = (pathway: CandidatePathway): number => {
+    const now = new Date();
+    const diff = getExamTargetDate(pathway).getTime() - now.getTime();
     return Math.max(1, Math.ceil(diff / (1000 * 60 * 60 * 24)));
 };
 
@@ -493,7 +497,7 @@ export const RevisionPortal: React.FC = () => {
                             <div className="flex flex-wrap items-center justify-between gap-2">
                                 <div className="inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-xs font-black text-indigo-700 border border-indigo-100">
                                     <Trophy className="w-3.5 h-3.5 text-amber-500" />
-                                    <span>{pathwayConfig.examName} Readiness</span>
+                                    <span>{`${pathwayConfig.id} ${getExamTargetDate(pathwayConfig.id).getFullYear()} Readiness`}</span>
                                 </div>
                                 <div className="inline-flex items-center gap-1.5 text-xs font-black text-amber-700 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded-xl">
                                     <Clock className="w-3.5 h-3.5 text-amber-600" />
