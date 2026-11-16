@@ -51,6 +51,28 @@ const MAX_OUTPUT_TOKENS_ADMIN = Math.max(16000, Number(Deno.env.get('MAX_OUTPUT_
 const DISABLE_GUEST_AI = envFlag('DISABLE_GUEST_AI');
 const DISABLE_AUDIO_GENERATION = envFlag('DISABLE_AUDIO_GENERATION');
 const DISABLE_TALK_AND_LEARN = envFlag('DISABLE_TALK_AND_LEARN');
+
+// Bounded in-isolate response cache for identical text-only study queries (reduces Gemini cost & latency)
+const TEXT_CACHE_TTL_MS = 60 * 60 * 1000;
+const TEXT_CACHE_MAX_ENTRIES = 200;
+const textAnswerCache = new Map<string, { data: unknown; expiresAt: number }>();
+
+const getTextCacheKey = (
+    model: string,
+    feature: unknown,
+    contents: unknown,
+    systemInstruction: unknown,
+    stream: unknown,
+) => {
+    if (stream || feature !== 'ai_generation' || model.includes('embedding')) return null;
+    if (!Array.isArray(contents) || contents.length !== 1) return null;
+    const parts = contents[0]?.parts;
+    if (!Array.isArray(parts) || parts.length !== 1 || typeof parts[0]?.text !== 'string') return null;
+    const text = parts[0].text.trim();
+    if (!text || text.length > 600) return null;
+    const sys = typeof systemInstruction === 'string' ? systemInstruction : JSON.stringify(systemInstruction || '');
+    return `${model}::${sys}::${text}`;
+};
 const KES_PER_USD = 130;
 const REMOTE_FILE_MAX_BYTES = Math.max(1_000_000, Number(Deno.env.get('REMOTE_FILE_MAX_BYTES') || '15728640'));
 const REMOTE_FILE_MIME_TYPES = new Set([
@@ -926,6 +948,18 @@ serve(async (req) => {
             }
         }
 
+        const cacheKey = getTextCacheKey(normalizedModel, feature, normalizedContents, systemInstruction, stream);
+        if (cacheKey) {
+            const cached = textAnswerCache.get(cacheKey);
+            if (cached && cached.expiresAt > Date.now()) {
+                return new Response(
+                    JSON.stringify(cached.data),
+                    { headers: { ...corsHeaders, 'Content-Type': 'application/json', 'X-Soma-Cache': 'HIT' }, status: 200 }
+                );
+            }
+            if (cached) textAnswerCache.delete(cacheKey);
+        }
+
         const geminiRes = await fetch(urlTarget, {
             method: 'POST',
             headers: requestHeaders,
@@ -966,6 +1000,13 @@ serve(async (req) => {
         }
 
         const data = await geminiRes.json();
+        if (cacheKey && data?.candidates?.[0]?.content?.parts?.[0]?.text) {
+            if (textAnswerCache.size >= TEXT_CACHE_MAX_ENTRIES) {
+                const oldestKey = textAnswerCache.keys().next().value;
+                if (oldestKey) textAnswerCache.delete(oldestKey);
+            }
+            textAnswerCache.set(cacheKey, { data, expiresAt: Date.now() + TEXT_CACHE_TTL_MS });
+        }
         await recordGeminiUsageCost(supabase, requester, normalizedModel, feature, contents, systemInstruction, data);
 
         return new Response(

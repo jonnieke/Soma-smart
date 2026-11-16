@@ -44,6 +44,12 @@ export default defineConfig(({ mode }) => {
           // Precache core learner shell without forcing heavy admin/enterprise/export bundles onto mobile data
           globPatterns: ['**/*.{js,css,html,ico,png,svg,json,woff2}'],
           globIgnores: [
+            '**/screenshots/**',
+            '**/hero_*.png',
+            '**/parent*.png',
+            '**/teacher*.png',
+            '**/learner*.png',
+            '**/step_*.png',
             '**/Admin*.js',
             '**/School*.js',
             '**/Teacher*.js',

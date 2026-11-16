@@ -26,7 +26,22 @@
             "purpose": "any maskable"
         }
     ],
-    "screenshots": [],
+    "screenshots": [
+        {
+            "src": "/screenshots/learner-desktop.png",
+            "sizes": "1280x800",
+            "type": "image/png",
+            "form_factor": "wide",
+            "label": "Soma AI Learner Classroom Desktop"
+        },
+        {
+            "src": "/screenshots/learner-mobile.png",
+            "sizes": "390x844",
+            "type": "image/png",
+            "form_factor": "narrow",
+            "label": "Soma AI Learn with Akili Mobile"
+        }
+    ],
     "shortcuts": [
         {
             "name": "Study Dashboard",
