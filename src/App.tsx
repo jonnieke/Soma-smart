@@ -36,6 +36,7 @@ const RevisionPortal = React.lazy(() => safeImport(() => import('./features/revi
 const FreeRevisionPoolPage = React.lazy(() => safeImport(() => import('./pages/FreeRevisionPoolPage').then(module => ({ default: module.FreeRevisionPoolPage }))));
 const RevisionDashboard = React.lazy(() => safeImport(() => import('./features/revision/RevisionDashboard').then(module => ({ default: module.RevisionDashboard }))));
 const ExamPaperBankPage = React.lazy(() => safeImport(() => import('./pages/ExamPaperBankPage').then(module => ({ default: module.ExamPaperBankPage }))));
+const ExamPaperPreviewPage = React.lazy(() => safeImport(() => import('./pages/ExamPaperPreviewPage').then(module => ({ default: module.ExamPaperPreviewPage }))));
 const ExamPaperReaderPage = React.lazy(() => safeImport(() => import('./pages/ExamPaperReaderPage').then(module => ({ default: module.ExamPaperReaderPage }))));
 const SomaGuidePage = React.lazy(() => safeImport(() => import('./pages/SomaGuidePage').then(module => ({ default: module.SomaGuidePage }))));
 const ResetPassword = React.lazy(() => safeImport(() => import('./pages/ResetPassword').then(module => ({ default: module.ResetPassword }))));
@@ -405,6 +406,7 @@ const App: React.FC = () => {
                                 <Route key={from} path={from} element={<RedirectKeepQuery to={to} />} />
                             ))}
                             <Route path="/exam-papers" element={<ExamPaperBankPage />} />
+                            <Route path="/exam-papers/:id" element={<ExamPaperPreviewPage />} />
                             <Route path="/exam-papers/:id/read" element={<ExamPaperReaderPage />} />
                             <Route path="/guide" element={<SomaGuidePage />} />
                             <Route path="/revision/dashboard" element={<RevisionDashboard />} />

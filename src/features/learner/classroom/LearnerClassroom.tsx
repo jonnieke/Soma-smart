@@ -1,4 +1,4 @@
-import React, { useId, useRef, useState } from 'react';
+import React, { Suspense, useId, useRef, useState } from 'react';
 import {
   BookOpen,
   Camera,
@@ -13,7 +13,12 @@ import {
   Volume2,
 } from 'lucide-react';
 import logo from '../../../assets/images/main_logo.png';
-import MarkdownText from '../../../components/LearnerMarkdown';
+const LazyMarkdownText = React.lazy(() => import('../../../components/LearnerMarkdown'));
+const MarkdownText: React.FC<{ content: string; className?: string }> = (mdProps) => (
+  <Suspense fallback={<div className={mdProps.className}>{mdProps.content}</div>}>
+    <LazyMarkdownText {...mdProps} />
+  </Suspense>
+);
 import type { ExplanationResult } from '../../../types';
 import { safeLearnerPractice } from '../../../services/learnerPractice';
 import { learnerPoolService } from '../../../services/learnerPoolService';
