@@ -67,9 +67,30 @@ async function fetchJson(endpoint) {
   }
 }
 
+async function fetchPublishedPapers() {
+  if (!supabaseUrl || !supabaseAnonKey || supabaseUrl.includes('your-project')) return [];
+  try {
+    const res = await fetch(`${supabaseUrl}/rest/v1/rpc/list_exam_paper_bank`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: supabaseAnonKey,
+        Authorization: `Bearer ${supabaseAnonKey}`,
+      },
+      body: JSON.stringify({ p_grade: null, p_subject: null, p_exam_body: null }),
+      signal: AbortSignal.timeout(8000),
+    });
+    if (!res.ok) return [];
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  } catch {
+    return [];
+  }
+}
+
 async function run() {
   const [papers, posts] = await Promise.all([
-    fetchJson('knowledge_base?select=id,created_at&type=eq.PAST_PAPER&review_status=eq.PUBLISHED&order=created_at.desc&limit=500'),
+    fetchPublishedPapers(),
     fetchJson('blog_posts?select=slug,published_at&order=published_at.desc&limit=200'),
   ]);
 

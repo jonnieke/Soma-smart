@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { Helmet } from 'react-helmet-async';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
@@ -247,6 +248,14 @@ export const FreeRevisionPoolPage: React.FC = () => {
 
   return (
     <div style={{ minHeight: '100vh', background: '#fbf9f4', color: '#0f172a', fontFamily: 'Arial, sans-serif' }}>
+      <Helmet>
+        <html lang="en" />
+        <title>Free Revision Pool — Kenyan CBC, KPSEA &amp; KCSE Study Notes | Soma AI</title>
+        <meta name="description" content="Explore community-pooled CBC, KPSEA, and KCSE homework solutions, worked examples, and practice drills for free on Soma AI." />
+        <meta name="ai-search-index" content="index" />
+        <meta name="ai-knowledge-base" content="official" />
+        <link rel="canonical" href="https://www.somaai.co.ke/free-pool" />
+      </Helmet>
       {/* Header */}
       <header
         style={{
